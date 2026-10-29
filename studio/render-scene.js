@@ -47,14 +47,16 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
   ctx.beginPath(); ctx.arc(x, y, radius - 5 * scale, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = settings.background; ctx.beginPath(); ctx.arc(x, y, radius - 9 * scale, 0, Math.PI * 2); ctx.fill();
-  if (logo) {
+  if (logo && logo.width > 0 && logo.height > 0) {
     ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius - 16 * scale, 0, Math.PI * 2); ctx.clip();
     const size = (radius - 20 * scale) * 2;
     const factor = Math.min(size / logo.width, size / logo.height);
-    ctx.drawImage(logo, x - logo.width * factor / 2, y - logo.height * factor / 2, logo.width * factor, logo.height * factor);
-    ctx.restore();
+    try {
+      ctx.drawImage(logo, x - logo.width * factor / 2, y - logo.height * factor / 2, logo.width * factor, logo.height * factor);
+    } finally {
+      ctx.restore();
+    }
   } else if (title) {
-    const title = title;
     let fontSize = Math.min(21 * scale, radius * .21);
     ctx.font = `600 ${fontSize}px Tektur, sans-serif`;
     const maxWidth = radius * 1.55;

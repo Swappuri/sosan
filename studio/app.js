@@ -1,5 +1,6 @@
 import { renderScene } from './render-scene.js';
 import { createBrowserExporter } from './browser-export.js';
+import { syncPlaybackButton } from './playback-state.js';
 
 const browserMode = document.querySelector('meta[name="sosan-export-mode"]')?.content === 'browser' || new URLSearchParams(location.search).get('export') === 'browser' || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const $ = id => document.getElementById(id);
@@ -12,6 +13,7 @@ let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 let lastTime = 0;
+let logoLoadId = 0, previewError;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
 let activeLoad = 0, exportPreparing = false;
 let statusTimer;
@@ -51,6 +53,7 @@ function setExportState(value) {
   $('cancel-export').hidden = !value;
   $('cancel-export').disabled = false;
 }
+function syncPlaybackState() { syncPlaybackButton($('play'), audio, loaded && !loading); }
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
@@ -59,7 +62,11 @@ async function loadSong(file) {
   const loadId = ++activeLoad;
   loading = true;
   loaded = false;
+  selectedFile = null;
   audio.pause();
+  syncPlaybackState();
+  $('elapsed').textContent = '0:00';
+  $('seek').value = 0;
   $('play').disabled = $('export').disabled = $('seek').disabled = true;
   status(`Loading ${file.name}…`);
   if (currentUrl) URL.revokeObjectURL(currentUrl);
@@ -92,19 +99,26 @@ async function loadSong(file) {
     status('');
   } catch (error) {
     if (loadId === activeLoad) { loaded = false; $('empty-state').hidden = false; $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'Choose another MP3 or WAV'; status(error.message, true); }
-  } finally { if (loadId === activeLoad) loading = false; }
+  } finally { if (loadId === activeLoad) { loading = false; syncPlaybackState(); } }
 }
 async function togglePlay() {
   if (!loaded || loading) return;
+  if (!audio.paused && !audio.ended) { audio.pause(); syncPlaybackState(); return; }
+  const loadId = activeLoad;
   try {
     await prepareAudio();
-    if (audio.paused) { if (audio.ended) { audio.currentTime = 0; resetMotion(); } await audio.play(); }
-    else audio.pause();
-  } catch (error) { status(`Playback failed: ${error.message}`, true); }
+    // Loading a new song invalidates a pending play request for the old song.
+    if (loadId !== activeLoad || !loaded || loading) return;
+    if (audio.ended) { audio.currentTime = 0; resetMotion(); }
+    await audio.play();
+  } catch (error) {
+    if (loadId === activeLoad && error.name !== 'AbortError') status(`Playback failed: ${error.message}`, true);
+  } finally { syncPlaybackState(); }
 }
 $('play').onclick = togglePlay;
-audio.addEventListener('play', () => { $('play').textContent = 'Ⅱ'; $('play').setAttribute('aria-label', 'Pause'); });
-audio.addEventListener('pause', () => { $('play').textContent = '▶'; $('play').setAttribute('aria-label', 'Play'); });
+for (const event of ['play', 'playing', 'pause', 'ended', 'emptied', 'loadstart', 'loadedmetadata', 'abort', 'error']) {
+  audio.addEventListener(event, syncPlaybackState);
+}
 $('seek').oninput = () => { if (loaded) { audio.currentTime = Number($('seek').value); resetMotion(); } };
 $('mute').onclick = () => { if (monitor) { monitor.gain.value = monitor.gain.value ? 0 : 1; $('mute').textContent = monitor.gain.value ? '♪' : '×'; $('mute').setAttribute('aria-label', monitor.gain.value ? 'Mute audio' : 'Unmute audio'); } };
 document.addEventListener('keydown', event => { if (event.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); togglePlay(); } });
@@ -158,27 +172,39 @@ for (const key of ['radius', 'sensitivity', 'bars']) $(key).oninput = () => { se
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
 $('reset').onclick = () => {
   settings = { ...defaults }; syncSettings(); resetMotion();
-  $('title').value = ''; logo = null; logoFile = null; $('logo-remove').hidden = true; $('logo-name').textContent = 'PNG, JPG, WebP';
+  $('title').value = ''; clearLogo();
   $('resolution').value = '1280x720'; $('fps').value = '30'; setResolution();
   status('Settings reset.');
 };
 function setResolution() { const [width, height] = $('resolution').value.split('x').map(Number); canvas.width = width; canvas.height = height; $('resolution-label').textContent = `${width} × ${height}`; }
 $('resolution').onchange = setResolution;
 $('logo-upload').onclick = () => $('logo-file').click();
+function clearLogo() {
+  logoLoadId++;
+  logo?.close?.(); logo = null; logoFile = null;
+  $('logo-remove').hidden = true;
+  $('logo-name').textContent = 'PNG, JPG, WebP';
+}
 $('logo-file').onchange = async event => {
   const file = event.target.files[0]; event.target.value = '';
   if (!file) return;
   if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) { status('Choose a PNG, JPG, or WebP logo.', true); return; }
   if (file.size > 20 * 1024 * 1024) { status('Choose a logo smaller than 20 MB.', true); return; }
-  const url = URL.createObjectURL(file);
+  const loadId = ++logoLoadId;
   try {
-    const image = new Image(); image.src = url; await image.decode();
-    logo = image; logoFile = file; $('logo-name').textContent = file.name; $('logo-remove').hidden = false;
+    // A decoded bitmap owns its pixels and doesn't depend on a revoked blob URL.
+    const image = await createImageBitmap(file);
+    if (loadId !== logoLoadId) { image.close(); return; }
+    const previous = logo;
+    logo = image; logoFile = file;
+    previous?.close?.();
+    $('logo-name').textContent = file.name; $('logo-remove').hidden = false;
     status('Logo added.');
-  } catch { status('Could not read this image. Try another logo.', true); }
-  finally { URL.revokeObjectURL(url); }
+  } catch {
+    if (loadId === logoLoadId) status('Could not read this image. Try another logo.', true);
+  }
 };
-$('logo-remove').onclick = () => { logo = null; logoFile = null; $('logo-remove').hidden = true; $('logo-name').textContent = 'PNG, JPG, WebP'; };
+$('logo-remove').onclick = clearLogo;
 
 // Logarithmic frequency bands with time-based attack/release smoothing.
 function sampleAudio(dt) {
@@ -210,13 +236,25 @@ function sampleAudio(dt) {
   }
 }
 function draw(now) {
+  // Queue the next frame first so one failed draw cannot stop the preview forever.
+  requestAnimationFrame(draw);
+  syncPlaybackState();
   const interval = 1000 / (audio.paused ? 12 : Math.min(60, Number($('fps').value)));
-  if (now - lastTime < interval) { requestAnimationFrame(draw); return; }
+  if (now - lastTime < interval) return;
   const dt = Math.min(0.1, Math.max(0.001, (now - lastTime) / 1000 || 1 / 60)); lastTime = now;
   sampleAudio(dt);
-  renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, logo, $('title').value.trim());
+  try {
+    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, logo, $('title').value.trim());
+    if (previewError && $('status').textContent.startsWith('Preview rendering failed:')) status('');
+    previewError = undefined;
+  } catch (error) {
+    if (previewError !== error.message) {
+      console.error('Preview rendering failed:', error);
+      status(`Preview rendering failed: ${error.message}`, true);
+      previewError = error.message;
+    }
+  }
   if (loaded) { $('elapsed').textContent = timeLabel(audio.currentTime); $('seek').value = audio.currentTime; }
-  requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
 

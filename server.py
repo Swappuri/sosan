@@ -121,7 +121,7 @@ class StudioHandler(SimpleHTTPRequestHandler):
             elif path in {'/fonts/Tektur.ttf', '/fonts/OFL.txt'}:
                 content_type = 'font/ttf' if path.endswith('.ttf') else 'text/plain; charset=utf-8'
                 self.send_file(ROOT / 'studio' / path.lstrip('/'), content_type)
-            elif path in {'/', '/index.html', '/app.js', '/style.css', '/render-scene.js', '/browser-export.js', '/audio-analysis.js'}:
+            elif path in {'/', '/index.html', '/app.js', '/style.css', '/render-scene.js', '/browser-export.js', '/audio-analysis.js', '/playback-state.js'}:
                 super().do_GET()
             else:
                 self.send_error(404)
