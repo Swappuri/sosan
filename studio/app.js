@@ -54,6 +54,12 @@ function setExportState(value) {
   $('cancel-export').disabled = false;
 }
 function syncPlaybackState() { syncPlaybackButton($('play'), audio, loaded && !loading); }
+function syncSettingsAvailability() {
+  const disabled = !loaded || loading;
+  document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
+  $('reset').disabled = disabled;
+  $('settings-hint').hidden = !disabled;
+}
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
@@ -62,6 +68,7 @@ async function loadSong(file) {
   const loadId = ++activeLoad;
   loading = true;
   loaded = false;
+  syncSettingsAvailability();
   selectedFile = null;
   audio.pause();
   syncPlaybackState();
@@ -99,7 +106,7 @@ async function loadSong(file) {
     status('');
   } catch (error) {
     if (loadId === activeLoad) { loaded = false; $('empty-state').hidden = false; $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'Choose another MP3 or WAV'; status(error.message, true); }
-  } finally { if (loadId === activeLoad) { loading = false; syncPlaybackState(); } }
+  } finally { if (loadId === activeLoad) { loading = false; syncPlaybackState(); syncSettingsAvailability(); } }
 }
 async function togglePlay() {
   if (!loaded || loading) return;
@@ -176,14 +183,14 @@ $('reset').onclick = () => {
   $('resolution').value = '1280x720'; $('fps').value = '30'; setResolution();
   status('Settings reset.');
 };
-function setResolution() { const [width, height] = $('resolution').value.split('x').map(Number); canvas.width = width; canvas.height = height; $('resolution-label').textContent = `${width} × ${height}`; }
+function setResolution() { const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
 $('resolution').onchange = setResolution;
 $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;
   logo?.close?.(); logo = null; logoFile = null;
   $('logo-remove').hidden = true;
-  $('logo-name').textContent = 'PNG, JPG, WebP';
+  $('logo-name').textContent = ''; $('logo-name').hidden = true;
 }
 $('logo-file').onchange = async event => {
   const file = event.target.files[0]; event.target.value = '';
@@ -198,7 +205,7 @@ $('logo-file').onchange = async event => {
     const previous = logo;
     logo = image; logoFile = file;
     previous?.close?.();
-    $('logo-name').textContent = file.name; $('logo-remove').hidden = false;
+    $('logo-name').textContent = file.name; $('logo-name').hidden = false; $('logo-remove').hidden = false;
     status('Logo added.');
   } catch {
     if (loadId === logoLoadId) status('Could not read this image. Try another logo.', true);
@@ -235,6 +242,14 @@ function sampleAudio(dt) {
     for (let i = 0; i < smooth.length; i++) smooth[i] *= Math.exp(-dt * 7);
   }
 }
+// The preview fills its stage; export dimensions remain independent.
+new ResizeObserver(entries => {
+  const { width, height } = entries[0].contentRect;
+  if (!width || !height) return;
+  const density = Math.min(window.devicePixelRatio || 1, 1.5);
+  canvas.width = Math.max(1, Math.round(width * density));
+  canvas.height = Math.max(1, Math.round(height * density));
+}).observe($('stage'));
 function draw(now) {
   // Queue the next frame first so one failed draw cannot stop the preview forever.
   requestAnimationFrame(draw);
@@ -244,7 +259,7 @@ function draw(now) {
   const dt = Math.min(0.1, Math.max(0.001, (now - lastTime) / 1000 || 1 / 60)); lastTime = now;
   sampleAudio(dt);
   try {
-    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, logo, $('title').value.trim());
+    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '');
     if (previewError && $('status').textContent.startsWith('Preview rendering failed:')) status('');
     previewError = undefined;
   } catch (error) {

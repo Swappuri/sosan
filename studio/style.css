@@ -53,7 +53,7 @@ h1, h2 { font-size: 12px; font-weight: 500; margin: 0; }
 .panel-meta { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .workspace { display: flex; flex-direction: column; position: relative; }
 .stage { flex: 1; min-height: 0; position: relative; background: var(--preview-bg); margin: 12px 12px 0; border: 1px solid #333; border-radius: 4px; overflow: hidden; }
-canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+canvas { display: block; width: 100%; height: 100%;  }
 .empty-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 16px; background: #10101033; }
 .upload-symbol { width: 24px; height: 24px; color: var(--accent); margin-bottom: 12px; }
 .empty-state h2 { font-size: 17px; font-weight: 500; margin: 0 0 6px; }
@@ -157,3 +157,13 @@ input[type=text]::placeholder { color: #939393; }
   .settings-content { padding: 10px 14px; gap: 8px; }
   .control-section + .control-section { padding-top: 8px; }
 }
+
+fieldset.control-section { margin: 0; padding: 0; border: 0; }
+fieldset.control-section:disabled { opacity: .45; }
+fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
+.settings-hint { margin: 0; color: var(--muted); font-size: 10px; grid-column: 1 / -1; }
+.logo-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; }
+.logo-row .secondary { grid-column: 1 / -1; width: 100%; min-height: 32px; justify-content: space-between; }
+.logo-row .secondary small { color: var(--muted); font-size: 9px; }
+.logo-row > span { grid-row: 2; grid-column: 1; }
+.logo-row .text-button { grid-row: 2; grid-column: 2; }
