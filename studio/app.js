@@ -58,7 +58,6 @@ function syncSettingsAvailability() {
   const disabled = !loaded || loading;
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
   $('reset').disabled = disabled;
-  $('settings-hint').hidden = !disabled;
 }
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
@@ -94,6 +93,7 @@ async function loadSong(file) {
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) throw new Error('This file has no playable audio.');
     loaded = true;
     selectedFile = file;
+    $('title').value = file.name.replace(/\.[^.]+$/, '').slice(0, 50);
     $('empty-state').hidden = true;
     $('track-name').textContent = file.name;
     $('track-detail').textContent = `${file.name.split('.').pop().toUpperCase()} · ${timeLabel(audio.duration)} · full track`;
@@ -247,8 +247,14 @@ new ResizeObserver(entries => {
   const { width, height } = entries[0].contentRect;
   if (!width || !height) return;
   const density = Math.min(window.devicePixelRatio || 1, 1.5);
-  canvas.width = Math.max(1, Math.round(width * density));
-  canvas.height = Math.max(1, Math.round(height * density));
+  const nextWidth = Math.max(1, Math.round(width * density));
+  const nextHeight = Math.max(1, Math.round(height * density));
+  if (canvas.width === nextWidth && canvas.height === nextHeight) return;
+  canvas.width = nextWidth;
+  canvas.height = nextHeight;
+  // Resizing clears the bitmap. Repaint synchronously before the browser presents it,
+  // including while paused, when the regular animation loop is throttled.
+  paintPreview(performance.now());
 }).observe($('stage'));
 function draw(now) {
   // Queue the next frame first so one failed draw cannot stop the preview forever.
@@ -258,6 +264,10 @@ function draw(now) {
   if (now - lastTime < interval) return;
   const dt = Math.min(0.1, Math.max(0.001, (now - lastTime) / 1000 || 1 / 60)); lastTime = now;
   sampleAudio(dt);
+  paintPreview(now);
+  if (loaded) { $('elapsed').textContent = timeLabel(audio.currentTime); $('seek').value = audio.currentTime; }
+}
+function paintPreview(now) {
   try {
     renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '');
     if (previewError && $('status').textContent.startsWith('Preview rendering failed:')) status('');
@@ -269,7 +279,6 @@ function draw(now) {
       previewError = error.message;
     }
   }
-  if (loaded) { $('elapsed').textContent = timeLabel(audio.currentTime); $('seek').value = audio.currentTime; }
 }
 requestAnimationFrame(draw);
 
