@@ -34,3 +34,6 @@ exports/
 *.log
 *.partial
 *.upload
+
+# Browser build dependencies
+node_modules/

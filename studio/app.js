@@ -1,3 +1,7 @@
+import { renderScene } from './render-scene.js';
+import { createBrowserExporter } from './browser-export.js';
+
+const browserMode = document.querySelector('meta[name="sosan-export-mode"]')?.content === 'browser' || new URLSearchParams(location.search).get('export') === 'browser' || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -10,8 +14,6 @@ let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 let lastTime = 0;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
 let activeLoad = 0, exportPreparing = false;
-const particles = Array.from({ length: 100 }, (_, i) => ({ x: fract(Math.sin(i * 127.1 + 3) * 43758.5453), y: fract(Math.sin(i * 311.7 + 9) * 43758.5453), size: 0.6 + fract(Math.sin(i * 41.9) * 43758.5453) * 1.4, phase: i * 2.7 }));
-function fract(n) { return n - Math.floor(n); }
 let statusTimer;
 function status(message, error = false) {
   clearTimeout(statusTimer);
@@ -212,60 +214,7 @@ function draw(now) {
   if (now - lastTime < interval) { requestAnimationFrame(draw); return; }
   const dt = Math.min(0.1, Math.max(0.001, (now - lastTime) / 1000 || 1 / 60)); lastTime = now;
   sampleAudio(dt);
-  const width = canvas.width, height = canvas.height, scale = Math.min(width / 854, height / 480);
-  const x = width / 2, y = height / 2;
-  const songTime = loaded ? audio.currentTime : now / 1000 * .25;
-  ctx.fillStyle = settings.background; ctx.fillRect(0, 0, width, height);
-  const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
-  aura.addColorStop(0, rgba(settings.primary, .09 + (settings.flashes ? flash * .1 : 0)));
-  aura.addColorStop(.55, rgba(settings.secondary, .025)); aura.addColorStop(1, rgba(settings.background, 0));
-  ctx.fillStyle = aura; ctx.fillRect(0, 0, width, height);
-  // A restrained star field drifts outwards with the song clock.
-  if (settings.particles) {
-    for (const p of particles) {
-      const px = fract(p.x + Math.cos(p.phase) * songTime * .003) * width;
-      const py = fract(p.y - songTime * .004 * (p.size / 2)) * height;
-      ctx.globalAlpha = .15 + .3 * (0.5 + 0.5 * Math.sin(songTime * .8 + p.phase));
-      ctx.fillStyle = settings.primary; ctx.beginPath(); ctx.arc(px, py, p.size * scale, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-  const pulse = settings.pulse ? Math.min(1, bass) * 12 : 0;
-  const radius = (settings.radius + pulse) * scale;
-  const count = settings.bars;
-  ctx.lineCap = 'round';
-  for (let i = 0; i < count; i++) {
-    const index = i < count / 2 ? i : count - i - 1;
-    const level = smooth[index] || 0;
-    const angle = i / count * Math.PI * 2 - Math.PI / 2;
-    const length = (3 + Math.pow(level, 1.9) * 67) * scale;
-    const color = blend(settings.primary, settings.secondary, index / (count / 2));
-    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
-    ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
-    ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (radius + 8 * scale), y + Math.sin(angle) * (radius + 8 * scale));
-    ctx.lineTo(x + Math.cos(angle) * (radius + 8 * scale + length), y + Math.sin(angle) * (radius + 8 * scale + length)); ctx.stroke();
-  }
-  ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
-  ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;
-  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
-  ctx.beginPath(); ctx.arc(x, y, radius - 5 * scale, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = settings.background; ctx.beginPath(); ctx.arc(x, y, radius - 9 * scale, 0, Math.PI * 2); ctx.fill();
-  if (logo) {
-    ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius - 16 * scale, 0, Math.PI * 2); ctx.clip();
-    const size = (radius - 20 * scale) * 2;
-    const factor = Math.min(size / logo.width, size / logo.height);
-    ctx.drawImage(logo, x - logo.width * factor / 2, y - logo.height * factor / 2, logo.width * factor, logo.height * factor);
-    ctx.restore();
-  } else if ($('title').value.trim()) {
-    const title = $('title').value.trim();
-    let fontSize = Math.min(21 * scale, radius * .21);
-    ctx.font = `600 ${fontSize}px Tektur, sans-serif`;
-    const maxWidth = radius * 1.55;
-    if (ctx.measureText(title).width > maxWidth) fontSize *= maxWidth / ctx.measureText(title).width;
-    ctx.font = `600 ${fontSize}px Tektur, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eeeff2'; ctx.fillText(title, x, y);
-  }
+  renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, logo, $('title').value.trim());
   if (loaded) { $('elapsed').textContent = timeLabel(audio.currentTime); $('seek').value = audio.currentTime; }
   requestAnimationFrame(draw);
 }
@@ -340,7 +289,7 @@ async function pollExport() {
     pollTimer = setTimeout(pollExport, 3000);
   }
 }
-$('export').onclick = async () => {
+const startServerExport = async () => {
   if (!loaded || !selectedFile || exporting || exportPreparing) return;
   setWorkspaceView('preview');
   exportPreparing = true;
@@ -384,7 +333,7 @@ $('export').onclick = async () => {
     uploadController = null;
   }
 };
-$('cancel-export').onclick = async () => {
+const cancelServerExport = async () => {
   uploadController?.abort();
   $('cancel-export').disabled = true;
   try {
@@ -394,14 +343,68 @@ $('cancel-export').onclick = async () => {
     else { setExportState(false); status('Export cancelled.'); }
   } catch (error) { $('cancel-export').disabled = false; status(error.message, true); await pollExport(); }
 };
-// Only an upload depends on the tab. Rendering never needs a page or an audio device.
-window.addEventListener('beforeunload', event => { if (exportPreparing) { event.preventDefault(); event.returnValue = ''; } });
+let browserDownloadUrl, browserFilename;
+const browserExporter = createBrowserExporter({
+  started() {
+    audio.pause();
+    if (browserDownloadUrl) URL.revokeObjectURL(browserDownloadUrl);
+    browserDownloadUrl = null;
+    setExportState(true);
+    $('export-download').hidden = true;
+    $('export-title').textContent = 'Preparing browser export…';
+    $('export-detail').textContent = 'Keep this tab open. Your audio stays on this device.';
+    $('export-progress').value = 0;
+    status('');
+  },
+  progress(data) {
+    $('export-progress').value = data.progress;
+    $('export-title').textContent = data.phase || `Rendering in browser · ${Math.floor(data.progress)}%`;
+    $('export-detail').textContent = data.frame ? `${data.frame} / ${data.total} frames · Keep this tab open.` : 'Keep this tab open. Your audio stays on this device.';
+  },
+  complete(blob) {
+    setExportState(false);
+    browserDownloadUrl = URL.createObjectURL(blob);
+    $('export-progress').value = 100;
+    $('export-title').textContent = `Ready · ${browserFilename}`;
+    $('export-detail').textContent = 'Download before closing this tab.';
+    $('export-download').href = browserDownloadUrl;
+    $('export-download').download = browserFilename;
+    $('export-download').hidden = false;
+  },
+  failed(error) {
+    setExportState(false);
+    $('export-title').textContent = 'Browser export failed.';
+    $('export-detail').textContent = error.message;
+    status(error.message, true);
+  },
+  cancelled() {
+    setExportState(false);
+    $('export-title').textContent = 'Export cancelled.';
+    $('export-detail').textContent = '';
+  },
+});
+$('export').onclick = () => {
+  if (!browserMode) return startServerExport();
+  if (!loaded || !selectedFile || exporting || loading) return;
+  setWorkspaceView('preview');
+  const [width, height] = $('resolution').value.split('x').map(Number);
+  const title = $('title').value.trim();
+  browserFilename = `${(title || selectedFile.name.replace(/\.[^.]+$/, '')).replace(/[\\/:*?"<>|]/g, '_')}.mp4`;
+  browserExporter.start({ file: selectedFile, logoFile, settings: { ...settings, width, height, fps: Number($('fps').value), title } });
+};
+$('cancel-export').onclick = () => browserMode ? browserExporter.cancel() : cancelServerExport();
+$('export').title = browserMode ? 'Render an MP4 on this device. Keep this tab open during export.' : 'Render an MP4 in the local background server.';
+window.addEventListener('beforeunload', event => {
+  if (exportPreparing || (browserMode && browserExporter.active)) { event.preventDefault(); event.returnValue = ''; }
+});
 syncSettings();
-try {
-  exportJobId = localStorage.getItem('sosan-export-id') || localStorage.getItem('orbit-export-id');
-  if (exportJobId) {
-    localStorage.setItem('sosan-export-id', exportJobId);
-    localStorage.removeItem('orbit-export-id');
-  }
-} catch { /* Optional recovery. */ }
-if (exportJobId && /^[a-f0-9]{32}$/.test(exportJobId)) pollExport();
+if (!browserMode) {
+  try {
+    exportJobId = localStorage.getItem('sosan-export-id') || localStorage.getItem('orbit-export-id');
+    if (exportJobId) {
+      localStorage.setItem('sosan-export-id', exportJobId);
+      localStorage.removeItem('orbit-export-id');
+    }
+  } catch { /* Optional recovery. */ }
+  if (exportJobId && /^[a-f0-9]{32}$/.test(exportJobId)) pollExport();
+}

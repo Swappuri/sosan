@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#2d2d2d">
   <title>sosan — Music Visualizer</title>
-  <link rel="preload" href="/fonts/Tektur.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="preload" href="./fonts/Tektur.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body data-view="preview">
   <header class="app-header">
-    <a class="brand" href="/" aria-label="sosan home"><span aria-hidden="true">s<svg class="brand-o" viewBox="0 0 24 24"><defs><linearGradient id="brand-gradient" x1="0" y1="0" x2="1" y2="1"><stop class="ring-primary" offset="0%"/><stop class="ring-secondary" offset="100%"/></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="none" stroke="url(#brand-gradient)" stroke-width="2.5"/></svg>san</span></a>
+    <a class="brand" href="./" aria-label="sosan home"><span aria-hidden="true">s<svg class="brand-o" viewBox="0 0 24 24"><defs><linearGradient id="brand-gradient" x1="0" y1="0" x2="1" y2="1"><stop class="ring-primary" offset="0%"/><stop class="ring-secondary" offset="100%"/></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="none" stroke="url(#brand-gradient)" stroke-width="2.5"/></svg>san</span></a>
     <button id="export" class="primary" disabled>Export video <span aria-hidden="true">↗</span></button>
   </header>
   <nav class="view-switch" aria-label="Workspace view">
@@ -93,6 +93,6 @@
   </main>
   <p id="status" role="status" hidden></p>
   <audio id="audio" preload="metadata"></audio>
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

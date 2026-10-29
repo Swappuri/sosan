@@ -1,0 +1,18 @@
+{
+  "name": "sosan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build-web.mjs",
+    "test": "node --test tests/web/*.test.js"
+  },
+  "dependencies": {
+    "@mediabunny/aac-encoder": "1.64.0",
+    "mediabunny": "1.64.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

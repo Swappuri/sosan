@@ -1,9 +1,28 @@
 # sosan
 
-A local, audio-reactive music visualizer with a live browser preview and offline
+An audio-reactive music visualizer with a live browser preview and frame-by-frame
 MP4 export. Built with Python, Web Audio, Canvas, OpenCV, and FFmpeg.
 
 ![sosan studio](docs/studio.png)
+
+## Use the free website
+
+**[Open sosan](https://swappuri.github.io/sosan/)** — no installation or account needed.
+
+The GitHub Pages version runs entirely on your device. Audio and logos are never
+uploaded. MP4 export uses WebCodecs in a browser worker and generates every frame
+without recording playback. Use an updated Chrome, Edge, or Safari browser with
+H.264 encoding support.
+
+**Keep the tab open until export finishes**, then download the MP4 before closing
+or refreshing it. GitHub Pages is static hosting: it cannot run a server-side job
+after you close the page. Rendering speed depends on your device, not song playback.
+A background tab can work, but browsers may suspend it; returning to the tab lets
+it continue. No render servers or paid hosting are used.
+
+Browser export supports mono/stereo tracks up to 100 MB and 10 minutes, subject
+to a 300 MB estimated output budget. Lower the resolution for longer tracks or
+use the optional local version for larger exports and closed-tab rendering.
 
 ## Features
 
@@ -12,11 +31,16 @@ MP4 export. Built with Python, Web Audio, Canvas, OpenCV, and FFmpeg.
   bass pulses, and beat flashes.
 - Add a logo or optional display text.
 - Export the full song at 480p, 720p, or 1080p, with 30 or 60 FPS.
-- Close the browser after upload; rendering continues in a background process.
-- Reopen the studio to recover progress, cancel a job, or download the MP4.
+- Export directly in the browser, or use the optional Python server for persistent background jobs.
+- Cancel an active render or download the completed MP4.
 - Keep audio, images, analysis, and rendering on your computer.
 
-## Requirements
+## Optional local version
+
+The local Python version retains server-side exports that continue after the
+browser closes. These requirements apply only to running that version.
+
+### Requirements
 
 - Python 3.10 or newer.
 - FFmpeg and FFprobe available on your `PATH`.
@@ -24,7 +48,7 @@ MP4 export. Built with Python, Web Audio, Canvas, OpenCV, and FFmpeg.
 
 No Node.js installation or frontend build is needed to run the app.
 
-## Quick start
+### Local setup
 
 Clone this repository and open its directory:
 
@@ -67,7 +91,7 @@ python server.py --port 8766        # Use another port
 python server.py --no-browser      # Start without opening a browser
 ```
 
-## Usage
+### Local usage
 
 1. Add your own MP3 or WAV file. No songs or sample recordings are bundled.
 2. Play the preview and adjust the settings. On smaller windows, switch between
@@ -80,7 +104,7 @@ python server.py --no-browser      # Start without opening a browser
 An export captures the settings and logo selected when you submit it. Later
 preview changes do not affect the active job. Only one export renders at a time.
 
-## How export works
+### Local export behavior
 
 The renderer analyzes the full song and generates frames using a fixed video
 clock. FFmpeg combines those frames with the original audio into an H.264/AAC
@@ -95,7 +119,7 @@ slightly between the browser preview and the offline renderer.
 The local server accepts audio up to 512 MB and logos up to 20 MB. It binds only
 to `127.0.0.1`; this is a local desktop tool, not an Internet-facing web service.
 
-## Local files and privacy
+### Local files and privacy
 
 Completed videos, job settings, status, and logs are stored in `exports/<job-id>/`.
 Temporary uploaded source copies and partial videos are removed when a worker
@@ -108,7 +132,28 @@ repository. All included fonts and UI assets are served locally.
 
 ## Development
 
-Run from the repository root:
+### Website
+
+Node.js 18+ is needed to build the website, but visitors install nothing:
+
+```sh
+npm ci
+npm test
+npm run build
+```
+
+The deployable static website is in `dist/`. Serve that directory with any static
+web server for development. `studio/` contains the shared UI and drawing code;
+`web/export-worker.js` contains the browser encoder. Dependencies and licenses
+are bundled locally; no runtime CDN requests are needed.
+
+`.github/workflows/pages.yml` builds and publishes `dist/` to GitHub Pages on
+pushes to `main`. The repository's Pages source must be set to **GitHub Actions**.
+The workflow does not deploy the Python backend.
+
+### Python renderer
+
+From the repository root, after installing `requirements.txt`:
 
 ```sh
 python -m unittest discover -s tests -v
@@ -116,30 +161,18 @@ python -m compileall -q server.py render_worker.py render_settings.py offline_re
 node --check studio/app.js
 ```
 
-Node.js is needed only for the optional JavaScript syntax check. Tests generate
-their own audio fixtures; none require a personal song. FFmpeg and FFprobe must
-be installed to exercise encoding checks. GitHub Actions runs these checks on
-Python 3.11 and 3.12.
+Tests generate their own audio fixtures. CI tests the Python renderer on 3.11
+and 3.12 and separately tests/builds the browser application.
 
-```text
-sosan/
-├── .github/workflows/ci.yml
-├── docs/studio.png
-├── studio/
-│   ├── fonts/                 # Tektur and its SIL license
-│   ├── index.html
-│   ├── style.css
-│   └── app.js
-├── tests/test_offline_export.py
-├── server.py                  # Local HTTP server and export API
-├── render_settings.py         # Settings validation
-├── render_worker.py           # Background jobs, progress, encoding, cleanup
-├── offline_renderer.py        # Audio analysis and frame rendering
-├── requirements.txt
-├── Open sosan.command         # macOS launcher
-├── LICENSE
-└── THIRD_PARTY_NOTICES.md
-```
+### Source layout
+
+- `studio/`: UI, shared Canvas scene, browser export controller, FFT analysis, font.
+- `web/export-worker.js`: frame-clock rendering and browser H.264/AAC encoding.
+- `scripts/build-web.mjs`: reproducible static build and license packaging.
+- `tests/web/`: browser-independent analysis and timing tests.
+- `server.py`, `render_worker.py`, `render_settings.py`, `offline_renderer.py`: optional local backend.
+- `tests/test_offline_export.py`: local backend regression tests.
+- `docs/studio.png`: interface screenshot.
 
 ## License
 

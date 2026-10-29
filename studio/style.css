@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'Tektur';
-  src: url('/fonts/Tektur.ttf') format('truetype');
+  src: url('./fonts/Tektur.ttf') format('truetype');
   font-weight: 400 900;
   font-stretch: 75% 100%;
   font-display: swap;
