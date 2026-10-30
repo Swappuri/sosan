@@ -169,7 +169,7 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
-  $('spectrum-style').value = settings.style;
+  document.querySelectorAll('input[name="spectrum-style"]').forEach(input => { input.checked = input.value === settings.style; });
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
   $('radius-value').value = `${settings.radius} px`;
@@ -183,7 +183,7 @@ function syncSettings() {
 for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
-$('spectrum-style').onchange = () => { settings.style = $('spectrum-style').value; };
+document.querySelectorAll('input[name="spectrum-style"]').forEach(input => { input.onchange = () => { if (input.checked) settings.style = input.value; }; });
 $('reset').onclick = () => {
   settings = { ...defaults }; syncSettings(); resetMotion();
   $('title').value = defaultTitle(selectedFile); clearLogo();
