@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', innerFill: '#0b1114', innerRing: true, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
@@ -165,7 +165,7 @@ function applyTheme() {
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
 function syncSettings() {
-  for (const key of ['primary', 'secondary', 'background']) {
+  for (const key of ['primary', 'secondary', 'innerFill', 'background']) {
     $(key + '-color').value = settings[key];
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
@@ -174,7 +174,7 @@ function syncSettings() {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
   }
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).value = settings[key];
-  for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
+  for (const key of ['glow', 'particles', 'pulse', 'flashes', 'innerRing']) $(key).checked = settings[key];
   for (const key of ['logoZoom', 'logoX', 'logoY']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
@@ -184,15 +184,15 @@ function syncSettings() {
   $('rotation-value').value = `${settings.rotation}°`;
   $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees down both sides`);
 }
-for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
+for (const key of ['primary', 'secondary', 'innerFill', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
-for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
+for (const key of ['glow', 'particles', 'pulse', 'flashes', 'innerRing']) $(key).onchange = () => { settings[key] = $(key).checked; };
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
 const resetSections = {
-  appearance: { title: 'Appearance', keys: ['style', 'shape'], detail: 'Restore Bars and Circle?' },
-  colors: { title: 'Colors', keys: ['primary', 'secondary', 'background'], detail: 'Restore the default colors?' },
+  appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inner ring?' },
+  colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
   effects: { title: 'Effects', keys: ['glow', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },
   logo: { title: 'Logo & text', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY'], detail: 'Restore the song filename and default logo placement? The uploaded logo will be kept.' },

@@ -37,6 +37,24 @@ export function shapeRadius(shape, radius, angle) {
   return radius;
 }
 
+// Walk the actual perimeter at a constant speed; polygon bars use edge normals.
+export function perimeterPoint(shape, radius, progress) {
+  if (shape !== 'square' && shape !== 'triangle') {
+    const angle = progress * Math.PI * 2 - Math.PI / 2;
+    const nx = Math.cos(angle), ny = Math.sin(angle);
+    return { x: nx * radius, y: ny * radius, nx, ny };
+  }
+  const sides = shape === 'square' ? 4 : 3;
+  const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
+  const distance = ((progress * sides + (shape === 'square' ? .5 : 0)) % sides + sides) % sides;
+  const edge = Math.floor(distance), t = distance - edge;
+  const a = start + edge * Math.PI * 2 / sides, b = a + Math.PI * 2 / sides;
+  const ax = Math.cos(a) * radius, ay = Math.sin(a) * radius;
+  const dx = Math.cos(b) * radius - ax, dy = Math.sin(b) * radius - ay;
+  const length = Math.hypot(dx, dy);
+  return { x: ax + dx * t, y: ay + dy * t, nx: dy / length, ny: -dx / length };
+}
+
 // Image placement is independent of the preview size and shared with MP4 rendering.
 export function logoPlacement(shape, radius, width, height, fit = 'cover', zoom = 100, offsetX = 0, offsetY = 0) {
   let factor, centerY = 0;
@@ -101,18 +119,17 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
     const first = Math.floor(index), fraction = index - first;
     const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
-    const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
-    const boundary = shapeRadius(shape, radius, angle);
+    const point = perimeterPoint(shape, radius, (i + .5) / count);
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / (count / 2));
     if (settings.style === 'wave') {
-      wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level });
+      wave.push({ x: x + point.x + point.nx * (8 * scale + length), y: y + point.y + point.ny * (8 * scale + length), color, level });
       continue;
     }
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
-    ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale));
-    ctx.lineTo(x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + point.x + point.nx * 8 * scale, y + point.y + point.ny * 8 * scale);
+    ctx.lineTo(x + point.x + point.nx * (8 * scale + length), y + point.y + point.ny * (8 * scale + length)); ctx.stroke();
   }
   // Quadratic segments meet at shared midpoints for one continuous wavy outline.
   for (let i = 0; i < wave.length; i++) {
@@ -122,9 +139,8 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     ctx.beginPath(); ctx.moveTo((previous.x + point.x) / 2, (previous.y + point.y) / 2);
     ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2); ctx.stroke();
   }
-  const hasLogo = logo && logo.width > 0 && logo.height > 0;
   ctx.shadowBlur = 0;
-  ctx.fillStyle = settings.background; traceShape(ctx, shape, x, y, hasLogo ? radius : radius - 9 * scale); ctx.fill();
+  ctx.fillStyle = settings.innerFill ?? '#0b1114'; traceShape(ctx, shape, x, y, radius); ctx.fill();
   if (logo && logo.width > 0 && logo.height > 0) {
     ctx.save(); traceShape(ctx, shape, x, y, radius); ctx.clip();
     const placement = logoPlacement(shape, radius, logo.width, logo.height, settings.logoFit, settings.logoZoom, settings.logoX, settings.logoY);
@@ -140,14 +156,15 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     if (ctx.measureText(title).width > maxWidth) fontSize *= maxWidth / ctx.measureText(title).width;
     ctx.font = `600 ${fontSize}px Tektur, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eeeff2'; ctx.fillText(title, x, y);
   }
-  // Draw the main outline over the logo; no inset rim separates image and border.
+  // Fill and logo reach the primary outline; the optional secondary rim overlays them.
   ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
   ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;
   traceShape(ctx, shape, x, y, radius); ctx.stroke();
   ctx.shadowBlur = 0;
-  if (!hasLogo) {
+  if (settings.innerRing ?? true) {
     ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
-    traceShape(ctx, shape, x, y, radius - 5 * scale); ctx.stroke();
+    const insetRadius = radius - 5 * scale / (shape === 'triangle' ? .5 : shape === 'square' ? Math.SQRT1_2 : 1);
+    traceShape(ctx, shape, x, y, insetRadius); ctx.stroke();
   }
 
 }

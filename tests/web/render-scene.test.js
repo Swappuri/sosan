@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, perimeterPoint } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -185,8 +185,41 @@ test('logo fills to the main outline with no inset clip or inner rim', () => {
   canvas.ctx.clip = () => { clipRadius = radii.at(-1); };
   canvas.ctx.drawImage = () => events.push('logo');
   canvas.ctx.stroke = () => events.push('outline');
-  renderScene(canvas.ctx, 854, 480, { ...settings, particles: false, pulse: false, logoFit: 'cover' }, motion, 1, { width: 100, height: 100 }, '');
+  renderScene(canvas.ctx, 854, 480, { ...settings, particles: false, pulse: false, logoFit: 'cover', innerRing: false }, motion, 1, { width: 100, height: 100 }, '');
   assert.equal(clipRadius, settings.radius);
   assert.ok(!radii.includes(settings.radius - 5));
   assert.deepEqual(events.slice(-2), ['logo', 'outline']);
+});
+
+
+test('polygon samples have uniform edge spacing, perpendicular normals, and mirrored positions', () => {
+  for (const shape of ['square', 'triangle']) {
+    const count = 128, radius = 115, sides = shape === 'square' ? 4 : 3;
+    const step = 2 * sides * radius * Math.sin(Math.PI / sides) / count;
+    const points = Array.from({ length: count }, (_, i) => perimeterPoint(shape, radius, (i + .5) / count));
+    for (let i = 0; i < count; i++) {
+      const a = points[i], b = points[(i + 1) % count], mirror = points[count - i - 1];
+      assert.ok(Math.abs(Math.hypot(a.nx, a.ny) - 1) < 1e-8);
+      assert.ok(Math.abs(a.x + mirror.x) < 1e-8 && Math.abs(a.y - mirror.y) < 1e-8);
+      assert.ok(Math.abs(a.nx + mirror.nx) < 1e-8 && Math.abs(a.ny - mirror.ny) < 1e-8);
+      if (Math.hypot(a.nx - b.nx, a.ny - b.ny) < 1e-8) {
+        assert.ok(Math.abs(Math.hypot(b.x - a.x, b.y - a.y) - step) < 1e-8);
+        assert.ok(Math.abs((b.x - a.x) * a.nx + (b.y - a.y) * a.ny) < 1e-8);
+      }
+    }
+  }
+});
+
+test('inner fill spans to the outline and optional inner ring overlays logos', () => {
+  for (const innerRing of [false, true]) {
+    const canvas = canvasContext(), radii = [], fills = [], events = [];
+    canvas.ctx.arc = (x, y, r) => radii.push(r);
+    canvas.ctx.fill = () => fills.push([canvas.ctx.fillStyle, radii.at(-1)]);
+    canvas.ctx.drawImage = () => events.push('logo');
+    canvas.ctx.stroke = () => events.push('ring');
+    renderScene(canvas.ctx, 854, 480, { ...settings, particles: false, pulse: false, innerFill: '#123456', innerRing, logoZoom: 50 }, motion, 1, { width: 100, height: 100 }, '');
+    assert.deepEqual(fills[0], ['#123456', settings.radius]);
+    assert.equal(radii.includes(settings.radius - 5), innerRing);
+    assert.deepEqual(events.slice(-(innerRing ? 3 : 2)), innerRing ? ['logo', 'ring', 'ring'] : ['logo', 'ring']);
+  }
 });

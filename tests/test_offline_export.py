@@ -11,14 +11,14 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement
+from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement, perimeter_point
 from render_settings import validate_settings
 from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
@@ -92,7 +92,7 @@ class OfflineExportTests(unittest.TestCase):
 
     def test_logo_fill_reaches_main_outline_for_all_shapes(self):
         for shape in ('circle', 'square', 'triangle'):
-            settings = validate_settings({'shape': shape, 'width': 854, 'height': 480, 'glow': False, 'pulse': False, 'particles': False})
+            settings = validate_settings({'shape': shape, 'width': 854, 'height': 480, 'glow': False, 'pulse': False, 'particles': False, 'innerRing': False})
             renderer = StudioRenderer(settings)
             renderer.logo = np.full((100, 100, 4), 255, np.uint8)
             image = renderer.frame(0, np.zeros(64), 0, 0)
@@ -100,6 +100,33 @@ class OfflineExportTests(unittest.TestCase):
                 reach = float(shape_radius(shape, settings['radius'], angle)) - 8
                 x, y = round(427 + math.cos(angle) * reach), round(240 + math.sin(angle) * reach)
                 self.assertTrue(np.all(image[y, x] > 230), (shape, angle, image[y, x]))
+
+    def test_polygon_perimeter_spacing_and_normals(self):
+        for shape, sides in (('square', 4), ('triangle', 3)):
+            points = [perimeter_point(shape, 115, (i + .5) / 128) for i in range(128)]
+            spacing = 2 * sides * 115 * math.sin(math.pi / sides) / 128
+            for i, (x, y, nx, ny) in enumerate(points):
+                mx, my, mnx, mny = points[127 - i]
+                self.assertAlmostEqual(x, -mx)
+                self.assertAlmostEqual(y, my)
+                self.assertAlmostEqual(nx, -mnx)
+                self.assertAlmostEqual(ny, mny)
+                bx, by, bnx, bny = points[(i + 1) % 128]
+                if math.hypot(nx - bnx, ny - bny) < 1e-8:
+                    self.assertAlmostEqual(math.hypot(bx - x, by - y), spacing)
+                    self.assertAlmostEqual((bx - x) * nx + (by - y) * ny, 0)
+
+    def test_inner_fill_and_ring_with_small_logo(self):
+        for shape in ('circle', 'square', 'triangle'):
+            settings = validate_settings({'shape': shape, 'width': 854, 'height': 480, 'innerFill': '#123456', 'innerRing': False, 'logoZoom': 50, 'particles': False, 'pulse': False, 'glow': False})
+            renderer = StudioRenderer(settings)
+            renderer.logo = np.full((100, 100, 4), 255, np.uint8)
+            image = renderer.frame(0, np.zeros(64), 0, 0)
+            reach = float(shape_radius(shape, 115, math.pi / 2)) - 8
+            np.testing.assert_array_equal(image[round(240 + reach), 427], [86, 52, 18])
+            renderer.settings = {**settings, 'innerRing': True}
+            with_ring = renderer.frame(0, np.zeros(64), 0, 0)
+            self.assertFalse(np.array_equal(image, with_ring))
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

@@ -2,7 +2,7 @@
 import math
 
 DEFAULTS = {
-    'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114',
+    'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
     'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
@@ -16,7 +16,7 @@ def validate_settings(value):
     if not isinstance(value, dict):
         raise ValueError('Settings must be an object.')
     result = {**DEFAULTS, **{key: val for key, val in value.items() if key in DEFAULTS}}
-    for name in ('primary', 'secondary', 'background'):
+    for name in ('primary', 'secondary', 'innerFill', 'background'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')
     for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100), ('logoZoom', 50, 200), ('logoX', -100, 100), ('logoY', -100, 100)]:
@@ -31,7 +31,7 @@ def validate_settings(value):
         raise ValueError('Invalid shape.')
     if result['style'] not in ('bars', 'wave'):
         raise ValueError('Invalid spectrum style.')
-    for name in ('glow', 'particles', 'pulse', 'flashes'):
+    for name in ('glow', 'particles', 'pulse', 'flashes', 'innerRing'):
         if type(result[name]) is not bool:
             raise ValueError(f'Invalid {name} switch.')
     if type(result['width']) is not int or type(result['height']) is not int or (result['width'], result['height']) not in [(854, 480), (1280, 720), (1920, 1080)]:

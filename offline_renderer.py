@@ -73,6 +73,21 @@ def shape_radius(shape, radius, angle):
     return radius
 
 
+def perimeter_point(shape, radius, progress):
+    if shape not in ('square', 'triangle'):
+        angle = progress * math.tau - math.pi / 2
+        nx, ny = math.cos(angle), math.sin(angle)
+        return nx * radius, ny * radius, nx, ny
+    sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
+    distance = (progress * sides + (.5 if shape == 'square' else 0)) % sides
+    edge, t = math.floor(distance), distance % 1
+    a, b = start + edge * math.tau / sides, start + (edge + 1) * math.tau / sides
+    ax, ay = math.cos(a) * radius, math.sin(a) * radius
+    dx, dy = math.cos(b) * radius - ax, math.sin(b) * radius - ay
+    length = math.hypot(dx, dy)
+    return ax + dx * t, ay + dy * t, dy / length, -dx / length
+
+
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
     center_y = 0
     if fit == 'contain':
@@ -209,15 +224,15 @@ class StudioRenderer:
             first = math.floor(idx)
             fraction = idx - first
             level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
-            angle = (i + .5) / s['bars'] * math.tau - math.pi / 2
-            start = float(shape_radius(s['shape'], radius, angle)) + 8 * scale
+            px, py, nx, ny = perimeter_point(s['shape'], radius, (i + .5) / s['bars'])
+            start = 8 * scale
             end = start + (3 + level ** 1.35 * 67) * scale
-            a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))
-            b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
+            a = (round(center[0] + px + nx * start), round(center[1] + py + ny * start))
+            b = (round(center[0] + px + nx * end), round(center[1] + py + ny * end))
             ratio = idx / (s['bars'] / 2)
             color = tuple(int(c) for c in self.primary * (1 - ratio) + self.secondary * ratio)
             if s['style'] == 'wave':
-                wave.append((np.array([center[0] + math.cos(angle) * end, center[1] + math.sin(angle) * end]), color))
+                wave.append((np.array([center[0] + px + nx * end, center[1] + py + ny * end]), color))
                 continue
             cv2.line(image, a, b, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
             if glow is not None:
@@ -230,7 +245,7 @@ class StudioRenderer:
             if glow is not None:
                 cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
         has_logo = self.logo is not None
-        draw_shape(image, s['shape'], center, radius if has_logo else radius - 9 * scale, tuple(int(c) for c in self.background), -1)
+        draw_shape(image, s['shape'], center, radius, bgr(s['innerFill']), -1)
         asset = self.logo if has_logo else self.text
         if asset is not None:
             self._composite(image, asset, radius, has_logo)
@@ -241,7 +256,8 @@ class StudioRenderer:
             small = cv2.resize(glow, (self.width // 2, self.height // 2))
             small = cv2.GaussianBlur(small, (0, 0), 3 * scale)
             image = cv2.addWeighted(image, 1, cv2.resize(small, (self.width, self.height)), .8, 0)
-        if not has_logo:
+        if s['innerRing']:
             rim = tuple(int(c) for c in self.secondary * .4 + self.background * .6)
-            draw_shape(image, s['shape'], center, radius - 5 * scale, rim, max(1, round(scale)))
+            inset_radius = radius - 5 * scale / (.5 if s['shape'] == 'triangle' else 1 / math.sqrt(2) if s['shape'] == 'square' else 1)
+            draw_shape(image, s['shape'], center, inset_radius, rim, max(1, round(scale)))
         return image
