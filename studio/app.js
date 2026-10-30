@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
@@ -24,6 +24,7 @@ function status(message, error = false) {
   $('status').classList.toggle('error', error);
   if (message && !error) statusTimer = setTimeout(() => { $('status').hidden = true; }, 5000);
 }
+function defaultTitle(file) { return file ? file.name.replace(/\.[^.]+$/, '').slice(0, 50) : ''; }
 function timeLabel(seconds) { if (!Number.isFinite(seconds)) return '0:00'; const n = Math.max(0, Math.floor(seconds)); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; }
 function rgba(hex, alpha) { const v = parseInt(hex.slice(1), 16); return `rgba(${v >> 16},${v >> 8 & 255},${v & 255},${alpha})`; }
 function blend(a, b, ratio) { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16); return `rgb(${[16, 8, 0].map(s => Math.round((x >> s & 255) * (1 - ratio) + (y >> s & 255) * ratio)).join(',')})`; }
@@ -93,7 +94,7 @@ async function loadSong(file) {
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) throw new Error('This file has no playable audio.');
     loaded = true;
     selectedFile = file;
-    $('title').value = file.name.replace(/\.[^.]+$/, '').slice(0, 50);
+    $('title').value = defaultTitle(file);
     $('empty-state').hidden = true;
     $('track-name').textContent = file.name;
     $('track-detail').textContent = `${file.name.split('.').pop().toUpperCase()} · ${timeLabel(audio.duration)} · full track`;
@@ -168,6 +169,7 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
+  $('spectrum-style').value = settings.style;
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
   $('radius-value').value = `${settings.radius} px`;
@@ -181,9 +183,10 @@ function syncSettings() {
 for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
+$('spectrum-style').onchange = () => { settings.style = $('spectrum-style').value; };
 $('reset').onclick = () => {
   settings = { ...defaults }; syncSettings(); resetMotion();
-  $('title').value = ''; clearLogo();
+  $('title').value = defaultTitle(selectedFile); clearLogo();
   $('resolution').value = '1280x720'; $('fps').value = '30'; setResolution();
   status('Settings reset.');
 };

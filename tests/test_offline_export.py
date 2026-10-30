@@ -17,7 +17,7 @@ from render_worker import run_job
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
@@ -48,6 +48,16 @@ class OfflineExportTests(unittest.TestCase):
         self.assertLess(smooth_spectrum(levels, 100)[32], smooth_spectrum(levels, 50)[32])
         self.assertEqual(validate_settings({})['smoothing'], 0)
         self.assertEqual(validate_settings({})['rotation'], 90)
+
+    def test_wave_style_uses_connected_curves(self):
+        settings = validate_settings({'style': 'wave', 'particles': False, 'glow': False})
+        with patch('offline_renderer.cv2.line') as bars, patch('offline_renderer.cv2.polylines') as curves:
+            StudioRenderer(settings).frame(0, np.ones(64), 0, 0)
+        bars.assert_not_called()
+        self.assertEqual(curves.call_count, settings['bars'])
+        for i, segment in enumerate(curves.call_args_list):
+            following = curves.call_args_list[(i + 1) % settings['bars']]
+            np.testing.assert_array_equal(segment.args[1][0][-1], following.args[1][0][0])
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

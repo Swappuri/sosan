@@ -53,6 +53,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const radius = (settings.radius + pulse) * scale;
   const count = settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
+  const wave = [];
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
     const bands = count / 2;
@@ -63,10 +64,22 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / (count / 2));
+    if (settings.style === 'wave') {
+      wave.push({ x: x + Math.cos(angle) * (radius + 8 * scale + length), y: y + Math.sin(angle) * (radius + 8 * scale + length), color, level });
+      continue;
+    }
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
     ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (radius + 8 * scale), y + Math.sin(angle) * (radius + 8 * scale));
     ctx.lineTo(x + Math.cos(angle) * (radius + 8 * scale + length), y + Math.sin(angle) * (radius + 8 * scale + length)); ctx.stroke();
+  }
+  // Quadratic segments meet at shared midpoints for one continuous wavy outline.
+  for (let i = 0; i < wave.length; i++) {
+    const point = wave[i], previous = wave[(i + wave.length - 1) % wave.length], next = wave[(i + 1) % wave.length];
+    ctx.strokeStyle = point.color; ctx.lineWidth = Math.max(1, 2.2 * scale);
+    ctx.shadowColor = point.color; ctx.shadowBlur = settings.glow ? (9 + point.level * 9) * scale : 0;
+    ctx.beginPath(); ctx.moveTo((previous.x + point.x) / 2, (previous.y + point.y) / 2);
+    ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2); ctx.stroke();
   }
   ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
   ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;

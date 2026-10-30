@@ -146,6 +146,7 @@ class StudioRenderer:
         radius = (s['radius'] + (min(1, self.bass) * 12 if s['pulse'] else 0)) * scale
         glow = np.zeros_like(image) if s['glow'] else None
         levels = smooth_spectrum(self.levels, s['smoothing'])
+        wave = []
         for i in range(s['bars']):
             bands = s['bars'] // 2
             side_index = i if i < bands else s['bars'] - i - 1
@@ -161,9 +162,19 @@ class StudioRenderer:
             b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
             ratio = idx / (s['bars'] / 2)
             color = tuple(int(c) for c in self.primary * (1 - ratio) + self.secondary * ratio)
+            if s['style'] == 'wave':
+                wave.append((np.array([center[0] + math.cos(angle) * end, center[1] + math.sin(angle) * end]), color))
+                continue
             cv2.line(image, a, b, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
             if glow is not None:
                 cv2.line(glow, a, b, color, max(1, round(3 * scale)), cv2.LINE_AA)
+        for i, (point, color) in enumerate(wave):
+            previous, following = wave[(i - 1) % len(wave)][0], wave[(i + 1) % len(wave)][0]
+            start, end = (previous + point) / 2, (point + following) / 2
+            curve = np.array([np.rint((1 - t) ** 2 * start + 2 * (1 - t) * t * point + t ** 2 * end) for t in np.linspace(0, 1, 6)], np.int32)
+            cv2.polylines(image, [curve], False, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
+            if glow is not None:
+                cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
         primary = tuple(int(c) for c in self.primary)
         cv2.circle(image, center, round(radius), primary, max(1, round(1.5 * scale)), cv2.LINE_AA)
         if glow is not None:

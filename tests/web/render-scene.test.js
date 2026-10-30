@@ -113,3 +113,19 @@ test('smoothing slider preserves sharp peaks at zero and progressively softens t
     previous = roughness(result);
   }
 });
+
+
+test('wave style joins every segment, closes the loop, and stays mirrored', () => {
+  const canvas = canvasContext(), starts = [], curves = [], lines = [];
+  canvas.ctx.moveTo = (...p) => starts.push(p);
+  canvas.ctx.quadraticCurveTo = (...p) => curves.push(p);
+  canvas.ctx.lineTo = (...p) => lines.push(p);
+  renderScene(canvas.ctx, 1280, 720, { ...settings, rotation: 70, style: 'wave' }, motion, 1, null, 'Title');
+  assert.equal(curves.length, settings.bars);
+  assert.equal(lines.length, 0);
+  for (let i = 0; i < curves.length; i++) {
+    assert.deepEqual(curves[i].slice(2), starts[(i + 1) % curves.length]);
+    assert.ok(Math.abs(curves[i][0] + curves[curves.length - i - 1][0] - 1280) < 1e-8);
+  }
+  assert.deepEqual(canvas.text[0], ['Title', 640, 360]);
+});

@@ -3,7 +3,7 @@ import math
 
 DEFAULTS = {
     'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114',
-    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0,
+    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars',
     'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',
 }
@@ -24,6 +24,8 @@ def validate_settings(value):
             raise ValueError(f'Invalid {name}.')
     if type(result['bars']) is not int or result['bars'] not in range(32, 193, 16):
         raise ValueError('Invalid spectrum bar count.')
+    if result['style'] not in ('bars', 'wave'):
+        raise ValueError('Invalid spectrum style.')
     for name in ('glow', 'particles', 'pulse', 'flashes'):
         if type(result[name]) is not bool:
             raise ValueError(f'Invalid {name} switch.')
