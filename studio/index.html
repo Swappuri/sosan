@@ -93,6 +93,16 @@
           <label class="sr-only" for="title">Display text</label>
           <input id="title" type="text" placeholder="Display text (optional)" maxlength="50">
           <div class="logo-row"><button id="logo-upload" class="secondary">Add logo <small>PNG, JPG, WebP</small></button><button id="logo-remove" class="text-button" hidden>Remove</button><span id="logo-name" hidden></span></div>
+          <div id="logo-placement" hidden>
+            <div class="style-choices logo-fit-choices" role="radiogroup" aria-label="Logo fit">
+              <label class="style-choice"><input class="sr-only" type="radio" name="logo-fit" value="contain"><span>Fit image</span></label>
+              <label class="style-choice"><input class="sr-only" type="radio" name="logo-fit" value="cover" checked><span>Fill shape</span></label>
+            </div>
+            <div class="slider-field"><label class="slider-label" for="logoZoom">Zoom <output id="logoZoom-value" for="logoZoom">100%</output></label><input id="logoZoom" type="range" min="50" max="200" value="100"></div>
+            <div class="slider-field"><label class="slider-label" for="logoX">Horizontal position <output id="logoX-value" for="logoX">0%</output></label><input id="logoX" type="range" min="-100" max="100" value="0"></div>
+            <div class="slider-field"><label class="slider-label" for="logoY">Vertical position <output id="logoY-value" for="logoY">0%</output></label><input id="logoY" type="range" min="-100" max="100" value="0"></div>
+            <button id="logo-reset" class="text-button">Reset placement</button>
+          </div>
           <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
         </fieldset>
         <fieldset class="control-section export-settings" disabled>

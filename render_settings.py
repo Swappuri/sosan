@@ -4,6 +4,7 @@ import math
 DEFAULTS = {
     'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114',
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
+    'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',
 }
@@ -18,12 +19,14 @@ def validate_settings(value):
     for name in ('primary', 'secondary', 'background'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')
-    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100)]:
+    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100), ('logoZoom', 50, 200), ('logoX', -100, 100), ('logoY', -100, 100)]:
         number = result[name]
         if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number) or not minimum <= number <= maximum:
             raise ValueError(f'Invalid {name}.')
     if type(result['bars']) is not int or result['bars'] not in range(32, 193, 16):
         raise ValueError('Invalid spectrum bar count.')
+    if result['logoFit'] not in ('contain', 'cover'):
+        raise ValueError('Invalid logo fit.')
     if result['shape'] not in ('circle', 'square', 'triangle'):
         raise ValueError('Invalid shape.')
     if result['style'] not in ('bars', 'wave'):

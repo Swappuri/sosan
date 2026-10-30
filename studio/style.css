@@ -179,3 +179,8 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 
 .shape-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; }
 .shape-choices .style-choice > span { flex-direction: column; gap: 4px; min-height: 56px; font-size: 10px; padding: 6px 2px; }
+
+#logo-placement { margin-top: 12px; }
+.logo-fit-choices { margin-bottom: 14px; }
+.logo-fit-choices .style-choice > span { min-height: 30px; font-size: 10px; }
+#logo-reset { margin-top: 12px; }

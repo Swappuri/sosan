@@ -1,5 +1,6 @@
 """Offline export regression checks, including cancellation and encoded timestamps."""
 import json
+import math
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,14 +11,14 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius
+from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement
 from render_settings import validate_settings
 from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
@@ -72,6 +73,22 @@ class OfflineExportTests(unittest.TestCase):
             self.assertFalse(np.array_equal(first, second))
         self.assertAlmostEqual(float(shape_radius('triangle', 100, -np.pi / 2)), 100)
         self.assertAlmostEqual(float(shape_radius('triangle', 100, np.pi / 2)), 50)
+
+    def test_logo_placement_and_clipping(self):
+        for shape in ('circle', 'square', 'triangle'):
+            x, y, w, h = logo_placement(shape, 100, 100, 200, 'contain')
+            for px in (x, x + w):
+                for py in (y, y + h):
+                    self.assertLessEqual(math.hypot(px, py), float(shape_radius(shape, 100, math.atan2(py, px))) + 1e-8)
+            for zoom, offset in ((50, -100), (100, 0), (200, 100)):
+                settings = validate_settings({'shape': shape, 'width': 854, 'height': 480, 'logoZoom': zoom, 'logoX': offset, 'logoY': offset})
+                renderer = StudioRenderer(settings)
+                image = np.zeros((480, 854, 3), np.uint8)
+                renderer._composite(image, np.full((100, 20, 4), 255, np.uint8), 115, True)
+                yy, xx = np.ogrid[:480, :854]
+                reach = shape_radius(shape, 99, np.arctan2(yy - 240, xx - 427))
+                outside = ((xx - 427) ** 2 + (yy - 240) ** 2) > reach ** 2
+                self.assertFalse(np.any(image[outside]))
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

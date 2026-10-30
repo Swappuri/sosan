@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
@@ -169,11 +169,12 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
-  for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
+  for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
   }
-  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).value = settings[key];
+  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
+  for (const key of ['logoZoom', 'logoX', 'logoY']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
   $('bars-value').value = settings.bars;
@@ -183,9 +184,9 @@ function syncSettings() {
   $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees down both sides`);
 }
 for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
-for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
+for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
-for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
+for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
 $('reset').onclick = () => {
@@ -200,6 +201,7 @@ $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;
   logo?.close?.(); logo = null; logoFile = null;
+  $('logo-placement').hidden = true;
   $('logo-remove').hidden = true;
   $('logo-name').textContent = ''; $('logo-name').hidden = true;
 }
@@ -217,12 +219,19 @@ $('logo-file').onchange = async event => {
     logo = image; logoFile = file;
     previous?.close?.();
     $('logo-name').textContent = file.name; $('logo-name').hidden = false; $('logo-remove').hidden = false;
+    resetLogoPlacement();
+    $('logo-placement').hidden = false;
     status('Logo added.');
   } catch {
     if (loadId === logoLoadId) status('Could not read this image. Try another logo.', true);
   }
 };
 $('logo-remove').onclick = clearLogo;
+function resetLogoPlacement() {
+  for (const key of ['logoFit', 'logoZoom', 'logoX', 'logoY']) settings[key] = defaults[key];
+  syncSettings();
+}
+$('logo-reset').onclick = resetLogoPlacement;
 
 // Logarithmic frequency bands with time-based attack/release smoothing.
 function sampleAudio(dt) {

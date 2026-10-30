@@ -73,6 +73,25 @@ def shape_radius(shape, radius, angle):
     return radius
 
 
+def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
+    center_y = 0
+    if fit == 'contain':
+        if shape == 'triangle':
+            factor = 1.5 * radius / (height + math.sqrt(3) * width / 2)
+            center_y = radius / 2 - height * factor / 2
+        elif shape == 'square':
+            factor = min(math.sqrt(2) * radius / width, math.sqrt(2) * radius / height)
+        else:
+            factor = 2 * radius / math.hypot(width, height)
+    else:
+        box_width = radius * (math.sqrt(3) if shape == 'triangle' else math.sqrt(2) if shape == 'square' else 2)
+        box_height = radius * (1.5 if shape == 'triangle' else math.sqrt(2) if shape == 'square' else 2)
+        factor = max(box_width / width, box_height / height)
+        center_y = -radius / 4 if shape == 'triangle' else 0
+    w, h = width * factor * zoom / 100, height * factor * zoom / 100
+    return radius * offset_x / 100 - w / 2, center_y + radius * offset_y / 100 - h / 2, w, h
+
+
 def draw_shape(image, shape, center, radius, color, thickness):
     radius = max(1, radius)
     if shape == 'circle':
@@ -139,17 +158,28 @@ class StudioRenderer:
 
     def _composite(self, image, asset, radius, is_logo):
         shape = self.settings['shape']
+        if is_logo:
+            clip_radius = radius - 16 * self.scale
+            s = self.settings
+            px, py, w, h = logo_placement(shape, clip_radius, asset.shape[1], asset.shape[0], s['logoFit'], s['logoZoom'], s['logoX'], s['logoY'])
+            # Warp only into the visible region, even for very wide/tall images at high zoom.
+            x0, y0 = max(0, math.floor(self.center[0] - clip_radius)), max(0, math.floor(self.center[1] - clip_radius))
+            x1, y1 = min(self.width, math.ceil(self.center[0] + clip_radius)), min(self.height, math.ceil(self.center[1] + clip_radius))
+            transform = np.array([[w / asset.shape[1], 0, self.center[0] + px - x0], [0, h / asset.shape[0], self.center[1] + py - y0]], np.float64)
+            resized = cv2.warpAffine(asset, transform, (x1 - x0, y1 - y0), flags=cv2.INTER_LINEAR)
+            yy, xx = np.ogrid[y0:y1, x0:x1]
+            reach = shape_radius(shape, clip_radius, np.arctan2(yy - self.center[1], xx - self.center[0]))
+            mask = ((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) <= reach ** 2
+            alpha = resized[:, :, 3:4].astype(np.float32) / 255 * mask[:, :, None]
+            image[y0:y1, x0:x1] = image[y0:y1, x0:x1] * (1 - alpha) + resized[:, :, :3] * alpha
+            return
         content_radius = radius * (.5 if shape == 'triangle' else 1 / math.sqrt(2) if shape == 'square' else 1)
-        size = max(self.scale, content_radius - 20 * self.scale) * 2 if is_logo else content_radius * 1.55
-        factor = min(size / asset.shape[1], size / asset.shape[0]) if is_logo else min(1, size / asset.shape[1])
+        size = content_radius * 1.55
+        factor = min(1, size / asset.shape[1])
         w, h = max(1, round(asset.shape[1] * factor)), max(1, round(asset.shape[0] * factor))
         resized = cv2.resize(asset, (w, h), interpolation=cv2.INTER_AREA)
         x, y = self.center[0] - w // 2, self.center[1] - h // 2
         alpha = resized[:, :, 3:4].astype(np.float32) / 255
-        if is_logo:
-            yy, xx = np.ogrid[y:y + h, x:x + w]
-            reach = shape_radius(shape, radius - 16 * self.scale, np.arctan2(yy - self.center[1], xx - self.center[0]))
-            alpha *= (((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) < reach ** 2)[:, :, None]
         image[y:y + h, x:x + w] = image[y:y + h, x:x + w] * (1 - alpha) + resized[:, :, :3] * alpha
 
     def frame(self, index, levels, bass, onset):

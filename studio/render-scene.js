@@ -37,6 +37,25 @@ export function shapeRadius(shape, radius, angle) {
   return radius;
 }
 
+// Image placement is independent of the preview size and shared with MP4 rendering.
+export function logoPlacement(shape, radius, width, height, fit = 'cover', zoom = 100, offsetX = 0, offsetY = 0) {
+  let factor, centerY = 0;
+  if (fit === 'contain') {
+    if (shape === 'triangle') {
+      factor = 1.5 * radius / (height + Math.sqrt(3) * width / 2);
+      centerY = radius / 2 - height * factor / 2;
+    } else if (shape === 'square') factor = Math.min(Math.SQRT2 * radius / width, Math.SQRT2 * radius / height);
+    else factor = 2 * radius / Math.hypot(width, height);
+  } else {
+    const boxWidth = radius * (shape === 'triangle' ? Math.sqrt(3) : shape === 'square' ? Math.SQRT2 : 2);
+    const boxHeight = radius * (shape === 'triangle' ? 1.5 : shape === 'square' ? Math.SQRT2 : 2);
+    factor = Math.max(boxWidth / width, boxHeight / height);
+    if (shape === 'triangle') centerY = -radius / 4;
+  }
+  const w = width * factor * zoom / 100, h = height * factor * zoom / 100;
+  return { x: radius * offsetX / 100 - w / 2, y: centerY + radius * offsetY / 100 - h / 2, width: w, height: h };
+}
+
 function traceShape(ctx, shape, x, y, radius) {
   ctx.beginPath();
   if (shape !== 'square' && shape !== 'triangle') { ctx.arc(x, y, radius, 0, Math.PI * 2); return; }
@@ -112,10 +131,9 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   ctx.fillStyle = settings.background; traceShape(ctx, shape, x, y, radius - 9 * scale); ctx.fill();
   if (logo && logo.width > 0 && logo.height > 0) {
     ctx.save(); traceShape(ctx, shape, x, y, radius - 16 * scale); ctx.clip();
-    const size = Math.max(scale, contentRadius - 20 * scale) * 2;
-    const factor = Math.min(size / logo.width, size / logo.height);
+    const placement = logoPlacement(shape, radius - 16 * scale, logo.width, logo.height, settings.logoFit, settings.logoZoom, settings.logoX, settings.logoY);
     try {
-      ctx.drawImage(logo, x - logo.width * factor / 2, y - logo.height * factor / 2, logo.width * factor, logo.height * factor);
+      ctx.drawImage(logo, x + placement.x, y + placement.y, placement.width, placement.height);
     } finally {
       ctx.restore();
     }

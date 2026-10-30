@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -149,7 +149,30 @@ test('shape boundaries follow polygon edges and remain left-right symmetric', ()
       renderScene(canvas.ctx, 1280, 720, { ...settings, shape, style }, motion, 1, logo, 'Title');
       assert.equal(canvas.saves, 0);
       assert.equal(canvas.images[0][1] + canvas.images[0][3] / 2, 640);
-      assert.equal(canvas.images[0][2] + canvas.images[0][4] / 2, 360);
+      const logoCenterY = canvas.images[0][2] + canvas.images[0][4] / 2;
+      if (shape === 'triangle') assert.ok(logoCenterY < 360);
+      else assert.equal(logoCenterY, 360);
     }
   }
+});
+
+
+test('Fit keeps every image corner inside each shape, including tall and wide logos', () => {
+  for (const shape of ['circle', 'square', 'triangle']) for (const [w, h] of [[100, 100], [30, 200], [200, 30]]) {
+    const p = logoPlacement(shape, 100, w, h, 'contain');
+    for (const x of [p.x, p.x + p.width]) for (const y of [p.y, p.y + p.height]) {
+      assert.ok(Math.hypot(x, y) <= shapeRadius(shape, 100, Math.atan2(y, x)) + 1e-8);
+    }
+    const fill = logoPlacement(shape, 100, w, h, 'cover');
+    assert.ok(fill.width >= (shape === 'triangle' ? Math.sqrt(3) : shape === 'square' ? Math.SQRT2 : 2) * 100 - 1e-8);
+    assert.ok(fill.height >= (shape === 'triangle' ? 1.5 : shape === 'square' ? Math.SQRT2 : 2) * 100 - 1e-8);
+  }
+});
+
+test('logo zoom and position are independent and proportional to shape size', () => {
+  const base = logoPlacement('triangle', 100, 100, 100);
+  const moved = logoPlacement('triangle', 100, 100, 100, 'cover', 150, 25, -10);
+  assert.ok(Math.abs(moved.width - base.width * 1.5) < 1e-8);
+  assert.ok(Math.abs(moved.x + moved.width / 2 - 25) < 1e-8);
+  assert.ok(Math.abs(moved.y + moved.height / 2 - (-35)) < 1e-8);
 });
