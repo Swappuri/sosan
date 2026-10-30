@@ -57,3 +57,21 @@ test('play symbol follows replacement/loading/ended state, not stale media event
   syncPlaybackButton(button, { paused: false, ended: true }, true);
   assert.equal(button.textContent, '▶');
 });
+
+
+test('rotation moves bass clockwise without rotating the center logo', () => {
+  const positions = [];
+  for (const rotation of [0, 90, 180, 360]) {
+    const canvas = canvasContext(), starts = [];
+    canvas.ctx.moveTo = (...point) => starts.push(point);
+    const logo = { width: 100, height: 100 };
+    renderScene(canvas.ctx, 1280, 720, { ...settings, rotation }, motion, 1, logo, 'Title');
+    positions.push(starts[0]);
+    assert.equal(canvas.images[0][1] + canvas.images[0][3] / 2, 640);
+    assert.equal(canvas.images[0][2] + canvas.images[0][4] / 2, 360);
+  }
+  assert.ok(Math.abs(positions[0][0] - 640) < 1e-8 && positions[0][1] < 360);
+  assert.ok(positions[1][0] > 640 && Math.abs(positions[1][1] - 360) < 1e-8);
+  assert.ok(Math.abs(positions[2][0] - 640) < 1e-8 && positions[2][1] > 360);
+  positions[0].forEach((value, index) => assert.ok(Math.abs(value - positions[3][index]) < 1e-8));
+});

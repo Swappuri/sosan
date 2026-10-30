@@ -17,9 +17,18 @@ from render_worker import run_job
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'rotation': -1}, {'rotation': 361}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
+
+    def test_rotation_changes_export_and_full_turn_matches_default(self):
+        settings = validate_settings({'width': 854, 'height': 480, 'particles': False, 'glow': False, 'pulse': False})
+        levels = np.zeros(64)
+        levels[0] = 1
+        def frame(rotation):
+            return StudioRenderer({**settings, 'rotation': rotation}).frame(0, levels, 0, 0)
+        self.assertFalse(np.array_equal(frame(0), frame(90)))
+        np.testing.assert_array_equal(frame(0), frame(360))
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

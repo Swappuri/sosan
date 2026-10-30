@@ -3,7 +3,7 @@ import math
 
 DEFAULTS = {
     'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114',
-    'radius': 115, 'sensitivity': 1.2, 'bars': 128,
+    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 0,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',
 }
@@ -18,7 +18,7 @@ def validate_settings(value):
     for name in ('primary', 'secondary', 'background'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')
-    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5)]:
+    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 360)]:
         number = result[name]
         if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number) or not minimum <= number <= maximum:
             raise ValueError(f'Invalid {name}.')

@@ -139,7 +139,7 @@ class StudioRenderer:
         for i in range(s['bars']):
             idx = i if i < s['bars'] // 2 else s['bars'] - i - 1
             level = self.levels[idx]
-            angle = i / s['bars'] * math.tau - math.pi / 2
+            angle = i / s['bars'] * math.tau - math.pi / 2 + math.radians(s['rotation'])
             start = radius + 8 * scale
             end = start + (3 + level ** 1.9 * 67) * scale
             a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))

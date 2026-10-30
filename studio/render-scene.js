@@ -32,7 +32,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   for (let i = 0; i < count; i++) {
     const index = i < count / 2 ? i : count - i - 1;
     const level = motion.levels[index] || 0;
-    const angle = i / count * Math.PI * 2 - Math.PI / 2;
+    const angle = i / count * Math.PI * 2 - Math.PI / 2 + (settings.rotation ?? 0) * Math.PI / 180;
     const length = (3 + Math.pow(level, 1.9) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / (count / 2));
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
