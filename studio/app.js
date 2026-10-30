@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 0, smoothing: 50, glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;

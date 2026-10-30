@@ -3,7 +3,7 @@ import math
 
 DEFAULTS = {
     'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114',
-    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 0, 'smoothing': 50,
+    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',
 }
