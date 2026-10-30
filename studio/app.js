@@ -59,6 +59,7 @@ function syncSettingsAvailability() {
   const disabled = !loaded || loading;
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
   $('reset').disabled = disabled;
+  document.querySelector('[data-reset="audio"]').disabled = disabled;
 }
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
@@ -189,12 +190,58 @@ for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = (
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
-$('reset').onclick = () => {
-  settings = { ...defaults }; syncSettings(); resetMotion();
-  $('title').value = defaultTitle(selectedFile); clearLogo();
-  $('resolution').value = '1280x720'; $('fps').value = '30'; setResolution();
-  status('Settings reset.');
+const resetSections = {
+  appearance: { title: 'Appearance', keys: ['style', 'shape'], detail: 'Restore Bars and Circle?' },
+  colors: { title: 'Colors', keys: ['primary', 'secondary', 'background'], detail: 'Restore the default colors?' },
+  spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
+  effects: { title: 'Effects', keys: ['glow', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },
+  logo: { title: 'Logo & text', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY'], detail: 'Restore the song filename and default logo placement? The uploaded logo will be kept.' },
+  export: { title: 'Export', keys: [], detail: 'Restore 720p and 30 FPS?' },
+  audio: { title: 'Audio', keys: [], detail: 'Remove the current song and stop playback? You can add the file again.' },
+  all: { title: 'all settings', keys: [], detail: 'Restore all visual and export settings, remove the logo, and restore the song filename? The current song will be kept.' },
 };
+let pendingReset;
+function requestReset(section) {
+  pendingReset = section;
+  $('reset-dialog-title').textContent = `Reset ${resetSections[section].title}?`;
+  $('reset-dialog-detail').textContent = resetSections[section].detail;
+  $('reset-dialog').returnValue = 'cancel';
+  $('reset-dialog').showModal();
+  $('reset-cancel').focus();
+}
+function resetExportSettings() {
+  $('resolution').value = '1280x720'; $('fps').value = '30'; setResolution();
+}
+function performReset(section) {
+  if (section === 'all') {
+    settings = { ...defaults };
+    $('title').value = defaultTitle(selectedFile); clearLogo(); resetExportSettings(); resetMotion();
+  } else if (section === 'audio') {
+    activeLoad++; audio.pause(); loaded = false; selectedFile = null;
+    audio.removeAttribute('src'); audio.load();
+    if (currentUrl) URL.revokeObjectURL(currentUrl);
+    currentUrl = undefined;
+    $('title').value = ''; $('empty-state').hidden = false;
+    $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'MP3 or WAV';
+    $('elapsed').textContent = $('duration').textContent = '0:00';
+    $('seek').value = 0; $('seek').max = 100;
+    $('play').disabled = $('seek').disabled = $('export').disabled = true;
+    resetMotion(); syncPlaybackState(); syncSettingsAvailability();
+  } else {
+    for (const key of resetSections[section].keys) settings[key] = defaults[key];
+    if (section === 'logo') $('title').value = defaultTitle(selectedFile);
+    if (section === 'export') resetExportSettings();
+    if (section === 'spectrum') resetMotion();
+  }
+  syncSettings();
+  status(section === 'all' ? 'All settings reset.' : `${resetSections[section].title} reset.`);
+}
+$('reset').onclick = () => requestReset('all');
+document.querySelectorAll('[data-reset]').forEach(button => { button.onclick = () => requestReset(button.dataset.reset); });
+$('reset-dialog').addEventListener('close', () => {
+  const section = pendingReset; pendingReset = undefined;
+  if (section && $('reset-dialog').returnValue === 'reset') performReset(section);
+});
 function setResolution() { const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
 $('resolution').onchange = setResolution;
 $('logo-upload').onclick = () => $('logo-file').click();
@@ -231,7 +278,6 @@ function resetLogoPlacement() {
   for (const key of ['logoFit', 'logoZoom', 'logoX', 'logoY']) settings[key] = defaults[key];
   syncSettings();
 }
-$('logo-reset').onclick = resetLogoPlacement;
 
 // Logarithmic frequency bands with time-based attack/release smoothing.
 function sampleAudio(dt) {

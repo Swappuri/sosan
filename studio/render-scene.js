@@ -122,16 +122,12 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     ctx.beginPath(); ctx.moveTo((previous.x + point.x) / 2, (previous.y + point.y) / 2);
     ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2); ctx.stroke();
   }
-  ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
-  ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;
-  traceShape(ctx, shape, x, y, radius); ctx.stroke();
+  const hasLogo = logo && logo.width > 0 && logo.height > 0;
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
-  traceShape(ctx, shape, x, y, radius - 5 * scale); ctx.stroke();
-  ctx.fillStyle = settings.background; traceShape(ctx, shape, x, y, radius - 9 * scale); ctx.fill();
+  ctx.fillStyle = settings.background; traceShape(ctx, shape, x, y, hasLogo ? radius : radius - 9 * scale); ctx.fill();
   if (logo && logo.width > 0 && logo.height > 0) {
-    ctx.save(); traceShape(ctx, shape, x, y, radius - 16 * scale); ctx.clip();
-    const placement = logoPlacement(shape, radius - 16 * scale, logo.width, logo.height, settings.logoFit, settings.logoZoom, settings.logoX, settings.logoY);
+    ctx.save(); traceShape(ctx, shape, x, y, radius); ctx.clip();
+    const placement = logoPlacement(shape, radius, logo.width, logo.height, settings.logoFit, settings.logoZoom, settings.logoX, settings.logoY);
     try {
       ctx.drawImage(logo, x + placement.x, y + placement.y, placement.width, placement.height);
     } finally {
@@ -144,4 +140,14 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     if (ctx.measureText(title).width > maxWidth) fontSize *= maxWidth / ctx.measureText(title).width;
     ctx.font = `600 ${fontSize}px Tektur, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eeeff2'; ctx.fillText(title, x, y);
   }
+  // Draw the main outline over the logo; no inset rim separates image and border.
+  ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
+  ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;
+  traceShape(ctx, shape, x, y, radius); ctx.stroke();
+  ctx.shadowBlur = 0;
+  if (!hasLogo) {
+    ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
+    traceShape(ctx, shape, x, y, radius - 5 * scale); ctx.stroke();
+  }
+
 }

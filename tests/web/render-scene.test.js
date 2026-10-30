@@ -176,3 +176,17 @@ test('logo zoom and position are independent and proportional to shape size', ()
   assert.ok(Math.abs(moved.x + moved.width / 2 - 25) < 1e-8);
   assert.ok(Math.abs(moved.y + moved.height / 2 - (-35)) < 1e-8);
 });
+
+
+test('logo fills to the main outline with no inset clip or inner rim', () => {
+  const canvas = canvasContext(), radii = [], events = [];
+  let clipRadius;
+  canvas.ctx.arc = (x, y, radius) => radii.push(radius);
+  canvas.ctx.clip = () => { clipRadius = radii.at(-1); };
+  canvas.ctx.drawImage = () => events.push('logo');
+  canvas.ctx.stroke = () => events.push('outline');
+  renderScene(canvas.ctx, 854, 480, { ...settings, particles: false, pulse: false, logoFit: 'cover' }, motion, 1, { width: 100, height: 100 }, '');
+  assert.equal(clipRadius, settings.radius);
+  assert.ok(!radii.includes(settings.radius - 5));
+  assert.deepEqual(events.slice(-2), ['logo', 'outline']);
+});

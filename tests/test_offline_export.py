@@ -86,9 +86,20 @@ class OfflineExportTests(unittest.TestCase):
                 image = np.zeros((480, 854, 3), np.uint8)
                 renderer._composite(image, np.full((100, 20, 4), 255, np.uint8), 115, True)
                 yy, xx = np.ogrid[:480, :854]
-                reach = shape_radius(shape, 99, np.arctan2(yy - 240, xx - 427))
+                reach = shape_radius(shape, 115, np.arctan2(yy - 240, xx - 427))
                 outside = ((xx - 427) ** 2 + (yy - 240) ** 2) > reach ** 2
                 self.assertFalse(np.any(image[outside]))
+
+    def test_logo_fill_reaches_main_outline_for_all_shapes(self):
+        for shape in ('circle', 'square', 'triangle'):
+            settings = validate_settings({'shape': shape, 'width': 854, 'height': 480, 'glow': False, 'pulse': False, 'particles': False})
+            renderer = StudioRenderer(settings)
+            renderer.logo = np.full((100, 100, 4), 255, np.uint8)
+            image = renderer.frame(0, np.zeros(64), 0, 0)
+            for angle in (0, -math.pi / 2, math.pi / 2):
+                reach = float(shape_radius(shape, settings['radius'], angle)) - 8
+                x, y = round(427 + math.cos(angle) * reach), round(240 + math.sin(angle) * reach)
+                self.assertTrue(np.all(image[y, x] > 230), (shape, angle, image[y, x]))
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

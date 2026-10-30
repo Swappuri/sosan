@@ -159,7 +159,7 @@ class StudioRenderer:
     def _composite(self, image, asset, radius, is_logo):
         shape = self.settings['shape']
         if is_logo:
-            clip_radius = radius - 16 * self.scale
+            clip_radius = radius
             s = self.settings
             px, py, w, h = logo_placement(shape, clip_radius, asset.shape[1], asset.shape[0], s['logoFit'], s['logoZoom'], s['logoX'], s['logoY'])
             # Warp only into the visible region, even for very wide/tall images at high zoom.
@@ -229,6 +229,11 @@ class StudioRenderer:
             cv2.polylines(image, [curve], False, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
             if glow is not None:
                 cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
+        has_logo = self.logo is not None
+        draw_shape(image, s['shape'], center, radius if has_logo else radius - 9 * scale, tuple(int(c) for c in self.background), -1)
+        asset = self.logo if has_logo else self.text
+        if asset is not None:
+            self._composite(image, asset, radius, has_logo)
         primary = tuple(int(c) for c in self.primary)
         draw_shape(image, s['shape'], center, radius, primary, max(1, round(1.5 * scale)))
         if glow is not None:
@@ -236,10 +241,7 @@ class StudioRenderer:
             small = cv2.resize(glow, (self.width // 2, self.height // 2))
             small = cv2.GaussianBlur(small, (0, 0), 3 * scale)
             image = cv2.addWeighted(image, 1, cv2.resize(small, (self.width, self.height)), .8, 0)
-        rim = tuple(int(c) for c in self.secondary * .4 + self.background * .6)
-        draw_shape(image, s['shape'], center, radius - 5 * scale, rim, max(1, round(scale)))
-        draw_shape(image, s['shape'], center, radius - 9 * scale, tuple(int(c) for c in self.background), -1)
-        asset = self.logo if self.logo is not None else self.text
-        if asset is not None:
-            self._composite(image, asset, radius, self.logo is not None)
+        if not has_logo:
+            rim = tuple(int(c) for c in self.secondary * .4 + self.background * .6)
+            draw_shape(image, s['shape'], center, radius - 5 * scale, rim, max(1, round(scale)))
         return image
