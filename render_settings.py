@@ -18,7 +18,7 @@ def validate_settings(value):
     for name in ('primary', 'secondary', 'background'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')
-    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 360)]:
+    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180)]:
         number = result[name]
         if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number) or not minimum <= number <= maximum:
             raise ValueError(f'Invalid {name}.')

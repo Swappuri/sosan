@@ -174,7 +174,7 @@ function syncSettings() {
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
   $('bars-value').value = settings.bars;
   $('rotation-value').value = `${settings.rotation}°`;
-  $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees clockwise`);
+  $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees down both sides`);
 }
 for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };

@@ -17,18 +17,28 @@ from render_worker import run_job
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'rotation': -1}, {'rotation': 361}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
-    def test_rotation_changes_export_and_full_turn_matches_default(self):
+    def test_rotation_changes_export_and_preserves_mirrored_geometry(self):
         settings = validate_settings({'width': 854, 'height': 480, 'particles': False, 'glow': False, 'pulse': False})
         levels = np.zeros(64)
         levels[0] = 1
         def frame(rotation):
             return StudioRenderer({**settings, 'rotation': rotation}).frame(0, levels, 0, 0)
         self.assertFalse(np.array_equal(frame(0), frame(90)))
-        np.testing.assert_array_equal(frame(0), frame(360))
+        for rotation in [0, 23, 90, 137, 180]:
+            with patch('offline_renderer.cv2.line') as line:
+                frame(rotation)
+            bars = line.call_args_list
+            for i in range(64):
+                left, right = bars[i].args, bars[127 - i].args
+                self.assertEqual(left[1][1], right[1][1])
+                self.assertEqual(left[2][1], right[2][1])
+                self.assertLessEqual(abs(left[2][0] + right[2][0] - 854), 1)
+            lengths = [np.linalg.norm(np.array(call.args[2]) - call.args[1]) for call in bars[:64]]
+            self.assertLessEqual(abs(int(np.argmax(lengths)) - rotation / 180 * 63), 1)
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

@@ -137,9 +137,14 @@ class StudioRenderer:
         radius = (s['radius'] + (min(1, self.bass) * 12 if s['pulse'] else 0)) * scale
         glow = np.zeros_like(image) if s['glow'] else None
         for i in range(s['bars']):
-            idx = i if i < s['bars'] // 2 else s['bars'] - i - 1
-            level = self.levels[idx]
-            angle = i / s['bars'] * math.tau - math.pi / 2 + math.radians(s['rotation'])
+            bands = s['bars'] // 2
+            side_index = i if i < bands else s['bars'] - i - 1
+            shift = s['rotation'] / 180 * (bands - 1)
+            idx = (side_index - shift + bands) % bands
+            first = math.floor(idx)
+            fraction = idx - first
+            level = self.levels[first] * (1 - fraction) + self.levels[(first + 1) % bands] * fraction
+            angle = (i + .5) / s['bars'] * math.tau - math.pi / 2
             start = radius + 8 * scale
             end = start + (3 + level ** 1.9 * 67) * scale
             a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))

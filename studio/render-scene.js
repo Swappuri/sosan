@@ -30,9 +30,14 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const count = settings.bars;
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
-    const index = i < count / 2 ? i : count - i - 1;
-    const level = motion.levels[index] || 0;
-    const angle = i / count * Math.PI * 2 - Math.PI / 2 + (settings.rotation ?? 0) * Math.PI / 180;
+    const bands = count / 2;
+    const sideIndex = i < bands ? i : count - i - 1;
+    // Shift the same spectrum along each half in opposite directions.
+    const shift = Math.min(180, Math.max(0, settings.rotation ?? 0)) / 180 * (bands - 1);
+    const index = (sideIndex - shift + bands) % bands;
+    const first = Math.floor(index), fraction = index - first;
+    const level = (motion.levels[first] || 0) * (1 - fraction) + (motion.levels[(first + 1) % bands] || 0) * fraction;
+    const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
     const length = (3 + Math.pow(level, 1.9) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / (count / 2));
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
