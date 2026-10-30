@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -77,4 +77,24 @@ test('bass moves down both sides with exact mirrored bar geometry', () => {
     assert.ok(Math.abs(peak - rotation / 180 * 63) <= 1);
     assert.deepEqual(canvas.text[0].slice(1), [640, 360]);
   }
+});
+
+
+test('180 degrees reverses the full frequency range without wrapping', () => {
+  for (let position = 0; position < 64; position++) {
+    assert.equal(spectrumBandPosition(position, 64, 0), position);
+    assert.equal(spectrumBandPosition(position, 64, 180), 63 - position);
+  }
+  for (const rotation of [23, 70, 90, 137, 179]) {
+    const mapped = Array.from({ length: 64 }, (_, i) => spectrumBandPosition(i, 64, rotation));
+    for (let i = 1; i < 64; i++) assert.ok(Math.abs(mapped[i] - mapped[i - 1]) <= 2.001);
+  }
+});
+
+test('neighbor smoothing spreads narrow peaks without blending bass and treble endpoints', () => {
+  const values = new Float32Array(64); values[0] = 1;
+  const smooth = smoothSpectrum(values);
+  assert.ok(smooth[0] > smooth[1] && smooth[1] > smooth[2] && smooth[2] > 0);
+  assert.equal(smooth[63], 0);
+  assert.ok(smoothSpectrum(new Float32Array(64)).every(x => x === 0));
 });

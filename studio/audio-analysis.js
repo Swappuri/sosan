@@ -68,7 +68,7 @@ export class SpectrumAnalysis {
       const [low, high] = this.ranges[i];
       let power = 0;
       for (let j = low; j < high; j++) power += this.spectrum[j] ** 2;
-      this.levels[i] = Math.min(1, Math.sqrt(power / Math.max(1, high - low)) * this.sensitivity);
+      this.levels[i] = 1 - Math.exp(-1.5 * Math.sqrt(power / Math.max(1, high - low)) * this.sensitivity);
     }
     const first = Math.ceil(35 * size / this.sampleRate), last = Math.ceil(160 * size / this.sampleRate);
     let low = 0;

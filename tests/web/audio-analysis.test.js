@@ -37,3 +37,12 @@ test('frame-clock motion is deterministic and responds to audio', () => {
   assert.deepEqual(a, b);
   assert.ok(a.levels[0] > .7 && a.bass > .8);
 });
+
+
+test('high reactivity retains differences instead of clipping bands to one', () => {
+  const pcm = Float32Array.from({ length: 48000 }, (_, i) => .9 * Math.sin(2 * Math.PI * 70 * i / 48000));
+  const a = new SpectrumAnalysis([pcm], 48000, 64, 2.1).frame(.5).levels;
+  const b = new SpectrumAnalysis([pcm], 48000, 64, 2.5).frame(.5).levels;
+  assert.ok(Math.max(...a) < Math.max(...b));
+  assert.ok(Math.max(...b) < 1);
+});

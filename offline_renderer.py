@@ -48,7 +48,7 @@ def analyze_track(source, settings, checkpoint=lambda *_: None):
             db = 20 * np.log10(np.maximum(smoothed_spectrum, 1e-12))
             spectrum = np.clip((db + 90) / 75, 0, 1)
             for index, (low, high) in enumerate(ranges):
-                levels[frame, index] = min(1, np.sqrt(np.mean(spectrum[low:high] ** 2)) * settings['sensitivity'])
+                levels[frame, index] = 1 - math.exp(-1.5 * np.sqrt(np.mean(spectrum[low:high] ** 2)) * settings['sensitivity'])
             low = spectrum[math.ceil(35 / hz_per_bin):math.ceil(160 / hz_per_bin)]
             bass[frame] = max(0, float(np.mean(low)) - .15) * settings['sensitivity']
             onsets[frame] = min(1, max(0, bass[frame] - previous_bass) * 6)
@@ -136,17 +136,18 @@ class StudioRenderer:
                 cv2.circle(image, (px, py), max(1, round(size * scale)), color, -1, cv2.LINE_AA)
         radius = (s['radius'] + (min(1, self.bass) * 12 if s['pulse'] else 0)) * scale
         glow = np.zeros_like(image) if s['glow'] else None
+        levels = np.convolve(np.pad(self.levels, (2, 2), mode='edge'), np.array([1, 4, 6, 4, 1]) / 16, mode='valid')
         for i in range(s['bars']):
             bands = s['bars'] // 2
             side_index = i if i < bands else s['bars'] - i - 1
-            shift = s['rotation'] / 180 * (bands - 1)
-            idx = (side_index - shift + bands) % bands
+            bass_position = s['rotation'] / 180 * (bands - 1)
+            idx = abs(side_index - bass_position) / max(bass_position, bands - 1 - bass_position, 1) * (bands - 1)
             first = math.floor(idx)
             fraction = idx - first
-            level = self.levels[first] * (1 - fraction) + self.levels[(first + 1) % bands] * fraction
+            level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
             angle = (i + .5) / s['bars'] * math.tau - math.pi / 2
             start = radius + 8 * scale
-            end = start + (3 + level ** 1.9 * 67) * scale
+            end = start + (3 + level ** 1.35 * 67) * scale
             a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))
             b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
             ratio = idx / (s['bars'] / 2)

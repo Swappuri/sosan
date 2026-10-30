@@ -7,6 +7,19 @@ function rgba(hex, alpha) { const v = parseInt(hex.slice(1), 16); return `rgba($
 function blend(a, b, ratio) { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16); return `rgb(${[16, 8, 0].map(s => Math.round((x >> s & 255) * (1 - ratio) + (y >> s & 255) * ratio)).join(',')})`; }
 
 
+// A continuous distance from the bass position, never a wrapped bass/treble seam.
+export function spectrumBandPosition(position, bands, rotation = 0) {
+  const last = bands - 1;
+  const bass = Math.min(180, Math.max(0, rotation)) / 180 * last;
+  return Math.abs(position - bass) / Math.max(bass, last - bass, 1) * last;
+}
+
+export function smoothSpectrum(levels) {
+  const weights = [1, 4, 6, 4, 1];
+  return Float32Array.from(levels, (_, index) => weights.reduce((sum, weight, offset) =>
+    sum + weight * levels[Math.max(0, Math.min(levels.length - 1, index + offset - 2))], 0) / 16);
+}
+
 export function renderScene(ctx, width, height, settings, motion, songTime, logo, title) {
   const scale = Math.min(width / 854, height / 480);
   const x = width / 2, y = height / 2;
@@ -28,17 +41,16 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 : 0;
   const radius = (settings.radius + pulse) * scale;
   const count = settings.bars;
+  const levels = smoothSpectrum(motion.levels);
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
     const bands = count / 2;
     const sideIndex = i < bands ? i : count - i - 1;
-    // Shift the same spectrum along each half in opposite directions.
-    const shift = Math.min(180, Math.max(0, settings.rotation ?? 0)) / 180 * (bands - 1);
-    const index = (sideIndex - shift + bands) % bands;
+    const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
     const first = Math.floor(index), fraction = index - first;
-    const level = (motion.levels[first] || 0) * (1 - fraction) + (motion.levels[(first + 1) % bands] || 0) * fraction;
+    const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
     const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
-    const length = (3 + Math.pow(level, 1.9) * 67) * scale;
+    const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / (count / 2));
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;

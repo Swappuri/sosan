@@ -236,7 +236,7 @@ function sampleAudio(dt) {
       const last = Math.min(spectrum.length, Math.max(first + 1, Math.ceil(high / hzPerBin)));
       let sum = 0;
       for (let j = first; j < last; j++) sum += Math.pow(spectrum[j] / 255, 2);
-      const level = Math.min(1, Math.sqrt(sum / Math.max(1, last - first)) * settings.sensitivity);
+      const level = 1 - Math.exp(-1.5 * Math.sqrt(sum / Math.max(1, last - first)) * settings.sensitivity);
       smooth[i] += (level - smooth[i]) * (1 - Math.exp(-dt * (level > smooth[i] ? 24 : 8)));
     }
   } else {
