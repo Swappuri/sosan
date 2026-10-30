@@ -31,6 +31,25 @@ export function smoothSpectrum(levels, smoothing = 50) {
   return result;
 }
 
+export function shapeRadius(shape, radius, angle) {
+  if (shape === 'square') return radius / Math.SQRT2 / Math.max(Math.abs(Math.cos(angle)), Math.abs(Math.sin(angle)));
+  if (shape === 'triangle') return radius * .5 / Math.max(...[0, 1, 2].map(i => Math.cos(angle - (-Math.PI / 6 + i * Math.PI * 2 / 3))));
+  return radius;
+}
+
+function traceShape(ctx, shape, x, y, radius) {
+  ctx.beginPath();
+  if (shape !== 'square' && shape !== 'triangle') { ctx.arc(x, y, radius, 0, Math.PI * 2); return; }
+  const sides = shape === 'square' ? 4 : 3;
+  const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
+  for (let i = 0; i < sides; i++) {
+    const angle = start + i * Math.PI * 2 / sides;
+    const px = x + Math.cos(angle) * radius, py = y + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
 export function renderScene(ctx, width, height, settings, motion, songTime, logo, title) {
   const scale = Math.min(width / 854, height / 480);
   const x = width / 2, y = height / 2;
@@ -51,6 +70,8 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 : 0;
   const radius = (settings.radius + pulse) * scale;
+  const shape = settings.shape ?? 'circle';
+  const contentRadius = radius * (shape === 'triangle' ? .5 : shape === 'square' ? Math.SQRT1_2 : 1);
   const count = settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
@@ -62,16 +83,17 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     const first = Math.floor(index), fraction = index - first;
     const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
     const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
+    const boundary = shapeRadius(shape, radius, angle);
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / (count / 2));
     if (settings.style === 'wave') {
-      wave.push({ x: x + Math.cos(angle) * (radius + 8 * scale + length), y: y + Math.sin(angle) * (radius + 8 * scale + length), color, level });
+      wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level });
       continue;
     }
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
-    ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (radius + 8 * scale), y + Math.sin(angle) * (radius + 8 * scale));
-    ctx.lineTo(x + Math.cos(angle) * (radius + 8 * scale + length), y + Math.sin(angle) * (radius + 8 * scale + length)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale));
+    ctx.lineTo(x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)); ctx.stroke();
   }
   // Quadratic segments meet at shared midpoints for one continuous wavy outline.
   for (let i = 0; i < wave.length; i++) {
@@ -83,14 +105,14 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
   ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;
-  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
+  traceShape(ctx, shape, x, y, radius); ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
-  ctx.beginPath(); ctx.arc(x, y, radius - 5 * scale, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = settings.background; ctx.beginPath(); ctx.arc(x, y, radius - 9 * scale, 0, Math.PI * 2); ctx.fill();
+  traceShape(ctx, shape, x, y, radius - 5 * scale); ctx.stroke();
+  ctx.fillStyle = settings.background; traceShape(ctx, shape, x, y, radius - 9 * scale); ctx.fill();
   if (logo && logo.width > 0 && logo.height > 0) {
-    ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius - 16 * scale, 0, Math.PI * 2); ctx.clip();
-    const size = (radius - 20 * scale) * 2;
+    ctx.save(); traceShape(ctx, shape, x, y, radius - 16 * scale); ctx.clip();
+    const size = Math.max(scale, contentRadius - 20 * scale) * 2;
     const factor = Math.min(size / logo.width, size / logo.height);
     try {
       ctx.drawImage(logo, x - logo.width * factor / 2, y - logo.height * factor / 2, logo.width * factor, logo.height * factor);
@@ -98,9 +120,9 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
       ctx.restore();
     }
   } else if (title) {
-    let fontSize = Math.min(21 * scale, radius * .21);
+    let fontSize = Math.min(21 * scale, contentRadius * .21);
     ctx.font = `600 ${fontSize}px Tektur, sans-serif`;
-    const maxWidth = radius * 1.55;
+    const maxWidth = contentRadius * 1.55;
     if (ctx.measureText(title).width > maxWidth) fontSize *= maxWidth / ctx.measureText(title).width;
     ctx.font = `600 ${fontSize}px Tektur, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eeeff2'; ctx.fillText(title, x, y);
   }

@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
@@ -169,7 +169,9 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
-  document.querySelectorAll('input[name="spectrum-style"]').forEach(input => { input.checked = input.value === settings.style; });
+  for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
+  }
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
   $('radius-value').value = `${settings.radius} px`;
@@ -183,7 +185,9 @@ function syncSettings() {
 for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
-document.querySelectorAll('input[name="spectrum-style"]').forEach(input => { input.onchange = () => { if (input.checked) settings.style = input.value; }; });
+for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
+}
 $('reset').onclick = () => {
   settings = { ...defaults }; syncSettings(); resetMotion();
   $('title').value = defaultTitle(selectedFile); clearLogo();

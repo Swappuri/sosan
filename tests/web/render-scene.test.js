@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -128,4 +128,28 @@ test('wave style joins every segment, closes the loop, and stays mirrored', () =
     assert.ok(Math.abs(curves[i][0] + curves[curves.length - i - 1][0] - 1280) < 1e-8);
   }
   assert.deepEqual(canvas.text[0], ['Title', 640, 360]);
+});
+
+
+test('shape boundaries follow polygon edges and remain left-right symmetric', () => {
+  assert.equal(shapeRadius('circle', 100, 0), 100);
+  assert.ok(Math.abs(shapeRadius('square', 100, 0) - 100 / Math.SQRT2) < 1e-8);
+  assert.ok(Math.abs(shapeRadius('triangle', 100, -Math.PI / 2) - 100) < 1e-8);
+  assert.ok(Math.abs(shapeRadius('triangle', 100, Math.PI / 2) - 50) < 1e-8);
+  for (const shape of ['circle', 'square', 'triangle']) {
+    for (let i = 0; i < 128; i++) {
+      const angle = (i + .5) / 128 * Math.PI * 2 - Math.PI / 2;
+      const reach = shapeRadius(shape, 100, angle);
+      assert.ok(reach >= 49.999 && reach <= 100.001);
+      assert.ok(Math.abs(reach - shapeRadius(shape, 100, Math.PI - angle)) < 1e-8);
+    }
+    for (const style of ['bars', 'wave']) {
+      const canvas = canvasContext();
+      const logo = { width: 100, height: 80 };
+      renderScene(canvas.ctx, 1280, 720, { ...settings, shape, style }, motion, 1, logo, 'Title');
+      assert.equal(canvas.saves, 0);
+      assert.equal(canvas.images[0][1] + canvas.images[0][3] / 2, 640);
+      assert.equal(canvas.images[0][2] + canvas.images[0][4] / 2, 360);
+    }
+  }
 });

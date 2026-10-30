@@ -176,3 +176,6 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .style-choice input:focus-visible + span { outline: 2px solid var(--accent-focus); outline-offset: 3px; }
 .style-choice input:disabled + span { cursor: not-allowed; }
 @media (min-width: 500px) and (max-width: 999px) { .appearance-settings { grid-column: 1 / -1; } }
+
+.shape-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; }
+.shape-choices .style-choice > span { flex-direction: column; gap: 4px; min-height: 56px; font-size: 10px; padding: 6px 2px; }

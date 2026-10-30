@@ -10,14 +10,14 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum
+from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius
 from render_settings import validate_settings
 from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
@@ -58,6 +58,20 @@ class OfflineExportTests(unittest.TestCase):
         for i, segment in enumerate(curves.call_args_list):
             following = curves.call_args_list[(i + 1) % settings['bars']]
             np.testing.assert_array_equal(segment.args[1][0][-1], following.args[1][0][0])
+
+    def test_shape_styles_render_distinct_geometry(self):
+        frames = []
+        for shape in ('circle', 'square', 'triangle'):
+            for style in ('bars', 'wave'):
+                settings = validate_settings({'shape': shape, 'style': style, 'width': 854, 'height': 480, 'particles': False, 'title': 'Shape'})
+                image = StudioRenderer(settings).frame(0, np.ones(64) * .6, 0, 0)
+                self.assertEqual(image.shape, (480, 854, 3))
+                self.assertTrue(np.isfinite(image).all())
+                frames.append(image)
+        for first, second in zip(frames, frames[1:]):
+            self.assertFalse(np.array_equal(first, second))
+        self.assertAlmostEqual(float(shape_radius('triangle', 100, -np.pi / 2)), 100)
+        self.assertAlmostEqual(float(shape_radius('triangle', 100, np.pi / 2)), 50)
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

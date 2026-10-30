@@ -65,6 +65,27 @@ def smooth_spectrum(levels, smoothing=50):
     return result
 
 
+def shape_radius(shape, radius, angle):
+    if shape == 'square':
+        return radius / math.sqrt(2) / np.maximum(np.abs(np.cos(angle)), np.abs(np.sin(angle)))
+    if shape == 'triangle':
+        return radius * .5 / np.maximum.reduce([np.cos(angle - (-math.pi / 6 + i * math.tau / 3)) for i in range(3)])
+    return radius
+
+
+def draw_shape(image, shape, center, radius, color, thickness):
+    radius = max(1, radius)
+    if shape == 'circle':
+        cv2.circle(image, center, round(radius), color, thickness, cv2.LINE_AA)
+        return
+    sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
+    points = np.array([[round(center[0] + math.cos(start + i * math.tau / sides) * radius), round(center[1] + math.sin(start + i * math.tau / sides) * radius)] for i in range(sides)], np.int32)
+    if thickness < 0:
+        cv2.fillPoly(image, [points], color, cv2.LINE_AA)
+    else:
+        cv2.polylines(image, [points], True, color, thickness, cv2.LINE_AA)
+
+
 def bgr(color):
     return tuple(int(color[index:index + 2], 16) for index in (5, 3, 1))
 
@@ -117,7 +138,9 @@ class StudioRenderer:
         return cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2BGRA)
 
     def _composite(self, image, asset, radius, is_logo):
-        size = (radius - 20 * self.scale) * 2 if is_logo else radius * 1.55
+        shape = self.settings['shape']
+        content_radius = radius * (.5 if shape == 'triangle' else 1 / math.sqrt(2) if shape == 'square' else 1)
+        size = max(self.scale, content_radius - 20 * self.scale) * 2 if is_logo else content_radius * 1.55
         factor = min(size / asset.shape[1], size / asset.shape[0]) if is_logo else min(1, size / asset.shape[1])
         w, h = max(1, round(asset.shape[1] * factor)), max(1, round(asset.shape[0] * factor))
         resized = cv2.resize(asset, (w, h), interpolation=cv2.INTER_AREA)
@@ -125,7 +148,8 @@ class StudioRenderer:
         alpha = resized[:, :, 3:4].astype(np.float32) / 255
         if is_logo:
             yy, xx = np.ogrid[y:y + h, x:x + w]
-            alpha *= (((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) < (radius - 16 * self.scale) ** 2)[:, :, None]
+            reach = shape_radius(shape, radius - 16 * self.scale, np.arctan2(yy - self.center[1], xx - self.center[0]))
+            alpha *= (((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) < reach ** 2)[:, :, None]
         image[y:y + h, x:x + w] = image[y:y + h, x:x + w] * (1 - alpha) + resized[:, :, :3] * alpha
 
     def frame(self, index, levels, bass, onset):
@@ -156,7 +180,7 @@ class StudioRenderer:
             fraction = idx - first
             level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
             angle = (i + .5) / s['bars'] * math.tau - math.pi / 2
-            start = radius + 8 * scale
+            start = float(shape_radius(s['shape'], radius, angle)) + 8 * scale
             end = start + (3 + level ** 1.35 * 67) * scale
             a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))
             b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
@@ -176,15 +200,15 @@ class StudioRenderer:
             if glow is not None:
                 cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
         primary = tuple(int(c) for c in self.primary)
-        cv2.circle(image, center, round(radius), primary, max(1, round(1.5 * scale)), cv2.LINE_AA)
+        draw_shape(image, s['shape'], center, radius, primary, max(1, round(1.5 * scale)))
         if glow is not None:
-            cv2.circle(glow, center, round(radius), primary, max(1, round(3 * scale)), cv2.LINE_AA)
+            draw_shape(glow, s['shape'], center, radius, primary, max(1, round(3 * scale)))
             small = cv2.resize(glow, (self.width // 2, self.height // 2))
             small = cv2.GaussianBlur(small, (0, 0), 3 * scale)
             image = cv2.addWeighted(image, 1, cv2.resize(small, (self.width, self.height)), .8, 0)
         rim = tuple(int(c) for c in self.secondary * .4 + self.background * .6)
-        cv2.circle(image, center, max(1, round(radius - 5 * scale)), rim, max(1, round(scale)), cv2.LINE_AA)
-        cv2.circle(image, center, max(1, round(radius - 9 * scale)), tuple(int(c) for c in self.background), -1, cv2.LINE_AA)
+        draw_shape(image, s['shape'], center, radius - 5 * scale, rim, max(1, round(scale)))
+        draw_shape(image, s['shape'], center, radius - 9 * scale, tuple(int(c) for c in self.background), -1)
         asset = self.logo if self.logo is not None else self.text
         if asset is not None:
             self._composite(image, asset, radius, self.logo is not None)
