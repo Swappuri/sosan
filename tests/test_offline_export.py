@@ -10,14 +10,14 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from offline_renderer import analyze_track, StudioRenderer
+from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum
 from render_settings import validate_settings
 from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
     def test_settings_validation(self):
-        for invalid in ({'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
@@ -39,6 +39,14 @@ class OfflineExportTests(unittest.TestCase):
                 self.assertLessEqual(abs(left[2][0] + right[2][0] - 854), 1)
             lengths = [np.linalg.norm(np.array(call.args[2]) - call.args[1]) for call in bars[:64]]
             self.assertLessEqual(abs(int(np.argmax(lengths)) - rotation / 180 * 63), 1)
+
+    def test_smoothing_endpoints_and_default(self):
+        levels = np.zeros(64)
+        levels[32] = 1
+        np.testing.assert_array_equal(smooth_spectrum(levels, 0), levels)
+        self.assertEqual(smooth_spectrum(levels, 50)[32], 6 / 16)
+        self.assertLess(smooth_spectrum(levels, 100)[32], smooth_spectrum(levels, 50)[32])
+        self.assertEqual(validate_settings({})['smoothing'], 50)
 
     def test_silence_and_settings_affect_output(self):
         settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})

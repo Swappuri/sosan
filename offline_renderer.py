@@ -56,6 +56,15 @@ def analyze_track(source, settings, checkpoint=lambda *_: None):
     return levels, bass, onsets, duration
 
 
+def smooth_spectrum(levels, smoothing=50):
+    passes = (min(100, max(0, smoothing)) / 50) ** 2
+    result = levels
+    for step in range(math.ceil(passes)):
+        filtered = np.convolve(np.pad(result, (2, 2), mode='edge'), np.array([1, 4, 6, 4, 1]) / 16, mode='valid')
+        result = result + (filtered - result) * min(1, passes - step)
+    return result
+
+
 def bgr(color):
     return tuple(int(color[index:index + 2], 16) for index in (5, 3, 1))
 
@@ -136,7 +145,7 @@ class StudioRenderer:
                 cv2.circle(image, (px, py), max(1, round(size * scale)), color, -1, cv2.LINE_AA)
         radius = (s['radius'] + (min(1, self.bass) * 12 if s['pulse'] else 0)) * scale
         glow = np.zeros_like(image) if s['glow'] else None
-        levels = np.convolve(np.pad(self.levels, (2, 2), mode='edge'), np.array([1, 4, 6, 4, 1]) / 16, mode='valid')
+        levels = smooth_spectrum(self.levels, s['smoothing'])
         for i in range(s['bars']):
             bands = s['bars'] // 2
             side_index = i if i < bands else s['bars'] - i - 1

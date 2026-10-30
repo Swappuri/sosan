@@ -7,7 +7,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 0, glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, sensitivity: 1.2, bars: 128, rotation: 0, smoothing: 50, glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
@@ -168,16 +168,18 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
-  for (const key of ['radius', 'sensitivity', 'bars', 'rotation']) $(key).value = settings[key];
+  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
   $('bars-value').value = settings.bars;
+  $('smoothing-value').value = `${settings.smoothing}%`;
+  $('smoothing').setAttribute('aria-valuetext', `${settings.smoothing} percent smoothing`);
   $('rotation-value').value = `${settings.rotation}°`;
   $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees down both sides`);
 }
 for (const key of ['primary', 'secondary', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
-for (const key of ['radius', 'sensitivity', 'bars', 'rotation']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
+for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
 $('reset').onclick = () => {
   settings = { ...defaults }; syncSettings(); resetMotion();

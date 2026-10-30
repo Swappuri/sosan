@@ -14,10 +14,21 @@ export function spectrumBandPosition(position, bands, rotation = 0) {
   return Math.abs(position - bass) / Math.max(bass, last - bass, 1) * last;
 }
 
-export function smoothSpectrum(levels) {
+export function smoothSpectrum(levels, smoothing = 50) {
+  // Zero keeps the original peaks; 50% matches the previous default filter.
+  const passes = (Math.min(100, Math.max(0, smoothing)) / 50) ** 2;
   const weights = [1, 4, 6, 4, 1];
-  return Float32Array.from(levels, (_, index) => weights.reduce((sum, weight, offset) =>
-    sum + weight * levels[Math.max(0, Math.min(levels.length - 1, index + offset - 2))], 0) / 16);
+  let result = levels;
+  for (let pass = 0; pass < Math.ceil(passes); pass++) {
+    const blend = Math.min(1, passes - pass);
+    const previous = result;
+    result = Float32Array.from(previous, (value, index) => {
+      const filtered = weights.reduce((sum, weight, offset) =>
+        sum + weight * previous[Math.max(0, Math.min(previous.length - 1, index + offset - 2))], 0) / 16;
+      return value + (filtered - value) * blend;
+    });
+  }
+  return result;
 }
 
 export function renderScene(ctx, width, height, settings, motion, songTime, logo, title) {
@@ -41,7 +52,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 : 0;
   const radius = (settings.radius + pulse) * scale;
   const count = settings.bars;
-  const levels = smoothSpectrum(motion.levels);
+  const levels = smoothSpectrum(motion.levels, settings.smoothing);
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
     const bands = count / 2;

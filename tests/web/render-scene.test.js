@@ -98,3 +98,18 @@ test('neighbor smoothing spreads narrow peaks without blending bass and treble e
   assert.equal(smooth[63], 0);
   assert.ok(smoothSpectrum(new Float32Array(64)).every(x => x === 0));
 });
+
+
+test('smoothing slider preserves sharp peaks at zero and progressively softens them', () => {
+  const values = new Float32Array(64); values[32] = 1;
+  assert.deepEqual(smoothSpectrum(values, 0), values);
+  assert.equal(smoothSpectrum(values, 50)[32], 6 / 16);
+  const roughness = values => values.slice(1).reduce((sum, value, i) => sum + (value - values[i]) ** 2, 0);
+  let previous = Infinity;
+  for (const amount of [0, 25, 50, 75, 100]) {
+    const result = smoothSpectrum(values, amount);
+    assert.ok(roughness(result) < previous);
+    assert.ok(Math.abs(result.reduce((a, b) => a + b, 0) - 1) < 1e-6);
+    previous = roughness(result);
+  }
+});
