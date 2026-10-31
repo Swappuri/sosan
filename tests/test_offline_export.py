@@ -11,7 +11,7 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement, perimeter_point, spectrum_point
+from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement, perimeter_point, spectrum_point, spectrum_samples
 from render_settings import validate_settings
 from render_worker import run_job
 
@@ -31,19 +31,19 @@ class OfflineExportTests(unittest.TestCase):
                 previous = point
             self.assertLess(max(distances) / min(distances), 1.001)
 
-    def test_polygon_corner_response_remains_reactive(self):
+    def test_expanded_polygon_tips_are_evenly_spaced_and_reactive(self):
         for shape in ('square', 'triangle'):
-            gains = []
-            for i in range(1024):
-                gain = spectrum_point(shape, 115, i / 1024, 8)[4]
-                mirror = spectrum_point(shape, 115, 1 - i / 1024, 8)[4]
-                self.assertAlmostEqual(gain, mirror)
-                self.assertGreaterEqual(gain, .35)
-                self.assertLessEqual(gain, 1)
-                gains.append(gain)
-            self.assertGreater(gains.count(.35), 20)
-            self.assertGreater(gains.count(1), 400)
-        self.assertEqual(spectrum_point('circle', 115, 0, 8)[4], 1)
+            for energy in (0, .5, 1):
+                points = spectrum_samples(shape, 115, 128, 128, np.ones(64) * energy, 90, 1)
+                tips = [(p[0] + p[2] * p[6], p[1] + p[3] * p[6]) for p in points]
+                gaps = []
+                for i, point in enumerate(tips):
+                    following, mirror = tips[(i + 1) % len(tips)], tips[-i - 1]
+                    self.assertAlmostEqual(point[0], -mirror[0])
+                    self.assertAlmostEqual(point[1], mirror[1])
+                    self.assertAlmostEqual(points[i][6], 3 + energy ** 1.35 * 67)
+                    gaps.append(math.hypot(point[0] - following[0], point[1] - following[1]))
+                self.assertLess(max(gaps) / min(gaps), 1.04)
 
     def test_settings_validation(self):
         for invalid in ({'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):

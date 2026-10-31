@@ -90,7 +90,7 @@ def perimeter_point(shape, radius, progress):
 
 def spectrum_point(shape, radius, progress, offset):
     if shape not in ('square', 'triangle'):
-        return (*perimeter_point(shape, radius + offset, progress), 1)
+        return perimeter_point(shape, radius + offset, progress)
     sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
     turn = math.tau / sides
     edge_length, arc_length = 2 * radius * math.sin(math.pi / sides), offset * turn
@@ -108,9 +108,40 @@ def spectrum_point(shape, radius, progress, offset):
         x += (math.cos(angle + turn) * radius - x) * t
         y += (math.sin(angle + turn) * radius - y) * t
     nx, ny = math.cos(normal), math.sin(normal)
-    edge_distance = 0 if local < arc_length else min(local - arc_length, segment - local)
-    corner_gain = .35 + .65 * math.sin(min(1, edge_distance / (radius * .3)) * math.pi / 2) ** 2
-    return x + nx * offset, y + ny * offset, nx, ny, corner_gain
+    return x + nx * offset, y + ny * offset, nx, ny
+
+
+def spectrum_samples(shape, radius, count, bars, levels, rotation, scale):
+    bands = bars // 2
+    reference_length = (3 + float(np.mean(levels ** 1.35)) * 67) * scale
+    def sample(position):
+        side = max(0, min(bands - 1, (position if position < .5 else 1 - position) * bars - .5))
+        bass = rotation / 180 * (bands - 1)
+        index = abs(side - bass) / max(bass, bands - 1 - bass, 1) * (bands - 1)
+        first, fraction = math.floor(index), index % 1
+        level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
+        px, py, nx, ny = spectrum_point(shape, radius, position, 8 * scale + reference_length)
+        px -= nx * reference_length
+        py -= ny * reference_length
+        length = (3 + level ** 1.35 * 67) * scale
+        return px, py, nx, ny, index, level, length
+    if shape not in ('square', 'triangle'):
+        return [sample((i + .5) / count) for i in range(count)]
+    resolution = 2048
+    cumulative = [0.0]
+    previous = sample(0)
+    for i in range(1, resolution + 1):
+        point = sample(i / resolution)
+        cumulative.append(cumulative[-1] + math.hypot(point[0] + point[2] * point[6] - previous[0] - previous[2] * previous[6], point[1] + point[3] * point[6] - previous[1] - previous[3] * previous[6]))
+        previous = point
+    result, cursor = [], 1
+    for i in range(count):
+        distance = (i + .5) / count * cumulative[-1]
+        while cursor < resolution and cumulative[cursor] < distance:
+            cursor += 1
+        fraction = (distance - cumulative[cursor - 1]) / (cumulative[cursor] - cumulative[cursor - 1] or 1)
+        result.append(sample((cursor - 1 + fraction) / resolution))
+    return result
 
 
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
@@ -242,18 +273,8 @@ class StudioRenderer:
         levels = smooth_spectrum(self.levels, s['smoothing'])
         wave = []
         count = max(512, s['bars']) if s['style'] == 'wave' else s['bars']
-        for i in range(count):
-            bands = s['bars'] // 2
-            position = (i + .5) / count
-            side_index = max(0, min(bands - 1, (position if position < .5 else 1 - position) * s['bars'] - .5))
-            bass_position = s['rotation'] / 180 * (bands - 1)
-            idx = abs(side_index - bass_position) / max(bass_position, bands - 1 - bass_position, 1) * (bands - 1)
-            first = math.floor(idx)
-            fraction = idx - first
-            level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
-            px, py, nx, ny, corner_gain = spectrum_point(s['shape'], radius, (i + .5) / count, 8 * scale)
-            start = 0
-            end = start + (3 + level ** 1.35 * corner_gain * 67) * scale
+        for px, py, nx, ny, idx, level, length in spectrum_samples(s['shape'], radius, count, s['bars'], levels, s['rotation'], scale):
+            start, end = 0, length
             a = (round(center[0] + px + nx * start), round(center[1] + py + ny * start))
             b = (round(center[0] + px + nx * end), round(center[1] + py + ny * end))
             ratio = idx / (s['bars'] / 2)

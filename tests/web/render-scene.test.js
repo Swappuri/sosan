@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, perimeterPoint, spectrumPoint } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, perimeterPoint, spectrumPoint, spectrumSamples } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -244,19 +244,19 @@ test('offset polygon path covers corners with continuous normals and uniform spe
   }
 });
 
-test('polygon corners stay reactive with restrained gain while flat edges retain full response', () => {
+test('expanded polygon bar tips stay evenly spaced and mirrored without suppressing corners', () => {
   for (const shape of ['square', 'triangle']) {
-    let restrained = 0, full = 0;
-    for (let i = 0; i < 1024; i++) {
-      const p = spectrumPoint(shape, 115, i / 1024, 8);
-      const mirror = spectrumPoint(shape, 115, 1 - i / 1024, 8);
-      assert.ok(p.cornerGain >= .35 && p.cornerGain <= 1);
-      assert.ok(Math.abs(p.cornerGain - mirror.cornerGain) < 1e-10);
-      if (p.cornerGain === .35) restrained++;
-      if (p.cornerGain === 1) full++;
+    for (const energy of [0, .5, 1]) {
+      const points = spectrumSamples(shape, 115, 128, 128, new Float32Array(64).fill(energy), 90, 1);
+      const gaps = points.map((point, i) => {
+        const next = points[(i + 1) % points.length];
+        const mirror = points[points.length - i - 1];
+        assert.ok(Math.abs(point.tipX + mirror.tipX) < 1e-7);
+        assert.ok(Math.abs(point.tipY - mirror.tipY) < 1e-7);
+        assert.ok(Math.abs(point.length - (3 + energy ** 1.35 * 67)) < 1e-6);
+        return Math.hypot(point.tipX - next.tipX, point.tipY - next.tipY);
+      });
+      assert.ok(Math.max(...gaps) / Math.min(...gaps) < 1.04);
     }
-    assert.ok(restrained > 20);
-    assert.ok(full > 400);
   }
-  assert.equal(spectrumPoint('circle', 115, 0, 8).cornerGain, 1);
 });

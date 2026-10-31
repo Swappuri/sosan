@@ -203,3 +203,10 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 
 .file-card.has-file .dropzone > span:first-child { display: none; }
 .file-card.has-file .file-copy { display: flex; align-items: center; }
+
+/* Loaded uploads share the 30px control rhythm used by text and fit buttons. */
+.file-card.has-file { min-height: 30px; height: 30px; border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+.file-card.has-file .dropzone, .file-card.has-file .file-upload { min-height: 28px; height: 28px; padding: 4px 9px; color: var(--accent); }
+.file-card.has-file .file-remove { padding: 4px 9px; color: var(--accent); }
+#logo-placement { margin-top: 8px; }
+.logo-fit-choices { margin-bottom: 12px; }

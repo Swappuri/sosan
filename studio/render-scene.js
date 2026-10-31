@@ -57,7 +57,7 @@ export function perimeterPoint(shape, radius, progress) {
 
 // Sample a rounded offset perimeter, including the full arc around every corner.
 export function spectrumPoint(shape, radius, progress, offset) {
-  if (shape !== 'square' && shape !== 'triangle') return { ...perimeterPoint(shape, radius + offset, progress), cornerGain: 1 };
+  if (shape !== 'square' && shape !== 'triangle') return perimeterPoint(shape, radius + offset, progress);
   const sides = shape === 'square' ? 4 : 3, turn = Math.PI * 2 / sides;
   const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
   const edgeLength = 2 * radius * Math.sin(Math.PI / sides), arcLength = offset * turn;
@@ -76,10 +76,39 @@ export function spectrumPoint(shape, radius, progress, offset) {
     x += (Math.cos(angle + turn) * radius - x) * t;
     y += (Math.sin(angle + turn) * radius - y) * t;
   }
-  // Restrain corner movement without freezing it or creating long corner spokes.
-  const edgeDistance = local < arcLength ? 0 : Math.min(local - arcLength, segment - local);
-  const cornerGain = .35 + .65 * Math.sin(Math.min(1, edgeDistance / (radius * .3)) * Math.PI / 2) ** 2;
-  return { x: x + nx * offset, y: y + ny * offset, nx, ny, cornerGain };
+  return { x: x + nx * offset, y: y + ny * offset, nx, ny };
+}
+
+// Space polygon samples along the actual animated outer contour, rather than
+// the short inner corner arcs whose diverging normals leave wide gaps at the tips.
+export function spectrumSamples(shape, radius, count, bars, levels, rotation, scale) {
+  const bands = bars / 2;
+  const referenceLength = (3 + levels.reduce((sum, value) => sum + Math.pow(value, 1.35), 0) / Math.max(1, levels.length) * 67) * scale;
+  const sample = position => {
+    const side = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * bars - .5));
+    const index = spectrumBandPosition(side, bands, rotation);
+    const first = Math.floor(index), fraction = index - first;
+    const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
+    const point = spectrumPoint(shape, radius, position, 8 * scale + referenceLength);
+    point.x -= point.nx * referenceLength; point.y -= point.ny * referenceLength;
+    const length = (3 + Math.pow(level, 1.35) * 67) * scale;
+    return { ...point, index, level, length, tipX: point.x + point.nx * length, tipY: point.y + point.ny * length };
+  };
+  if (shape !== 'square' && shape !== 'triangle') return Array.from({ length: count }, (_, i) => sample((i + .5) / count));
+  const resolution = 2048, cumulative = new Float64Array(resolution + 1);
+  let previous = sample(0);
+  for (let i = 1; i <= resolution; i++) {
+    const point = sample(i / resolution);
+    cumulative[i] = cumulative[i - 1] + Math.hypot(point.tipX - previous.tipX, point.tipY - previous.tipY);
+    previous = point;
+  }
+  let cursor = 1;
+  return Array.from({ length: count }, (_, i) => {
+    const distance = (i + .5) / count * cumulative[resolution];
+    while (cursor < resolution && cumulative[cursor] < distance) cursor++;
+    const fraction = (distance - cumulative[cursor - 1]) / (cumulative[cursor] - cumulative[cursor - 1] || 1);
+    return sample((cursor - 1 + fraction) / resolution);
+  });
 }
 
 // Image placement is independent of the preview size and shared with MP4 rendering.
@@ -140,15 +169,9 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
   ctx.lineCap = 'round';
-  for (let i = 0; i < count; i++) {
+  for (const point of spectrumSamples(shape, radius, count, settings.bars, levels, settings.rotation, scale)) {
+    const { index, level, length } = point;
     const bands = settings.bars / 2;
-    const position = (i + .5) / count;
-    const sideIndex = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * settings.bars - .5));
-    const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
-    const first = Math.floor(index), fraction = index - first;
-    const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
-    const point = spectrumPoint(shape, radius, (i + .5) / count, 8 * scale);
-    const length = (3 + Math.pow(level, 1.35) * point.cornerGain * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / bands);
     if (settings.style === 'wave') {
       wave.push({ x: x + point.x + point.nx * length, y: y + point.y + point.ny * length, color, level });
