@@ -244,19 +244,24 @@ test('offset polygon path covers corners with continuous normals and uniform spe
   }
 });
 
-test('expanded polygon bar tips stay evenly spaced and mirrored without suppressing corners', () => {
+test('polygon bars keep corner clearance and full tip response during strong reactions', () => {
   for (const shape of ['square', 'triangle']) {
     for (const energy of [0, .5, 1]) {
       const points = spectrumSamples(shape, 115, 128, 128, new Float32Array(64).fill(energy), 90, 1);
+      const distanceToBar = (x, y, p) => {
+        const dx = p.tipX - p.x, dy = p.tipY - p.y;
+        const t = Math.max(0, Math.min(1, ((x - p.x) * dx + (y - p.y) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(x - p.x - t * dx, y - p.y - t * dy);
+      };
       const gaps = points.map((point, i) => {
         const next = points[(i + 1) % points.length];
         const mirror = points[points.length - i - 1];
-        assert.ok(Math.abs(point.tipX + mirror.tipX) < 1e-7);
-        assert.ok(Math.abs(point.tipY - mirror.tipY) < 1e-7);
-        assert.ok(Math.abs(point.length - (3 + energy ** 1.35 * 67)) < 1e-6);
-        return Math.hypot(point.tipX - next.tipX, point.tipY - next.tipY);
+        assert.ok(Math.abs(point.x + mirror.x) < 1e-7);
+        assert.ok(Math.abs(point.y - mirror.y) < 1e-7);
+        assert.ok(Math.abs(point.fullLength - (3 + energy ** 1.35 * 67)) < 1e-6);
+        return Math.min(distanceToBar(point.x, point.y, next), distanceToBar(point.tipX, point.tipY, next), distanceToBar(next.x, next.y, point), distanceToBar(next.tipX, next.tipY, point));
       });
-      assert.ok(Math.max(...gaps) / Math.min(...gaps) < 1.04);
+      assert.ok(Math.max(...gaps) / Math.min(...gaps) < 1.2);
     }
   }
 });

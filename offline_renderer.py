@@ -111,7 +111,7 @@ def spectrum_point(shape, radius, progress, offset):
     return x + nx * offset, y + ny * offset, nx, ny
 
 
-def spectrum_samples(shape, radius, count, bars, levels, rotation, scale):
+def spectrum_samples(shape, radius, count, bars, levels, rotation, scale, style='bars'):
     bands = bars // 2
     reference_length = (3 + float(np.mean(levels ** 1.35)) * 67) * scale
     def sample(position):
@@ -125,7 +125,19 @@ def spectrum_samples(shape, radius, count, bars, levels, rotation, scale):
         py -= ny * reference_length
         length = (3 + level ** 1.35 * 67) * scale
         return px, py, nx, ny, index, level, length
-    return [sample((i + .5) / count) for i in range(count)]
+    points = [sample((i + .5) / count) for i in range(count)]
+    if style == 'bars' and shape in ('square', 'triangle'):
+        tips = [(p[0] + p[2] * p[6], p[1] + p[3] * p[6]) for p in points]
+        tip_gaps = [math.dist(p, tips[(i + 1) % count]) for i, p in enumerate(tips)]
+        target = sum(tip_gaps) / count * .85
+        trimmed = []
+        for i, p in enumerate(points):
+            root_gap = min(math.dist(p[:2], points[(i - 1) % count][:2]), math.dist(p[:2], points[(i + 1) % count][:2]))
+            tip_gap = min(tip_gaps[i], tip_gaps[(i - 1) % count])
+            trim = p[6] * max(0, min(.95, (target - root_gap) / max(.001, tip_gap - root_gap)))
+            trimmed.append((p[0] + p[2] * trim, p[1] + p[3] * trim, *p[2:6], p[6] - trim))
+        points = trimmed
+    return points
 
 
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
@@ -257,7 +269,10 @@ class StudioRenderer:
         levels = smooth_spectrum(self.levels, s['smoothing'])
         wave = []
         count = max(512, s['bars']) if s['style'] == 'wave' else s['bars']
-        for px, py, nx, ny, idx, level, length in spectrum_samples(s['shape'], radius, count, s['bars'], levels, s['rotation'], scale):
+        points = spectrum_samples(s['shape'], radius, count, s['bars'], levels, s['rotation'], scale, s['style'])
+        min_gap = min(math.hypot(p[0] - points[(i + 1) % count][0], p[1] - points[(i + 1) % count][1]) for i, p in enumerate(points))
+        bar_width = max(1, round(min(2.2 * scale, min_gap * .45))) if s['shape'] != 'circle' else max(1, round(2.2 * scale))
+        for px, py, nx, ny, idx, level, length in points:
             start, end = 0, length
             a = (round(center[0] + px + nx * start), round(center[1] + py + ny * start))
             b = (round(center[0] + px + nx * end), round(center[1] + py + ny * end))
@@ -266,7 +281,7 @@ class StudioRenderer:
             if s['style'] == 'wave':
                 wave.append((np.array([center[0] + px + nx * end, center[1] + py + ny * end]), color))
                 continue
-            cv2.line(image, a, b, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
+            cv2.line(image, a, b, color, bar_width, cv2.LINE_AA)
             if glow is not None:
                 cv2.line(glow, a, b, color, max(1, round(3 * scale)), cv2.LINE_AA)
         for i, (point, color) in enumerate(wave):

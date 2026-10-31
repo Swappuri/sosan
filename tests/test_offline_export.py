@@ -31,19 +31,24 @@ class OfflineExportTests(unittest.TestCase):
                 previous = point
             self.assertLess(max(distances) / min(distances), 1.001)
 
-    def test_expanded_polygon_tips_are_evenly_spaced_and_reactive(self):
+    def test_polygon_corner_clearance_during_strong_reactions(self):
         for shape in ('square', 'triangle'):
             for energy in (0, .5, 1):
                 points = spectrum_samples(shape, 115, 128, 128, np.ones(64) * energy, 90, 1)
                 tips = [(p[0] + p[2] * p[6], p[1] + p[3] * p[6]) for p in points]
+                def distance_to_bar(x, y, p):
+                    dx, dy = p[2] * p[6], p[3] * p[6]
+                    t = max(0, min(1, ((x - p[0]) * dx + (y - p[1]) * dy) / (dx * dx + dy * dy)))
+                    return math.hypot(x - p[0] - t * dx, y - p[1] - t * dy)
                 gaps = []
                 for i, point in enumerate(tips):
                     following, mirror = tips[(i + 1) % len(tips)], tips[-i - 1]
                     self.assertAlmostEqual(point[0], -mirror[0])
                     self.assertAlmostEqual(point[1], mirror[1])
-                    self.assertAlmostEqual(points[i][6], 3 + energy ** 1.35 * 67)
-                    gaps.append(math.hypot(point[0] - following[0], point[1] - following[1]))
-                self.assertLess(max(gaps) / min(gaps), 1.04)
+                    self.assertGreater(points[i][6], 0)
+                    p, n = points[i], points[(i + 1) % len(points)]
+                    gaps.append(min(distance_to_bar(*p[:2], n), distance_to_bar(*point, n), distance_to_bar(*n[:2], p), distance_to_bar(*following, p)))
+                self.assertLess(max(gaps) / min(gaps), 1.2)
 
     def test_settings_validation(self):
         for invalid in ({'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):

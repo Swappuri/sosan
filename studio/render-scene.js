@@ -79,9 +79,9 @@ export function spectrumPoint(shape, radius, progress, offset) {
   return { x: x + nx * offset, y: y + ny * offset, nx, ny };
 }
 
-// Distribute normals around the expanded perimeter so corner gaps match edge
-// gaps without crowding extra bars into isolated frequency peaks.
-export function spectrumSamples(shape, radius, count, bars, levels, rotation, scale) {
+// Use the expanded contour for tip spacing, then trim converging inner ends
+// to keep visible clearance around corners without damping their audio response.
+export function spectrumSamples(shape, radius, count, bars, levels, rotation, scale, style = 'bars') {
   const bands = bars / 2;
   const referenceLength = (3 + levels.reduce((sum, value) => sum + Math.pow(value, 1.35), 0) / Math.max(1, levels.length) * 67) * scale;
   const sample = position => {
@@ -94,7 +94,19 @@ export function spectrumSamples(shape, radius, count, bars, levels, rotation, sc
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     return { ...point, index, level, length, tipX: point.x + point.nx * length, tipY: point.y + point.ny * length };
   };
-  return Array.from({ length: count }, (_, i) => sample((i + .5) / count));
+  const points = Array.from({ length: count }, (_, i) => sample((i + .5) / count));
+  if (style === 'bars' && (shape === 'square' || shape === 'triangle')) {
+    const tipGaps = points.map((p, i) => { const next = points[(i + 1) % count]; return Math.hypot(p.tipX - next.tipX, p.tipY - next.tipY); });
+    const target = tipGaps.reduce((a, b) => a + b, 0) / count * .85;
+    const trims = points.map((p, i) => {
+      const previous = points[(i + count - 1) % count], next = points[(i + 1) % count];
+      const rootGap = Math.min(Math.hypot(p.x - previous.x, p.y - previous.y), Math.hypot(p.x - next.x, p.y - next.y));
+      const tipGap = Math.min(tipGaps[i], tipGaps[(i + count - 1) % count]);
+      return Math.max(0, Math.min(.95, (target - rootGap) / Math.max(.001, tipGap - rootGap)));
+    });
+    points.forEach((p, i) => { const trim = p.length * trims[i]; p.fullLength = p.length; p.x += p.nx * trim; p.y += p.ny * trim; p.length -= trim; });
+  }
+  return points;
 }
 
 // Image placement is independent of the preview size and shared with MP4 rendering.
@@ -155,7 +167,10 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
   ctx.lineCap = 'round';
-  for (const point of spectrumSamples(shape, radius, count, settings.bars, levels, settings.rotation, scale)) {
+  const points = spectrumSamples(shape, radius, count, settings.bars, levels, settings.rotation, scale, settings.style);
+  const minGap = Math.min(...points.map((point, i) => { const next = points[(i + 1) % points.length]; return Math.hypot(point.x - next.x, point.y - next.y); }));
+  const barWidth = shape === 'circle' ? Math.max(1, 2.2 * scale) : Math.min(2.2 * scale, minGap * .45);
+  for (const point of points) {
     const { index, level, length } = point;
     const bands = settings.bars / 2;
     const color = blend(settings.primary, settings.secondary, index / bands);
@@ -163,7 +178,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
       wave.push({ x: x + point.x + point.nx * length, y: y + point.y + point.ny * length, color, level });
       continue;
     }
-    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
+    ctx.strokeStyle = color; ctx.lineWidth = barWidth;
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
     ctx.beginPath(); ctx.moveTo(x + point.x, y + point.y);
     ctx.lineTo(x + point.x + point.nx * length, y + point.y + point.ny * length); ctx.stroke();
