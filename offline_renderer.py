@@ -90,7 +90,7 @@ def perimeter_point(shape, radius, progress):
 
 def spectrum_point(shape, radius, progress, offset):
     if shape not in ('square', 'triangle'):
-        return perimeter_point(shape, radius + offset, progress)
+        return (*perimeter_point(shape, radius + offset, progress), 1)
     sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
     turn = math.tau / sides
     edge_length, arc_length = 2 * radius * math.sin(math.pi / sides), offset * turn
@@ -108,7 +108,9 @@ def spectrum_point(shape, radius, progress, offset):
         x += (math.cos(angle + turn) * radius - x) * t
         y += (math.sin(angle + turn) * radius - y) * t
     nx, ny = math.cos(normal), math.sin(normal)
-    return x + nx * offset, y + ny * offset, nx, ny
+    edge_distance = 0 if local < arc_length else min(local - arc_length, segment - local)
+    corner_gain = math.sin(min(1, edge_distance / (radius * .3)) * math.pi / 2) ** 2
+    return x + nx * offset, y + ny * offset, nx, ny, corner_gain
 
 
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
@@ -249,9 +251,9 @@ class StudioRenderer:
             first = math.floor(idx)
             fraction = idx - first
             level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
-            px, py, nx, ny = spectrum_point(s['shape'], radius, (i + .5) / count, 8 * scale)
+            px, py, nx, ny, corner_gain = spectrum_point(s['shape'], radius, (i + .5) / count, 8 * scale)
             start = 0
-            end = start + (3 + level ** 1.35 * 67) * scale
+            end = start + (3 + level ** 1.35 * corner_gain * 67) * scale
             a = (round(center[0] + px + nx * start), round(center[1] + py + ny * start))
             b = (round(center[0] + px + nx * end), round(center[1] + py + ny * end))
             ratio = idx / (s['bars'] / 2)

@@ -243,3 +243,20 @@ test('offset polygon path covers corners with continuous normals and uniform spe
     if (shape === 'triangle') assert.ok(Math.abs(spectrumPoint(shape, 115, 0, 8).y + 123) < 1e-8);
   }
 });
+
+test('polygon corner response tapers to zero while flat edges retain full response', () => {
+  for (const shape of ['square', 'triangle']) {
+    let quiet = 0, full = 0;
+    for (let i = 0; i < 1024; i++) {
+      const p = spectrumPoint(shape, 115, i / 1024, 8);
+      const mirror = spectrumPoint(shape, 115, 1 - i / 1024, 8);
+      assert.ok(p.cornerGain >= 0 && p.cornerGain <= 1);
+      assert.ok(Math.abs(p.cornerGain - mirror.cornerGain) < 1e-10);
+      if (p.cornerGain === 0) quiet++;
+      if (p.cornerGain === 1) full++;
+    }
+    assert.ok(quiet > 20);
+    assert.ok(full > 400);
+  }
+  assert.equal(spectrumPoint('circle', 115, 0, 8).cornerGain, 1);
+});

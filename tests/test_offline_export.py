@@ -31,6 +31,20 @@ class OfflineExportTests(unittest.TestCase):
                 previous = point
             self.assertLess(max(distances) / min(distances), 1.001)
 
+    def test_polygon_corner_response_keeps_vertices_quiet(self):
+        for shape in ('square', 'triangle'):
+            gains = []
+            for i in range(1024):
+                gain = spectrum_point(shape, 115, i / 1024, 8)[4]
+                mirror = spectrum_point(shape, 115, 1 - i / 1024, 8)[4]
+                self.assertAlmostEqual(gain, mirror)
+                self.assertGreaterEqual(gain, 0)
+                self.assertLessEqual(gain, 1)
+                gains.append(gain)
+            self.assertGreater(gains.count(0), 20)
+            self.assertGreater(gains.count(1), 400)
+        self.assertEqual(spectrum_point('circle', 115, 0, 8)[4], 1)
+
     def test_settings_validation(self):
         for invalid in ({'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):

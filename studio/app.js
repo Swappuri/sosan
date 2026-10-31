@@ -61,6 +61,18 @@ function syncSettingsAvailability() {
   $('reset').disabled = disabled;
   document.querySelector('[data-reset="audio"]').disabled = disabled;
 }
+function syncFileCards() {
+  $('audio-name').textContent = selectedFile?.name || (loading ? 'Loading audio…' : 'Add audio');
+  $('audio-name').title = selectedFile?.name || '';
+  $('audio-hint').textContent = selectedFile ? `${timeLabel(audio.duration)} · Click or drop to replace` : 'MP3, WAV · drop or browse';
+  $('audio-remove').hidden = !selectedFile;
+  $('audio-card').classList.toggle('has-file', !!selectedFile);
+  $('logo-name').textContent = logoFile?.name || 'Add logo';
+  $('logo-name').title = logoFile?.name || '';
+  $('logo-hint').textContent = logoFile ? 'Click to replace' : 'PNG, JPG, WebP';
+  $('logo-remove').hidden = !logoFile;
+  $('logo-card').classList.toggle('has-file', !!logoFile);
+}
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
@@ -71,6 +83,7 @@ async function loadSong(file) {
   loaded = false;
   syncSettingsAvailability();
   selectedFile = null;
+  syncFileCards();
   audio.pause();
   syncPlaybackState();
   $('elapsed').textContent = '0:00';
@@ -108,7 +121,7 @@ async function loadSong(file) {
     status('');
   } catch (error) {
     if (loadId === activeLoad) { loaded = false; $('empty-state').hidden = false; $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'Choose another MP3 or WAV'; status(error.message, true); }
-  } finally { if (loadId === activeLoad) { loading = false; syncPlaybackState(); syncSettingsAvailability(); } }
+  } finally { if (loadId === activeLoad) { loading = false; syncFileCards(); syncPlaybackState(); syncSettingsAvailability(); } }
 }
 async function togglePlay() {
   if (!loaded || loading) return;
@@ -170,7 +183,7 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
-  document.querySelectorAll('input[name="interior-detail"]').forEach(input => { input.checked = input.value === (settings.innerRing ? 'outline' : 'none'); });
+  $('innerRing').setAttribute('aria-pressed', String(settings.innerRing));
   for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
   }
@@ -191,7 +204,7 @@ for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = (
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
-document.querySelectorAll('input[name="interior-detail"]').forEach(input => { input.onchange = () => { if (input.checked) settings.innerRing = input.value === 'outline'; }; });
+$('innerRing').onclick = () => { settings.innerRing = !settings.innerRing; syncSettings(); };
 const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
@@ -235,6 +248,7 @@ function performReset(section) {
     if (section === 'export') resetExportSettings();
     if (section === 'spectrum') resetMotion();
   }
+  syncFileCards();
   syncSettings();
   status(section === 'all' ? 'All settings reset.' : `${resetSections[section].title} reset.`);
 }
@@ -251,8 +265,7 @@ function clearLogo() {
   logoLoadId++;
   logo?.close?.(); logo = null; logoFile = null;
   $('logo-placement').hidden = true;
-  $('logo-remove').hidden = true;
-  $('logo-name').textContent = ''; $('logo-name').hidden = true;
+  syncFileCards();
 }
 $('logo-file').onchange = async event => {
   const file = event.target.files[0]; event.target.value = '';
@@ -267,7 +280,7 @@ $('logo-file').onchange = async event => {
     const previous = logo;
     logo = image; logoFile = file;
     previous?.close?.();
-    $('logo-name').textContent = file.name; $('logo-name').hidden = false; $('logo-remove').hidden = false;
+    syncFileCards();
     resetLogoPlacement();
     $('logo-placement').hidden = false;
     status('Logo added.');
@@ -276,6 +289,7 @@ $('logo-file').onchange = async event => {
   }
 };
 $('logo-remove').onclick = clearLogo;
+$('audio-remove').onclick = () => performReset('audio');
 function resetLogoPlacement() {
   for (const key of ['logoFit', 'logoZoom', 'logoX', 'logoY']) settings[key] = defaults[key];
   syncSettings();

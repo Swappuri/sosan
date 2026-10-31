@@ -57,7 +57,7 @@ export function perimeterPoint(shape, radius, progress) {
 
 // Sample a rounded offset perimeter, including the full arc around every corner.
 export function spectrumPoint(shape, radius, progress, offset) {
-  if (shape !== 'square' && shape !== 'triangle') return perimeterPoint(shape, radius + offset, progress);
+  if (shape !== 'square' && shape !== 'triangle') return { ...perimeterPoint(shape, radius + offset, progress), cornerGain: 1 };
   const sides = shape === 'square' ? 4 : 3, turn = Math.PI * 2 / sides;
   const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
   const edgeLength = 2 * radius * Math.sin(Math.PI / sides), arcLength = offset * turn;
@@ -76,7 +76,11 @@ export function spectrumPoint(shape, radius, progress, offset) {
     x += (Math.cos(angle + turn) * radius - x) * t;
     y += (Math.sin(angle + turn) * radius - y) * t;
   }
-  return { x: x + nx * offset, y: y + ny * offset, nx, ny };
+  // Keep polygon vertices quiet: long edge-normal bars otherwise fan into spokes,
+  // and an equally large displacement around the tiny corner arc balloons the wave.
+  const edgeDistance = local < arcLength ? 0 : Math.min(local - arcLength, segment - local);
+  const cornerGain = Math.sin(Math.min(1, edgeDistance / (radius * .3)) * Math.PI / 2) ** 2;
+  return { x: x + nx * offset, y: y + ny * offset, nx, ny, cornerGain };
 }
 
 // Image placement is independent of the preview size and shared with MP4 rendering.
@@ -145,7 +149,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     const first = Math.floor(index), fraction = index - first;
     const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
     const point = spectrumPoint(shape, radius, (i + .5) / count, 8 * scale);
-    const length = (3 + Math.pow(level, 1.35) * 67) * scale;
+    const length = (3 + Math.pow(level, 1.35) * point.cornerGain * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / bands);
     if (settings.style === 'wave') {
       wave.push({ x: x + point.x + point.nx * length, y: y + point.y + point.ny * length, color, level });
