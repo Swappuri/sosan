@@ -189,13 +189,13 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 
 .decoration-button { margin-top: 8px; width: 100%; min-height: 36px; border: 1px solid #444; border-radius: 4px; background: var(--surface); color: var(--muted); font-size: 11px; }
 .decoration-button[aria-pressed=true] { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
-.file-card { display: flex; align-items: center; min-width: 0; min-height: 44px; border: 1px dashed #555; border-radius: 4px; background: var(--surface); }
+.file-card { display: flex; align-items: center; min-width: 0; min-height: 30px; height: 30px; border: 1px dashed #555; border-radius: 4px; background: var(--surface); }
 .file-card.has-file { border-style: solid; }
 .file-card:focus-within, .file-card:hover { border-color: var(--accent-border); }
-.file-card .dropzone, .file-upload { border: 0; background: transparent; flex: 1; min-width: 0; width: auto; height: auto; min-height: 44px; padding: 7px 10px; text-align: left; color: var(--text); }
-.file-copy { display: block; flex: 1; min-width: 0; }
-.file-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; }
-.file-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+.file-card .dropzone, .file-upload { border: 0; background: transparent; flex: 1; min-width: 0; width: auto; display: flex; align-items: center; height: 28px; min-height: 28px; padding: 4px 9px; text-align: left; color: var(--text); }
+.file-copy { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; }
+.file-copy strong { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; }
+.file-copy small { display: block; flex-shrink: 0; margin: 0; text-align: right; white-space: nowrap; color: var(--muted); font-size: 9px; }
 .file-remove { flex-shrink: 0; padding: 8px 10px; font-size: 10px; }
 .logo-row { margin-top: 8px; }
 .color-row label { padding: 6px 4px; font-size: 9px; }
@@ -204,9 +204,9 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .file-card.has-file .dropzone > span:first-child { display: none; }
 .file-card.has-file .file-copy { display: flex; align-items: center; }
 
-/* Loaded uploads share the 30px control rhythm used by text and fit buttons. */
-.file-card.has-file { min-height: 30px; height: 30px; border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
-.file-card.has-file .dropzone, .file-card.has-file .file-upload { min-height: 28px; height: 28px; padding: 4px 9px; color: var(--accent); }
+/* Selected uploads use the same dimensions as empty uploads. */
+.file-card.has-file { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+.file-card.has-file .dropzone, .file-card.has-file .file-upload { color: var(--accent); }
 .file-card.has-file .file-remove { padding: 4px 9px; color: var(--accent); }
 #logo-placement { margin-top: 8px; }
 .logo-fit-choices { margin-bottom: 12px; }
