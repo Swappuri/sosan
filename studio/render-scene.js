@@ -37,78 +37,6 @@ export function shapeRadius(shape, radius, angle) {
   return radius;
 }
 
-// Walk the actual perimeter at a constant speed; polygon bars use edge normals.
-export function perimeterPoint(shape, radius, progress) {
-  if (shape !== 'square' && shape !== 'triangle') {
-    const angle = progress * Math.PI * 2 - Math.PI / 2;
-    const nx = Math.cos(angle), ny = Math.sin(angle);
-    return { x: nx * radius, y: ny * radius, nx, ny };
-  }
-  const sides = shape === 'square' ? 4 : 3;
-  const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
-  const distance = ((progress * sides + (shape === 'square' ? .5 : 0)) % sides + sides) % sides;
-  const edge = Math.floor(distance), t = distance - edge;
-  const a = start + edge * Math.PI * 2 / sides, b = a + Math.PI * 2 / sides;
-  const ax = Math.cos(a) * radius, ay = Math.sin(a) * radius;
-  const dx = Math.cos(b) * radius - ax, dy = Math.sin(b) * radius - ay;
-  const length = Math.hypot(dx, dy);
-  return { x: ax + dx * t, y: ay + dy * t, nx: dy / length, ny: -dx / length };
-}
-
-// Sample a rounded offset perimeter, including the full arc around every corner.
-export function spectrumPoint(shape, radius, progress, offset) {
-  if (shape !== 'square' && shape !== 'triangle') return perimeterPoint(shape, radius + offset, progress);
-  const sides = shape === 'square' ? 4 : 3, turn = Math.PI * 2 / sides;
-  const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
-  const edgeLength = 2 * radius * Math.sin(Math.PI / sides), arcLength = offset * turn;
-  const segment = edgeLength + arcLength;
-  const origin = shape === 'square' ? arcLength + edgeLength / 2 : arcLength / 2;
-  const distance = ((progress * sides * segment + origin) % (sides * segment) + sides * segment) % (sides * segment);
-  const vertex = Math.floor(distance / segment), local = distance - vertex * segment;
-  const angle = start + vertex * turn;
-  let nx, ny, x = Math.cos(angle) * radius, y = Math.sin(angle) * radius;
-  if (local < arcLength) {
-    const normal = angle - turn / 2 + local / offset;
-    nx = Math.cos(normal); ny = Math.sin(normal);
-  } else {
-    const normal = angle + turn / 2, t = (local - arcLength) / edgeLength;
-    nx = Math.cos(normal); ny = Math.sin(normal);
-    x += (Math.cos(angle + turn) * radius - x) * t;
-    y += (Math.sin(angle + turn) * radius - y) * t;
-  }
-  return { x: x + nx * offset, y: y + ny * offset, nx, ny };
-}
-
-// Use the expanded contour for tip spacing, then trim converging inner ends
-// to keep visible clearance around corners without damping their audio response.
-export function spectrumSamples(shape, radius, count, bars, levels, rotation, scale, style = 'bars') {
-  const bands = bars / 2;
-  const referenceLength = (3 + levels.reduce((sum, value) => sum + Math.pow(value, 1.35), 0) / Math.max(1, levels.length) * 67) * scale;
-  const sample = position => {
-    const side = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * bars - .5));
-    const index = spectrumBandPosition(side, bands, rotation);
-    const first = Math.floor(index), fraction = index - first;
-    const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
-    const point = spectrumPoint(shape, radius, position, 8 * scale + referenceLength);
-    point.x -= point.nx * referenceLength; point.y -= point.ny * referenceLength;
-    const length = (3 + Math.pow(level, 1.35) * 67) * scale;
-    return { ...point, index, level, length, tipX: point.x + point.nx * length, tipY: point.y + point.ny * length };
-  };
-  const points = Array.from({ length: count }, (_, i) => sample((i + .5) / count));
-  if (style === 'bars' && (shape === 'square' || shape === 'triangle')) {
-    const tipGaps = points.map((p, i) => { const next = points[(i + 1) % count]; return Math.hypot(p.tipX - next.tipX, p.tipY - next.tipY); });
-    const target = tipGaps.reduce((a, b) => a + b, 0) / count * .85;
-    const trims = points.map((p, i) => {
-      const previous = points[(i + count - 1) % count], next = points[(i + 1) % count];
-      const rootGap = Math.min(Math.hypot(p.x - previous.x, p.y - previous.y), Math.hypot(p.x - next.x, p.y - next.y));
-      const tipGap = Math.min(tipGaps[i], tipGaps[(i + count - 1) % count]);
-      return Math.max(0, Math.min(.95, (target - rootGap) / Math.max(.001, tipGap - rootGap)));
-    });
-    points.forEach((p, i) => { const trim = p.length * trims[i]; p.fullLength = p.length; p.x += p.nx * trim; p.y += p.ny * trim; p.length -= trim; });
-  }
-  return points;
-}
-
 // Image placement is independent of the preview size and shared with MP4 rendering.
 export function logoPlacement(shape, radius, width, height, fit = 'cover', zoom = 100, offsetX = 0, offsetY = 0) {
   let factor, centerY = 0;
@@ -163,25 +91,29 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const radius = (settings.radius + pulse) * scale;
   const shape = settings.shape ?? 'circle';
   const contentRadius = radius * (shape === 'triangle' ? .5 : shape === 'square' ? Math.SQRT1_2 : 1);
-  const count = settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
+  const count = shape === 'circle' && settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
   ctx.lineCap = 'round';
-  const points = spectrumSamples(shape, radius, count, settings.bars, levels, settings.rotation, scale, settings.style);
-  const minGap = Math.min(...points.map((point, i) => { const next = points[(i + 1) % points.length]; return Math.hypot(point.x - next.x, point.y - next.y); }));
-  const barWidth = shape === 'circle' ? Math.max(1, 2.2 * scale) : Math.min(2.2 * scale, minGap * .45);
-  for (const point of points) {
-    const { index, level, length } = point;
+  for (let i = 0; i < count; i++) {
     const bands = settings.bars / 2;
+    const position = (i + .5) / count;
+    const sideIndex = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * settings.bars - .5));
+    const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
+    const first = Math.floor(index), fraction = index - first;
+    const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
+    const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
+    const boundary = shapeRadius(shape, radius, angle);
+    const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / bands);
     if (settings.style === 'wave') {
-      wave.push({ x: x + point.x + point.nx * length, y: y + point.y + point.ny * length, color, level });
+      wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level });
       continue;
     }
-    ctx.strokeStyle = color; ctx.lineWidth = barWidth;
+    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
-    ctx.beginPath(); ctx.moveTo(x + point.x, y + point.y);
-    ctx.lineTo(x + point.x + point.nx * length, y + point.y + point.ny * length); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale));
+    ctx.lineTo(x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)); ctx.stroke();
   }
   // Quadratic segments meet at shared midpoints for one continuous wavy outline.
   for (let i = 0; i < wave.length; i++) {

@@ -73,73 +73,6 @@ def shape_radius(shape, radius, angle):
     return radius
 
 
-def perimeter_point(shape, radius, progress):
-    if shape not in ('square', 'triangle'):
-        angle = progress * math.tau - math.pi / 2
-        nx, ny = math.cos(angle), math.sin(angle)
-        return nx * radius, ny * radius, nx, ny
-    sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
-    distance = (progress * sides + (.5 if shape == 'square' else 0)) % sides
-    edge, t = math.floor(distance), distance % 1
-    a, b = start + edge * math.tau / sides, start + (edge + 1) * math.tau / sides
-    ax, ay = math.cos(a) * radius, math.sin(a) * radius
-    dx, dy = math.cos(b) * radius - ax, math.sin(b) * radius - ay
-    length = math.hypot(dx, dy)
-    return ax + dx * t, ay + dy * t, dy / length, -dx / length
-
-
-def spectrum_point(shape, radius, progress, offset):
-    if shape not in ('square', 'triangle'):
-        return perimeter_point(shape, radius + offset, progress)
-    sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
-    turn = math.tau / sides
-    edge_length, arc_length = 2 * radius * math.sin(math.pi / sides), offset * turn
-    segment = edge_length + arc_length
-    origin = arc_length + edge_length / 2 if shape == 'square' else arc_length / 2
-    distance = (progress * sides * segment + origin) % (sides * segment)
-    vertex = math.floor(distance / segment)
-    local, angle = distance - vertex * segment, start + vertex * turn
-    x, y = math.cos(angle) * radius, math.sin(angle) * radius
-    if local < arc_length:
-        normal = angle - turn / 2 + local / offset
-    else:
-        normal = angle + turn / 2
-        t = (local - arc_length) / edge_length
-        x += (math.cos(angle + turn) * radius - x) * t
-        y += (math.sin(angle + turn) * radius - y) * t
-    nx, ny = math.cos(normal), math.sin(normal)
-    return x + nx * offset, y + ny * offset, nx, ny
-
-
-def spectrum_samples(shape, radius, count, bars, levels, rotation, scale, style='bars'):
-    bands = bars // 2
-    reference_length = (3 + float(np.mean(levels ** 1.35)) * 67) * scale
-    def sample(position):
-        side = max(0, min(bands - 1, (position if position < .5 else 1 - position) * bars - .5))
-        bass = rotation / 180 * (bands - 1)
-        index = abs(side - bass) / max(bass, bands - 1 - bass, 1) * (bands - 1)
-        first, fraction = math.floor(index), index % 1
-        level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
-        px, py, nx, ny = spectrum_point(shape, radius, position, 8 * scale + reference_length)
-        px -= nx * reference_length
-        py -= ny * reference_length
-        length = (3 + level ** 1.35 * 67) * scale
-        return px, py, nx, ny, index, level, length
-    points = [sample((i + .5) / count) for i in range(count)]
-    if style == 'bars' and shape in ('square', 'triangle'):
-        tips = [(p[0] + p[2] * p[6], p[1] + p[3] * p[6]) for p in points]
-        tip_gaps = [math.dist(p, tips[(i + 1) % count]) for i, p in enumerate(tips)]
-        target = sum(tip_gaps) / count * .85
-        trimmed = []
-        for i, p in enumerate(points):
-            root_gap = min(math.dist(p[:2], points[(i - 1) % count][:2]), math.dist(p[:2], points[(i + 1) % count][:2]))
-            tip_gap = min(tip_gaps[i], tip_gaps[(i - 1) % count])
-            trim = p[6] * max(0, min(.95, (target - root_gap) / max(.001, tip_gap - root_gap)))
-            trimmed.append((p[0] + p[2] * trim, p[1] + p[3] * trim, *p[2:6], p[6] - trim))
-        points = trimmed
-    return points
-
-
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
     center_y = 0
     if fit == 'contain':
@@ -268,20 +201,27 @@ class StudioRenderer:
         glow = np.zeros_like(image) if s['glow'] else None
         levels = smooth_spectrum(self.levels, s['smoothing'])
         wave = []
-        count = max(512, s['bars']) if s['style'] == 'wave' else s['bars']
-        points = spectrum_samples(s['shape'], radius, count, s['bars'], levels, s['rotation'], scale, s['style'])
-        min_gap = min(math.hypot(p[0] - points[(i + 1) % count][0], p[1] - points[(i + 1) % count][1]) for i, p in enumerate(points))
-        bar_width = max(1, round(min(2.2 * scale, min_gap * .45))) if s['shape'] != 'circle' else max(1, round(2.2 * scale))
-        for px, py, nx, ny, idx, level, length in points:
-            start, end = 0, length
-            a = (round(center[0] + px + nx * start), round(center[1] + py + ny * start))
-            b = (round(center[0] + px + nx * end), round(center[1] + py + ny * end))
+        count = max(512, s['bars']) if s['shape'] == 'circle' and s['style'] == 'wave' else s['bars']
+        for i in range(count):
+            bands = s['bars'] // 2
+            position = (i + .5) / count
+            side_index = max(0, min(bands - 1, (position if position < .5 else 1 - position) * s['bars'] - .5))
+            bass_position = s['rotation'] / 180 * (bands - 1)
+            idx = abs(side_index - bass_position) / max(bass_position, bands - 1 - bass_position, 1) * (bands - 1)
+            first = math.floor(idx)
+            fraction = idx - first
+            level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
+            angle = (i + .5) / count * math.tau - math.pi / 2
+            start = float(shape_radius(s['shape'], radius, angle)) + 8 * scale
+            end = start + (3 + level ** 1.35 * 67) * scale
+            a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))
+            b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
             ratio = idx / (s['bars'] / 2)
             color = tuple(int(c) for c in self.primary * (1 - ratio) + self.secondary * ratio)
             if s['style'] == 'wave':
-                wave.append((np.array([center[0] + px + nx * end, center[1] + py + ny * end]), color))
+                wave.append((np.array([center[0] + math.cos(angle) * end, center[1] + math.sin(angle) * end]), color))
                 continue
-            cv2.line(image, a, b, color, bar_width, cv2.LINE_AA)
+            cv2.line(image, a, b, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
             if glow is not None:
                 cv2.line(glow, a, b, color, max(1, round(3 * scale)), cv2.LINE_AA)
         for i, (point, color) in enumerate(wave):

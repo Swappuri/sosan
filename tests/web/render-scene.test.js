@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, perimeterPoint, spectrumPoint, spectrumSamples } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -192,24 +192,6 @@ test('logo fills to the main outline with no inset clip or inner rim', () => {
 });
 
 
-test('polygon samples have uniform edge spacing, perpendicular normals, and mirrored positions', () => {
-  for (const shape of ['square', 'triangle']) {
-    const count = 128, radius = 115, sides = shape === 'square' ? 4 : 3;
-    const step = 2 * sides * radius * Math.sin(Math.PI / sides) / count;
-    const points = Array.from({ length: count }, (_, i) => perimeterPoint(shape, radius, (i + .5) / count));
-    for (let i = 0; i < count; i++) {
-      const a = points[i], b = points[(i + 1) % count], mirror = points[count - i - 1];
-      assert.ok(Math.abs(Math.hypot(a.nx, a.ny) - 1) < 1e-8);
-      assert.ok(Math.abs(a.x + mirror.x) < 1e-8 && Math.abs(a.y - mirror.y) < 1e-8);
-      assert.ok(Math.abs(a.nx + mirror.nx) < 1e-8 && Math.abs(a.ny - mirror.ny) < 1e-8);
-      if (Math.hypot(a.nx - b.nx, a.ny - b.ny) < 1e-8) {
-        assert.ok(Math.abs(Math.hypot(b.x - a.x, b.y - a.y) - step) < 1e-8);
-        assert.ok(Math.abs((b.x - a.x) * a.nx + (b.y - a.y) * a.ny) < 1e-8);
-      }
-    }
-  }
-});
-
 test('inner fill spans to the outline and optional inner ring overlays logos', () => {
   for (const innerRing of [false, true]) {
     const canvas = canvasContext(), radii = [], fills = [], events = [];
@@ -225,54 +207,34 @@ test('inner fill spans to the outline and optional inner ring overlays logos', (
 });
 
 
-test('offset polygon path covers corners with continuous normals and uniform speed', () => {
-  for (const shape of ['square', 'triangle']) {
-    let previous = spectrumPoint(shape, 115, 0, 8);
-    const distances = [];
-    for (let i = 1; i <= 4096; i++) {
-      const point = spectrumPoint(shape, 115, i / 4096, 8);
-      const mirror = spectrumPoint(shape, 115, 1 - i / 4096, 8);
-      distances.push(Math.hypot(point.x - previous.x, point.y - previous.y));
-      assert.ok(Math.hypot(point.nx - previous.nx, point.ny - previous.ny) < .04);
-      assert.ok(Math.abs(point.x + mirror.x) < 1e-8);
-      assert.ok(Math.abs(point.y - mirror.y) < 1e-8);
-      previous = point;
-    }
-    assert.ok(Math.max(...distances) / Math.min(...distances) < 1.001);
-    // The top corner of the triangle has an outward-facing sample, not an empty gap.
-    if (shape === 'triangle') assert.ok(Math.abs(spectrumPoint(shape, 115, 0, 8).y + 123) < 1e-8);
-  }
-});
-
-test('polygon bars keep corner clearance and full tip response during strong reactions', () => {
-  for (const shape of ['square', 'triangle']) {
-    for (const energy of [0, .5, 1]) {
-      const points = spectrumSamples(shape, 115, 128, 128, new Float32Array(64).fill(energy), 90, 1);
-      const distanceToBar = (x, y, p) => {
-        const dx = p.tipX - p.x, dy = p.tipY - p.y;
-        const t = Math.max(0, Math.min(1, ((x - p.x) * dx + (y - p.y) * dy) / (dx * dx + dy * dy)));
-        return Math.hypot(x - p.x - t * dx, y - p.y - t * dy);
-      };
-      const gaps = points.map((point, i) => {
-        const next = points[(i + 1) % points.length];
-        const mirror = points[points.length - i - 1];
-        assert.ok(Math.abs(point.x + mirror.x) < 1e-7);
-        assert.ok(Math.abs(point.y - mirror.y) < 1e-7);
-        assert.ok(Math.abs(point.fullLength - (3 + energy ** 1.35 * 67)) < 1e-6);
-        return Math.min(distanceToBar(point.x, point.y, next), distanceToBar(point.tipX, point.tipY, next), distanceToBar(next.x, next.y, point), distanceToBar(next.tipX, next.tipY, point));
-      });
-      assert.ok(Math.max(...gaps) / Math.min(...gaps) < 1.2);
+test('polygon bars use the original radial geometry at every energy level', () => {
+  for (const shape of ['square', 'triangle']) for (const energy of [0, .5, 1]) {
+    const canvas = canvasContext(), starts = [], ends = [];
+    canvas.ctx.moveTo = (...p) => starts.push(p);
+    canvas.ctx.lineTo = (...p) => ends.push(p);
+    renderScene(canvas.ctx, 854, 480, { ...settings, shape, style: 'bars', particles: false, pulse: false }, { ...motion, levels: new Float32Array(64).fill(energy) }, 0, null, '');
+    for (let i = 0; i < settings.bars; i++) {
+      const angle = (i + .5) / settings.bars * Math.PI * 2 - Math.PI / 2;
+      const reach = shapeRadius(shape, settings.radius, angle) + 8;
+      const length = 3 + energy ** 1.35 * 67;
+      assert.ok(Math.abs(starts[i][0] - (427 + Math.cos(angle) * reach)) < 1e-8);
+      assert.ok(Math.abs(starts[i][1] - (240 + Math.sin(angle) * reach)) < 1e-8);
+      assert.ok(Math.abs(Math.hypot(ends[i][0] - starts[i][0], ends[i][1] - starts[i][1]) - length) < 1e-6);
     }
   }
 });
 
-
-test('isolated peaks do not collect extra bars or change frequency assignments', () => {
+test('polygon waves follow the original radial control points and band count', () => {
   for (const shape of ['square', 'triangle']) {
-    const quiet = spectrumSamples(shape, 115, 128, 128, new Float32Array(64), 90, 1);
-    const levels = new Float32Array(64); levels[30] = 1;
-    const peak = spectrumSamples(shape, 115, 128, 128, levels, 90, 1);
-    assert.deepEqual(peak.map(p => p.index), quiet.map(p => p.index));
-    assert.ok(peak.filter(p => p.level > 0).length <= 8);
+    const canvas = canvasContext(), curves = [];
+    canvas.ctx.quadraticCurveTo = (...p) => curves.push(p);
+    renderScene(canvas.ctx, 854, 480, { ...settings, shape, style: 'wave', particles: false, pulse: false }, { ...motion, levels: new Float32Array(64).fill(1) }, 0, null, '');
+    assert.equal(curves.length, settings.bars);
+    curves.forEach(([x, y], i) => {
+      const angle = (i + .5) / settings.bars * Math.PI * 2 - Math.PI / 2;
+      const reach = shapeRadius(shape, settings.radius, angle) + 8 + 70;
+      assert.ok(Math.abs(x - (427 + Math.cos(angle) * reach)) < 1e-8);
+      assert.ok(Math.abs(y - (240 + Math.sin(angle) * reach)) < 1e-8);
+    });
   }
 });
