@@ -79,8 +79,8 @@ export function spectrumPoint(shape, radius, progress, offset) {
   return { x: x + nx * offset, y: y + ny * offset, nx, ny };
 }
 
-// Space polygon samples along the actual animated outer contour, rather than
-// the short inner corner arcs whose diverging normals leave wide gaps at the tips.
+// Distribute normals around the expanded perimeter so corner gaps match edge
+// gaps without crowding extra bars into isolated frequency peaks.
 export function spectrumSamples(shape, radius, count, bars, levels, rotation, scale) {
   const bands = bars / 2;
   const referenceLength = (3 + levels.reduce((sum, value) => sum + Math.pow(value, 1.35), 0) / Math.max(1, levels.length) * 67) * scale;
@@ -94,21 +94,7 @@ export function spectrumSamples(shape, radius, count, bars, levels, rotation, sc
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     return { ...point, index, level, length, tipX: point.x + point.nx * length, tipY: point.y + point.ny * length };
   };
-  if (shape !== 'square' && shape !== 'triangle') return Array.from({ length: count }, (_, i) => sample((i + .5) / count));
-  const resolution = 2048, cumulative = new Float64Array(resolution + 1);
-  let previous = sample(0);
-  for (let i = 1; i <= resolution; i++) {
-    const point = sample(i / resolution);
-    cumulative[i] = cumulative[i - 1] + Math.hypot(point.tipX - previous.tipX, point.tipY - previous.tipY);
-    previous = point;
-  }
-  let cursor = 1;
-  return Array.from({ length: count }, (_, i) => {
-    const distance = (i + .5) / count * cumulative[resolution];
-    while (cursor < resolution && cumulative[cursor] < distance) cursor++;
-    const fraction = (distance - cumulative[cursor - 1]) / (cumulative[cursor] - cumulative[cursor - 1] || 1);
-    return sample((cursor - 1 + fraction) / resolution);
-  });
+  return Array.from({ length: count }, (_, i) => sample((i + .5) / count));
 }
 
 // Image placement is independent of the preview size and shared with MP4 rendering.

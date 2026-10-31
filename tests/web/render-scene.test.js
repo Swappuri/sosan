@@ -260,3 +260,14 @@ test('expanded polygon bar tips stay evenly spaced and mirrored without suppress
     }
   }
 });
+
+
+test('isolated peaks do not collect extra bars or change frequency assignments', () => {
+  for (const shape of ['square', 'triangle']) {
+    const quiet = spectrumSamples(shape, 115, 128, 128, new Float32Array(64), 90, 1);
+    const levels = new Float32Array(64); levels[30] = 1;
+    const peak = spectrumSamples(shape, 115, 128, 128, levels, 90, 1);
+    assert.deepEqual(peak.map(p => p.index), quiet.map(p => p.index));
+    assert.ok(peak.filter(p => p.level > 0).length <= 8);
+  }
+});

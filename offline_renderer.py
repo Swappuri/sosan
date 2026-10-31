@@ -125,23 +125,7 @@ def spectrum_samples(shape, radius, count, bars, levels, rotation, scale):
         py -= ny * reference_length
         length = (3 + level ** 1.35 * 67) * scale
         return px, py, nx, ny, index, level, length
-    if shape not in ('square', 'triangle'):
-        return [sample((i + .5) / count) for i in range(count)]
-    resolution = 2048
-    cumulative = [0.0]
-    previous = sample(0)
-    for i in range(1, resolution + 1):
-        point = sample(i / resolution)
-        cumulative.append(cumulative[-1] + math.hypot(point[0] + point[2] * point[6] - previous[0] - previous[2] * previous[6], point[1] + point[3] * point[6] - previous[1] - previous[3] * previous[6]))
-        previous = point
-    result, cursor = [], 1
-    for i in range(count):
-        distance = (i + .5) / count * cumulative[-1]
-        while cursor < resolution and cumulative[cursor] < distance:
-            cursor += 1
-        fraction = (distance - cumulative[cursor - 1]) / (cumulative[cursor] - cumulative[cursor - 1] or 1)
-        result.append(sample((cursor - 1 + fraction) / resolution))
-    return result
+    return [sample((i + .5) / count) for i in range(count)]
 
 
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
