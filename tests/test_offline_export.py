@@ -11,12 +11,26 @@ from unittest.mock import patch
 import numpy as np
 import soundfile as sf
 
-from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement, perimeter_point
+from offline_renderer import analyze_track, StudioRenderer, smooth_spectrum, shape_radius, logo_placement, perimeter_point, spectrum_point
 from render_settings import validate_settings
 from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
+    def test_rounded_polygon_corners_are_continuous_and_mirrored(self):
+        for shape in ('square', 'triangle'):
+            previous = spectrum_point(shape, 115, 0, 8)
+            distances = []
+            for i in range(1, 4097):
+                point = spectrum_point(shape, 115, i / 4096, 8)
+                mirror = spectrum_point(shape, 115, 1 - i / 4096, 8)
+                distances.append(math.hypot(point[0] - previous[0], point[1] - previous[1]))
+                self.assertLess(math.hypot(point[2] - previous[2], point[3] - previous[3]), .04)
+                self.assertAlmostEqual(point[0], -mirror[0])
+                self.assertAlmostEqual(point[1], mirror[1])
+                previous = point
+            self.assertLess(max(distances) / min(distances), 1.001)
+
     def test_settings_validation(self):
         for invalid in ({'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
@@ -55,9 +69,9 @@ class OfflineExportTests(unittest.TestCase):
         with patch('offline_renderer.cv2.line') as bars, patch('offline_renderer.cv2.polylines') as curves:
             StudioRenderer(settings).frame(0, np.ones(64), 0, 0)
         bars.assert_not_called()
-        self.assertEqual(curves.call_count, settings['bars'])
+        self.assertEqual(curves.call_count, 512)
         for i, segment in enumerate(curves.call_args_list):
-            following = curves.call_args_list[(i + 1) % settings['bars']]
+            following = curves.call_args_list[(i + 1) % curves.call_count]
             np.testing.assert_array_equal(segment.args[1][0][-1], following.args[1][0][0])
 
     def test_shape_styles_render_distinct_geometry(self):

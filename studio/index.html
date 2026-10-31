@@ -62,14 +62,17 @@
             <label class="style-choice"><input class="sr-only" type="radio" name="shape" value="square"><span><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M4 2h16v16H4z"/></svg>Square</span></label>
             <label class="style-choice"><input class="sr-only" type="radio" name="shape" value="triangle"><span><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M12 2 22 18H2z"/></svg>Triangle</span></label>
           </div>
-          <label class="toggle-row inner-ring-control">Inner ring <input id="innerRing" type="checkbox" role="switch" checked></label>
+          <div class="decoration-choices style-choices" role="radiogroup" aria-label="Interior detail">
+            <label class="style-choice"><input class="sr-only" type="radio" name="interior-detail" value="none"><span>None</span></label>
+            <label class="style-choice"><input class="sr-only" type="radio" name="interior-detail" value="outline" checked><span>Inset outline</span></label>
+          </div>
         </fieldset>
         <fieldset class="control-section colors-settings" disabled>
           <div class="section-heading"><h3>Colors</h3><button class="text-button" data-reset="colors" aria-label="Reset colors">Reset</button></div>
           <div class="color-row">
             <label for="primary-color">Primary<input id="primary-color" type="color" value="#a7f36b"><output id="primary-color-value" for="primary-color">#A7F36B</output></label>
             <label for="secondary-color">Secondary<input id="secondary-color" type="color" value="#5de5ec"><output id="secondary-color-value" for="secondary-color">#5DE5EC</output></label>
-            <label for="innerFill-color">Inner fill<input id="innerFill-color" type="color" value="#0b1114"><output id="innerFill-color-value" for="innerFill-color">#0B1114</output></label>
+            <label for="innerFill-color">Surface<input id="innerFill-color" type="color" value="#0b1114"><output id="innerFill-color-value" for="innerFill-color">#0B1114</output></label>
             <label for="background-color">Background<input id="background-color" type="color" value="#0b1114"><output id="background-color-value" for="background-color">#0B1114</output></label>
           </div>
         </fieldset>

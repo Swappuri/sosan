@@ -88,6 +88,29 @@ def perimeter_point(shape, radius, progress):
     return ax + dx * t, ay + dy * t, dy / length, -dx / length
 
 
+def spectrum_point(shape, radius, progress, offset):
+    if shape not in ('square', 'triangle'):
+        return perimeter_point(shape, radius + offset, progress)
+    sides, start = (4, -math.pi * .75) if shape == 'square' else (3, -math.pi / 2)
+    turn = math.tau / sides
+    edge_length, arc_length = 2 * radius * math.sin(math.pi / sides), offset * turn
+    segment = edge_length + arc_length
+    origin = arc_length + edge_length / 2 if shape == 'square' else arc_length / 2
+    distance = (progress * sides * segment + origin) % (sides * segment)
+    vertex = math.floor(distance / segment)
+    local, angle = distance - vertex * segment, start + vertex * turn
+    x, y = math.cos(angle) * radius, math.sin(angle) * radius
+    if local < arc_length:
+        normal = angle - turn / 2 + local / offset
+    else:
+        normal = angle + turn / 2
+        t = (local - arc_length) / edge_length
+        x += (math.cos(angle + turn) * radius - x) * t
+        y += (math.sin(angle + turn) * radius - y) * t
+    nx, ny = math.cos(normal), math.sin(normal)
+    return x + nx * offset, y + ny * offset, nx, ny
+
+
 def logo_placement(shape, radius, width, height, fit='cover', zoom=100, offset_x=0, offset_y=0):
     center_y = 0
     if fit == 'contain':
@@ -216,16 +239,18 @@ class StudioRenderer:
         glow = np.zeros_like(image) if s['glow'] else None
         levels = smooth_spectrum(self.levels, s['smoothing'])
         wave = []
-        for i in range(s['bars']):
+        count = max(512, s['bars']) if s['style'] == 'wave' else s['bars']
+        for i in range(count):
             bands = s['bars'] // 2
-            side_index = i if i < bands else s['bars'] - i - 1
+            position = (i + .5) / count
+            side_index = max(0, min(bands - 1, (position if position < .5 else 1 - position) * s['bars'] - .5))
             bass_position = s['rotation'] / 180 * (bands - 1)
             idx = abs(side_index - bass_position) / max(bass_position, bands - 1 - bass_position, 1) * (bands - 1)
             first = math.floor(idx)
             fraction = idx - first
             level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
-            px, py, nx, ny = perimeter_point(s['shape'], radius, (i + .5) / s['bars'])
-            start = 8 * scale
+            px, py, nx, ny = spectrum_point(s['shape'], radius, (i + .5) / count, 8 * scale)
+            start = 0
             end = start + (3 + level ** 1.35 * 67) * scale
             a = (round(center[0] + px + nx * start), round(center[1] + py + ny * start))
             b = (round(center[0] + px + nx * end), round(center[1] + py + ny * end))

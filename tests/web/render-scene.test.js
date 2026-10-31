@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, perimeterPoint } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, perimeterPoint, spectrumPoint } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -121,7 +121,7 @@ test('wave style joins every segment, closes the loop, and stays mirrored', () =
   canvas.ctx.quadraticCurveTo = (...p) => curves.push(p);
   canvas.ctx.lineTo = (...p) => lines.push(p);
   renderScene(canvas.ctx, 1280, 720, { ...settings, rotation: 70, style: 'wave' }, motion, 1, null, 'Title');
-  assert.equal(curves.length, settings.bars);
+  assert.equal(curves.length, 512);
   assert.equal(lines.length, 0);
   for (let i = 0; i < curves.length; i++) {
     assert.deepEqual(curves[i].slice(2), starts[(i + 1) % curves.length]);
@@ -221,5 +221,25 @@ test('inner fill spans to the outline and optional inner ring overlays logos', (
     assert.deepEqual(fills[0], ['#123456', settings.radius]);
     assert.equal(radii.includes(settings.radius - 5), innerRing);
     assert.deepEqual(events.slice(-(innerRing ? 3 : 2)), innerRing ? ['logo', 'ring', 'ring'] : ['logo', 'ring']);
+  }
+});
+
+
+test('offset polygon path covers corners with continuous normals and uniform speed', () => {
+  for (const shape of ['square', 'triangle']) {
+    let previous = spectrumPoint(shape, 115, 0, 8);
+    const distances = [];
+    for (let i = 1; i <= 4096; i++) {
+      const point = spectrumPoint(shape, 115, i / 4096, 8);
+      const mirror = spectrumPoint(shape, 115, 1 - i / 4096, 8);
+      distances.push(Math.hypot(point.x - previous.x, point.y - previous.y));
+      assert.ok(Math.hypot(point.nx - previous.nx, point.ny - previous.ny) < .04);
+      assert.ok(Math.abs(point.x + mirror.x) < 1e-8);
+      assert.ok(Math.abs(point.y - mirror.y) < 1e-8);
+      previous = point;
+    }
+    assert.ok(Math.max(...distances) / Math.min(...distances) < 1.001);
+    // The top corner of the triangle has an outward-facing sample, not an empty gap.
+    if (shape === 'triangle') assert.ok(Math.abs(spectrumPoint(shape, 115, 0, 8).y + 123) < 1e-8);
   }
 });

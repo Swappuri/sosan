@@ -170,11 +170,12 @@ function syncSettings() {
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
+  document.querySelectorAll('input[name="interior-detail"]').forEach(input => { input.checked = input.value === (settings.innerRing ? 'outline' : 'none'); });
   for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
   }
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).value = settings[key];
-  for (const key of ['glow', 'particles', 'pulse', 'flashes', 'innerRing']) $(key).checked = settings[key];
+  for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
   for (const key of ['logoZoom', 'logoX', 'logoY']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
@@ -186,12 +187,13 @@ function syncSettings() {
 }
 for (const key of ['primary', 'secondary', 'innerFill', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
-for (const key of ['glow', 'particles', 'pulse', 'flashes', 'innerRing']) $(key).onchange = () => { settings[key] = $(key).checked; };
+for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
+document.querySelectorAll('input[name="interior-detail"]').forEach(input => { input.onchange = () => { if (input.checked) settings.innerRing = input.value === 'outline'; }; });
 const resetSections = {
-  appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inner ring?' },
+  appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
   effects: { title: 'Effects', keys: ['glow', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },

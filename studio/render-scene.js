@@ -55,6 +55,30 @@ export function perimeterPoint(shape, radius, progress) {
   return { x: ax + dx * t, y: ay + dy * t, nx: dy / length, ny: -dx / length };
 }
 
+// Sample a rounded offset perimeter, including the full arc around every corner.
+export function spectrumPoint(shape, radius, progress, offset) {
+  if (shape !== 'square' && shape !== 'triangle') return perimeterPoint(shape, radius + offset, progress);
+  const sides = shape === 'square' ? 4 : 3, turn = Math.PI * 2 / sides;
+  const start = shape === 'square' ? -Math.PI * .75 : -Math.PI / 2;
+  const edgeLength = 2 * radius * Math.sin(Math.PI / sides), arcLength = offset * turn;
+  const segment = edgeLength + arcLength;
+  const origin = shape === 'square' ? arcLength + edgeLength / 2 : arcLength / 2;
+  const distance = ((progress * sides * segment + origin) % (sides * segment) + sides * segment) % (sides * segment);
+  const vertex = Math.floor(distance / segment), local = distance - vertex * segment;
+  const angle = start + vertex * turn;
+  let nx, ny, x = Math.cos(angle) * radius, y = Math.sin(angle) * radius;
+  if (local < arcLength) {
+    const normal = angle - turn / 2 + local / offset;
+    nx = Math.cos(normal); ny = Math.sin(normal);
+  } else {
+    const normal = angle + turn / 2, t = (local - arcLength) / edgeLength;
+    nx = Math.cos(normal); ny = Math.sin(normal);
+    x += (Math.cos(angle + turn) * radius - x) * t;
+    y += (Math.sin(angle + turn) * radius - y) * t;
+  }
+  return { x: x + nx * offset, y: y + ny * offset, nx, ny };
+}
+
 // Image placement is independent of the preview size and shared with MP4 rendering.
 export function logoPlacement(shape, radius, width, height, fit = 'cover', zoom = 100, offsetX = 0, offsetY = 0) {
   let factor, centerY = 0;
@@ -109,27 +133,28 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const radius = (settings.radius + pulse) * scale;
   const shape = settings.shape ?? 'circle';
   const contentRadius = radius * (shape === 'triangle' ? .5 : shape === 'square' ? Math.SQRT1_2 : 1);
-  const count = settings.bars;
+  const count = settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
-    const bands = count / 2;
-    const sideIndex = i < bands ? i : count - i - 1;
+    const bands = settings.bars / 2;
+    const position = (i + .5) / count;
+    const sideIndex = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * settings.bars - .5));
     const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
     const first = Math.floor(index), fraction = index - first;
     const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
-    const point = perimeterPoint(shape, radius, (i + .5) / count);
+    const point = spectrumPoint(shape, radius, (i + .5) / count, 8 * scale);
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
-    const color = blend(settings.primary, settings.secondary, index / (count / 2));
+    const color = blend(settings.primary, settings.secondary, index / bands);
     if (settings.style === 'wave') {
-      wave.push({ x: x + point.x + point.nx * (8 * scale + length), y: y + point.y + point.ny * (8 * scale + length), color, level });
+      wave.push({ x: x + point.x + point.nx * length, y: y + point.y + point.ny * length, color, level });
       continue;
     }
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
     ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
-    ctx.beginPath(); ctx.moveTo(x + point.x + point.nx * 8 * scale, y + point.y + point.ny * 8 * scale);
-    ctx.lineTo(x + point.x + point.nx * (8 * scale + length), y + point.y + point.ny * (8 * scale + length)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + point.x, y + point.y);
+    ctx.lineTo(x + point.x + point.nx * length, y + point.y + point.ny * length); ctx.stroke();
   }
   // Quadratic segments meet at shared midpoints for one continuous wavy outline.
   for (let i = 0; i < wave.length; i++) {
