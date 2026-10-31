@@ -14,6 +14,7 @@ let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 let lastTime = 0;
 let logoLoadId = 0, previewError;
+let titleBeforeLogo;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
 let activeLoad = 0, exportPreparing = false;
 let statusTimer;
@@ -58,20 +59,25 @@ function syncPlaybackState() { syncPlaybackButton($('play'), audio, loaded && !l
 function syncSettingsAvailability() {
   const disabled = !loaded || loading;
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
+  $('title').disabled = disabled || !!logoFile;
   $('reset').disabled = disabled;
   document.querySelector('[data-reset="audio"]').disabled = disabled;
 }
 function syncFileCards() {
   $('audio-name').textContent = selectedFile?.name || (loading ? 'Loading audio…' : 'Add audio');
   $('audio-name').title = selectedFile?.name || '';
-  $('audio-hint').textContent = selectedFile ? `${timeLabel(audio.duration)} · Click or drop to replace` : 'MP3, WAV · drop or browse';
+  $('audio-hint').hidden = !!selectedFile;
   $('audio-remove').hidden = !selectedFile;
   $('audio-card').classList.toggle('has-file', !!selectedFile);
   $('logo-name').textContent = logoFile?.name || 'Add logo';
   $('logo-name').title = logoFile?.name || '';
-  $('logo-hint').textContent = logoFile ? 'Click to replace' : 'PNG, JPG, WebP';
+  $('logo-hint').hidden = !!logoFile;
   $('logo-remove').hidden = !logoFile;
   $('logo-card').classList.toggle('has-file', !!logoFile);
+}
+function setDisplayTitle(value) {
+  if (logoFile) { titleBeforeLogo = value; $('title').value = ''; }
+  else $('title').value = value;
 }
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
@@ -108,7 +114,7 @@ async function loadSong(file) {
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) throw new Error('This file has no playable audio.');
     loaded = true;
     selectedFile = file;
-    $('title').value = defaultTitle(file);
+    setDisplayTitle(defaultTitle(file));
     $('empty-state').hidden = true;
     $('track-name').textContent = file.name;
     $('track-detail').textContent = `${file.name.split('.').pop().toUpperCase()} · ${timeLabel(audio.duration)} · full track`;
@@ -230,13 +236,13 @@ function resetExportSettings() {
 function performReset(section) {
   if (section === 'all') {
     settings = { ...defaults };
-    $('title').value = defaultTitle(selectedFile); clearLogo(); resetExportSettings(); resetMotion();
+    setDisplayTitle(defaultTitle(selectedFile)); clearLogo(); resetExportSettings(); resetMotion();
   } else if (section === 'audio') {
     activeLoad++; audio.pause(); loaded = false; selectedFile = null;
     audio.removeAttribute('src'); audio.load();
     if (currentUrl) URL.revokeObjectURL(currentUrl);
     currentUrl = undefined;
-    $('title').value = ''; $('empty-state').hidden = false;
+    setDisplayTitle(''); $('empty-state').hidden = false;
     $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'MP3 or WAV';
     $('elapsed').textContent = $('duration').textContent = '0:00';
     $('seek').value = 0; $('seek').max = 100;
@@ -244,7 +250,7 @@ function performReset(section) {
     resetMotion(); syncPlaybackState(); syncSettingsAvailability();
   } else {
     for (const key of resetSections[section].keys) settings[key] = defaults[key];
-    if (section === 'logo') $('title').value = defaultTitle(selectedFile);
+    if (section === 'logo') setDisplayTitle(defaultTitle(selectedFile));
     if (section === 'export') resetExportSettings();
     if (section === 'spectrum') resetMotion();
   }
@@ -263,7 +269,11 @@ $('resolution').onchange = setResolution;
 $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;
+  const hadLogo = !!logoFile;
   logo?.close?.(); logo = null; logoFile = null;
+  if (hadLogo) $('title').value = titleBeforeLogo ?? defaultTitle(selectedFile);
+  titleBeforeLogo = undefined;
+  syncSettingsAvailability();
   $('logo-placement').hidden = true;
   syncFileCards();
 }
@@ -278,7 +288,10 @@ $('logo-file').onchange = async event => {
     const image = await createImageBitmap(file);
     if (loadId !== logoLoadId) { image.close(); return; }
     const previous = logo;
+    if (!logoFile) titleBeforeLogo = $('title').value;
     logo = image; logoFile = file;
+    $('title').value = '';
+    syncSettingsAvailability();
     previous?.close?.();
     syncFileCards();
     resetLogoPlacement();

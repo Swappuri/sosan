@@ -76,10 +76,9 @@ export function spectrumPoint(shape, radius, progress, offset) {
     x += (Math.cos(angle + turn) * radius - x) * t;
     y += (Math.sin(angle + turn) * radius - y) * t;
   }
-  // Keep polygon vertices quiet: long edge-normal bars otherwise fan into spokes,
-  // and an equally large displacement around the tiny corner arc balloons the wave.
+  // Restrain corner movement without freezing it or creating long corner spokes.
   const edgeDistance = local < arcLength ? 0 : Math.min(local - arcLength, segment - local);
-  const cornerGain = Math.sin(Math.min(1, edgeDistance / (radius * .3)) * Math.PI / 2) ** 2;
+  const cornerGain = .35 + .65 * Math.sin(Math.min(1, edgeDistance / (radius * .3)) * Math.PI / 2) ** 2;
   return { x: x + nx * offset, y: y + ny * offset, nx, ny, cornerGain };
 }
 

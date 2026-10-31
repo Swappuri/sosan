@@ -200,3 +200,6 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .logo-row { margin-top: 8px; }
 .color-row label { padding: 6px 4px; font-size: 9px; }
 .color-row output { font-size: 8px; }
+
+.file-card.has-file .dropzone > span:first-child { display: none; }
+.file-card.has-file .file-copy { display: flex; align-items: center; }

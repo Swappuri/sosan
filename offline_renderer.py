@@ -109,7 +109,7 @@ def spectrum_point(shape, radius, progress, offset):
         y += (math.sin(angle + turn) * radius - y) * t
     nx, ny = math.cos(normal), math.sin(normal)
     edge_distance = 0 if local < arc_length else min(local - arc_length, segment - local)
-    corner_gain = math.sin(min(1, edge_distance / (radius * .3)) * math.pi / 2) ** 2
+    corner_gain = .35 + .65 * math.sin(min(1, edge_distance / (radius * .3)) * math.pi / 2) ** 2
     return x + nx * offset, y + ny * offset, nx, ny, corner_gain
 
 
