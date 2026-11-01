@@ -76,7 +76,7 @@ canvas { display: block; width: 100%; height: 100%;  }
 .control-section + .control-section { border-top: 1px solid var(--line); padding-top: 12px; }
 .control-section h3 { font-size: 11px; font-weight: 500; color: #e2e2e2; margin: 0 0 8px; line-height: 15px; }
 .dropzone { width: 100%; height: 40px; display: flex; align-items: center; gap: 10px; text-align: left; border: 1px dashed #555; border-radius: 4px; background: var(--surface); padding: 5px 10px; color: var(--text); }
-.dropzone > span:first-child { color: var(--accent); font-size: 18px; }
+.file-add-icon { width: 14px; height: 14px; flex-shrink: 0; fill: none; stroke: var(--accent); stroke-width: 2; }
 .dropzone strong { display: block; font-size: 10px; font-weight: 500; }
 .dropzone small { display: block; color: var(--muted); font-size: 9px; }
 .dropzone:hover, .dropzone.dragging { border-color: var(--accent); background: var(--accent-soft); }
@@ -193,16 +193,16 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .file-card { display: flex; align-items: center; min-width: 0; min-height: 30px; height: 30px; border: 1px dashed #555; border-radius: 4px; background: var(--surface); }
 .file-card.has-file { border-style: solid; }
 .file-card:focus-within, .file-card:hover { border-color: var(--accent-border); }
-.file-card .dropzone, .file-upload { border: 0; background: transparent; flex: 1; min-width: 0; width: auto; display: flex; align-items: center; height: 28px; min-height: 28px; padding: 4px 9px; text-align: left; color: var(--text); }
+.file-card .dropzone, .file-upload { border: 0; background: transparent; flex: 1; min-width: 0; width: auto; display: flex; align-items: center; gap: 10px; height: 28px; min-height: 28px; padding: 4px 9px; text-align: left; color: var(--text); }
 .file-copy { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; }
-.file-copy strong { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; }
-.file-copy small { display: block; flex-shrink: 0; margin: 0; text-align: right; white-space: nowrap; color: var(--muted); font-size: 9px; }
+.file-copy strong { display: block; line-height: 1; transform: translateY(1px); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; }
+.file-copy small { display: block; line-height: 1; transform: translateY(1px); flex-shrink: 0; margin: 0; text-align: right; white-space: nowrap; color: var(--muted); font-size: 9px; }
 .file-remove { flex-shrink: 0; padding: 8px 10px; font-size: 10px; }
 .logo-row { margin-top: 8px; }
 .color-row label { padding: 6px 4px; font-size: 9px; }
 .color-row output { font-size: 8px; }
 
-.file-card.has-file .dropzone > span:first-child { display: none; }
+.file-card.has-file .file-add-icon { display: none; }
 .file-card.has-file .file-copy { display: flex; align-items: center; }
 
 /* Selected uploads use the same dimensions as empty uploads. */
