@@ -216,4 +216,4 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .identity-settings .logo-row { margin-top: 0; }
 .text-font-control { display: block; margin-top: 12px; color: var(--muted); font-size: 10px; }
 .text-font-control select { display: block; margin-top: 5px; }
-.text-format-row { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 12px; }
+.text-format-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 12px; }

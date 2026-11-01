@@ -188,7 +188,7 @@ function syncSettings() {
   $('textFont').value = settings.textFont;
   $('innerRing').setAttribute('aria-pressed', String(settings.innerRing));
   for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
-    document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
+    document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key] && (name !== 'logo-fit' || (settings.logoZoom === defaults.logoZoom && settings.logoX === defaults.logoX && settings.logoY === defaults.logoY)); });
   }
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
