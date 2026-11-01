@@ -238,3 +238,21 @@ test('polygon waves follow the original radial control points and band count', (
     });
   }
 });
+
+
+test('text draws over logos with independent font, color, and relative size', () => {
+  for (const [textFont, family] of [['tektur', 'Tektur'], ['sans', 'Arial'], ['serif', 'Georgia'], ['mono', 'Courier New']]) {
+    const events = [], fonts = [];
+    const canvas = canvasContext();
+    canvas.ctx.drawImage = () => events.push('logo');
+    canvas.ctx.fillText = () => { events.push('text'); fonts.push([canvas.ctx.font, canvas.ctx.fillStyle]); };
+    for (const textSize of [50, 100, 200]) {
+      renderScene(canvas.ctx, 854, 480, { ...settings, particles: false, pulse: false, textColor: '#ff3366', textFont, textSize }, motion, 0, { width: 100, height: 100 }, 'Title');
+    }
+    assert.deepEqual(events, ['logo', 'text', 'logo', 'text', 'logo', 'text']);
+    fonts.forEach(([font, color]) => { assert.ok(font.includes(family)); assert.equal(color, '#ff3366'); });
+    const sizes = fonts.map(([font]) => Number(font.match(/([\d.]+)px/)[1]));
+    assert.ok(Math.abs(sizes[1] / sizes[0] - 2) < 1e-6);
+    assert.ok(Math.abs(sizes[2] / sizes[1] - 2) < 1e-6);
+  }
+});

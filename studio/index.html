@@ -91,9 +91,7 @@
           </div>
         </fieldset>
         <fieldset class="control-section identity-settings" disabled>
-          <div class="section-heading"><h3>Logo & text</h3><button class="text-button" data-reset="logo" aria-label="Reset logo & text">Reset</button></div>
-          <label class="sr-only" for="title">Display text</label>
-          <input id="title" type="text" placeholder="Display text" maxlength="50">
+          <div class="section-heading"><h3>Logo</h3><button class="text-button" data-reset="logo" aria-label="Reset logo">Reset</button></div>
           <div class="file-card logo-row" id="logo-card"><button id="logo-upload" class="file-upload"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="logo-name">Add logo</strong><small id="logo-hint">PNG, JPG, WebP</small></span></button><button id="logo-remove" class="text-button file-remove" aria-label="Remove logo" hidden><span>Remove</span></button></div>
           <div id="logo-placement" hidden>
             <div class="style-choices logo-fit-choices" role="radiogroup" aria-label="Logo fit">
@@ -105,6 +103,16 @@
             <div class="slider-field"><label class="slider-label" for="logoY">Vertical position <output id="logoY-value" for="logoY">0%</output></label><input id="logoY" type="range" min="-100" max="100" value="0"></div>
           </div>
           <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </fieldset>
+        <fieldset class="control-section text-settings" disabled>
+          <div class="section-heading"><h3>Text</h3><button class="text-button" data-reset="text" aria-label="Reset text">Reset</button></div>
+          <label class="sr-only" for="title">Display text</label>
+          <input id="title" type="text" placeholder="Display text" maxlength="50">
+          <div class="text-style-row">
+            <label for="textFont">Font<select id="textFont"><option value="tektur">Tektur</option><option value="sans">Arial</option><option value="serif">Georgia</option><option value="mono">Courier New</option></select></label>
+            <label for="textColor-color">Color<input id="textColor-color" type="color" value="#eeeff2"><output id="textColor-color-value" for="textColor-color">#EEEFF2</output></label>
+          </div>
+          <div class="slider-field"><label class="slider-label" for="textSize">Size <output id="textSize-value" for="textSize">100%</output></label><input id="textSize" type="range" min="50" max="200" step="5" value="100"></div>
         </fieldset>
         <fieldset class="control-section export-settings" disabled>
           <div class="section-heading"><h3>Export</h3><button class="text-button" data-reset="export" aria-label="Reset export">Reset</button></div>

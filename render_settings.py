@@ -3,6 +3,7 @@ import math
 
 DEFAULTS = {
     'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
+    'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'tektur',
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
     'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
@@ -16,15 +17,17 @@ def validate_settings(value):
     if not isinstance(value, dict):
         raise ValueError('Settings must be an object.')
     result = {**DEFAULTS, **{key: val for key, val in value.items() if key in DEFAULTS}}
-    for name in ('primary', 'secondary', 'innerFill', 'background'):
+    for name in ('primary', 'secondary', 'innerFill', 'background', 'textColor'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')
-    for name, minimum, maximum in [('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100), ('logoZoom', 50, 200), ('logoX', -100, 100), ('logoY', -100, 100)]:
+    for name, minimum, maximum in [('textSize', 50, 200), ('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100), ('logoZoom', 50, 200), ('logoX', -100, 100), ('logoY', -100, 100)]:
         number = result[name]
         if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number) or not minimum <= number <= maximum:
             raise ValueError(f'Invalid {name}.')
     if type(result['bars']) is not int or result['bars'] not in range(32, 193, 16):
         raise ValueError('Invalid spectrum bar count.')
+    if result['textFont'] not in ('tektur', 'sans', 'serif', 'mono'):
+        raise ValueError('Invalid text font.')
     if result['logoFit'] not in ('contain', 'cover'):
         raise ValueError('Invalid logo fit.')
     if result['shape'] not in ('circle', 'square', 'triangle'):

@@ -138,22 +138,24 @@ class StudioRenderer:
                 self.logo = cv2.cvtColor(self.logo, cv2.COLOR_GRAY2BGRA)
             elif self.logo.shape[2] == 3:
                 self.logo = cv2.cvtColor(self.logo, cv2.COLOR_BGR2BGRA)
-        self.text = self._title_image() if self.logo is None and settings['title'] else None
+        self.text = self._title_image() if settings['title'] else None
 
     def _title_image(self):
-        # Match the locally bundled UI font; retain system fallbacks for portability.
         from PIL import Image, ImageDraw, ImageFont
-        font_path = next((str(path) for path in [
-            Path(__file__).resolve().parent / 'studio' / 'fonts' / 'Tektur.ttf',
-            Path('/System/Library/Fonts/Supplemental/Arial.ttf'),
-            Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
-        ] if path.is_file()), None)
-        size = max(12, round(21 * self.scale))
+        family = self.settings['textFont']
+        filenames = {'tektur': 'Tektur.ttf', 'sans': 'Arial.ttf', 'serif': 'Georgia.ttf', 'mono': 'Courier New.ttf'}
+        linux_names = {'tektur': 'DejaVuSans.ttf', 'sans': 'DejaVuSans.ttf', 'serif': 'DejaVuSerif.ttf', 'mono': 'DejaVuSansMono.ttf'}
+        candidates = [Path('/System/Library/Fonts/Supplemental') / filenames[family], Path('/usr/share/fonts/truetype/dejavu') / linux_names[family]]
+        if family == 'tektur': candidates.insert(0, Path(__file__).resolve().parent / 'studio' / 'fonts' / 'Tektur.ttf')
+        font_path = next((str(path) for path in candidates if path.is_file()), None)
+        radius = self.settings['radius'] * self.scale
+        content_radius = radius * (.5 if self.settings['shape'] == 'triangle' else 1 / math.sqrt(2) if self.settings['shape'] == 'square' else 1)
+        size = max(1, round(min(21 * self.scale, content_radius * .21)))
         font = ImageFont.truetype(font_path, size) if font_path else ImageFont.load_default()
         title = self.settings['title']
         box = font.getbbox(title)
         image = Image.new('RGBA', (max(1, box[2] - box[0] + 4), max(1, box[3] - box[1] + 4)))
-        ImageDraw.Draw(image).text((2 - box[0], 2 - box[1]), title, font=font, fill=(238, 239, 242, 255))
+        ImageDraw.Draw(image).text((2 - box[0], 2 - box[1]), title, font=font, fill=tuple(int(self.settings['textColor'][i:i + 2], 16) for i in (1, 3, 5)) + (255,))
         return cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2BGRA)
 
     def _composite(self, image, asset, radius, is_logo):
@@ -175,7 +177,7 @@ class StudioRenderer:
             return
         content_radius = radius * (.5 if shape == 'triangle' else 1 / math.sqrt(2) if shape == 'square' else 1)
         size = content_radius * 1.55
-        factor = min(1, size / asset.shape[1])
+        factor = min(1, size / asset.shape[1]) * self.settings['textSize'] / 100
         w, h = max(1, round(asset.shape[1] * factor)), max(1, round(asset.shape[0] * factor))
         resized = cv2.resize(asset, (w, h), interpolation=cv2.INTER_AREA)
         x, y = self.center[0] - w // 2, self.center[1] - h // 2
@@ -233,9 +235,10 @@ class StudioRenderer:
                 cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
         has_logo = self.logo is not None
         draw_shape(image, s['shape'], center, radius, bgr(s['innerFill']), -1)
-        asset = self.logo if has_logo else self.text
-        if asset is not None:
-            self._composite(image, asset, radius, has_logo)
+        if has_logo:
+            self._composite(image, self.logo, radius, True)
+        if self.text is not None:
+            self._composite(image, self.text, radius, False)
         primary = tuple(int(c) for c in self.primary)
         draw_shape(image, s['shape'], center, radius, primary, max(1, round(1.5 * scale)))
         if glow is not None:

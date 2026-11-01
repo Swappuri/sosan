@@ -29,7 +29,7 @@ use the optional local version for larger exports and closed-tab rendering.
 - Drag and drop MP3 or WAV audio.
 - Customize spectrum colors, radius, reactivity, bar count, glow, particles,
   bass pulses, and beat flashes.
-- Add a logo or optional display text.
+- Add a logo and display text, with independent text color, size, and font controls.
 - Export the full song at 480p, 720p, or 1080p, with 30 or 60 FPS.
 - Export directly in the browser, or use the optional Python server for persistent background jobs.
 - Cancel an active render or download the completed MP4.
@@ -96,7 +96,7 @@ python server.py --no-browser      # Start without opening a browser
 1. Add your own MP3 or WAV file. No songs or sample recordings are bundled.
 2. Play the preview and adjust the settings. On smaller windows, switch between
    the Preview and Settings views.
-3. Optionally add a PNG, JPG, or WebP logo, or enter display text.
+3. Optionally add a PNG, JPG, or WebP logo. Use the Text section to add text over the logo or on its own, and customize its color, size, and font.
 4. Select the export resolution and frame rate, then click **Export video**.
 5. Keep the page open during the initial upload. Once analysis or rendering
    starts, you can close it and return later to download the finished MP4.

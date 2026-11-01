@@ -212,3 +212,9 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .file-card.has-file .file-remove { padding: 4px 9px; color: var(--accent); }
 #logo-placement { margin-top: 8px; }
 .logo-fit-choices { margin-bottom: 12px; }
+
+.identity-settings .logo-row { margin-top: 0; }
+.text-style-row { display: grid; grid-template-columns: minmax(0, 1fr) 80px; align-items: start; gap: 12px; margin: 12px 0; }
+.text-style-row label { color: var(--muted); font-size: 10px; }
+.text-style-row select, .text-style-row input[type=color] { display: block; margin-top: 5px; height: 30px; }
+.text-style-row output { display: block; margin-top: 3px; font-size: 9px; }

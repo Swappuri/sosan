@@ -17,8 +17,28 @@ from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
+    def test_text_overlays_logo_with_custom_color_size_and_font(self):
+        import cv2
+        with tempfile.TemporaryDirectory() as directory:
+            logo_path = Path(directory) / 'logo.png'
+            cv2.imwrite(str(logo_path), np.zeros((100, 100, 3), np.uint8))
+            frames = []
+            for font in ('tektur', 'sans', 'serif', 'mono'):
+                for size in (50, 100, 200):
+                    settings = validate_settings({'title': 'Overlay', 'textColor': '#ff0000', 'textSize': size, 'textFont': font, 'particles': False, 'glow': False, 'pulse': False})
+                    renderer = StudioRenderer(settings, logo_path)
+                    self.assertIsNotNone(renderer.logo)
+                    self.assertIsNotNone(renderer.text)
+                    frame = renderer.frame(0, np.zeros(64), 0, 0)
+                    roi = frame[280:440, 440:840]
+                    red = (roi[:, :, 2] > 80) & (roi[:, :, 1] < 30) & (roi[:, :, 0] < 30)
+                    self.assertGreater(int(red.sum()), 0)
+                    frames.append(frame)
+            for first, second in zip(frames, frames[1:]):
+                self.assertFalse(np.array_equal(first, second))
+
     def test_settings_validation(self):
-        for invalid in ({'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 

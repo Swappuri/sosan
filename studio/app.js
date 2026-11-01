@@ -7,14 +7,13 @@ const $ = id => document.getElementById(id);
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', innerFill: '#0b1114', innerRing: true, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: false };
+const defaults = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'tektur', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: false };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 let lastTime = 0;
 let logoLoadId = 0, previewError;
-let titleBeforeLogo;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
 let activeLoad = 0, exportPreparing = false;
 let statusTimer;
@@ -59,7 +58,7 @@ function syncPlaybackState() { syncPlaybackButton($('play'), audio, loaded && !l
 function syncSettingsAvailability() {
   const disabled = !loaded || loading;
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
-  $('title').disabled = disabled || !!logoFile;
+  $('title').disabled = disabled;
   $('reset').disabled = disabled;
   document.querySelector('[data-reset="audio"]').disabled = disabled;
 }
@@ -75,10 +74,7 @@ function syncFileCards() {
   $('logo-remove').hidden = !logoFile;
   $('logo-card').classList.toggle('has-file', !!logoFile);
 }
-function setDisplayTitle(value) {
-  if (logoFile) { titleBeforeLogo = value; $('title').value = ''; }
-  else $('title').value = value;
-}
+function setDisplayTitle(value) { $('title').value = value; }
 function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
@@ -184,18 +180,19 @@ function applyTheme() {
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
 function syncSettings() {
-  for (const key of ['primary', 'secondary', 'innerFill', 'background']) {
+  for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) {
     $(key + '-color').value = settings[key];
     $(key + '-color-value').value = settings[key].toUpperCase();
   }
   applyTheme();
+  $('textFont').value = settings.textFont;
   $('innerRing').setAttribute('aria-pressed', String(settings.innerRing));
   for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key]; });
   }
-  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).value = settings[key];
+  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
-  for (const key of ['logoZoom', 'logoX', 'logoY']) $(key + '-value').value = `${settings[key]}%`;
+  for (const key of ['logoZoom', 'logoX', 'logoY', 'textSize']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
   $('bars-value').value = settings.bars;
@@ -204,19 +201,21 @@ function syncSettings() {
   $('rotation-value').value = `${settings.rotation}°`;
   $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees down both sides`);
 }
-for (const key of ['primary', 'secondary', 'innerFill', 'background']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
-for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
+for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
+for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
+$('textFont').onchange = () => { settings.textFont = $('textFont').value; };
 $('innerRing').onclick = () => { settings.innerRing = !settings.innerRing; syncSettings(); };
 const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
   effects: { title: 'Effects', keys: ['glow', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },
-  logo: { title: 'Logo & text', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY'], detail: 'Restore the song filename and default logo placement? The uploaded logo will be kept.' },
+  logo: { title: 'Logo', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY'], detail: 'Restore default logo placement? The uploaded logo will be kept.' },
+  text: { title: 'Text', keys: ['textColor', 'textSize', 'textFont'], detail: 'Restore the song filename and default text color, size, and font?' },
   export: { title: 'Export', keys: [], detail: 'Restore 720p and 30 FPS?' },
   audio: { title: 'Audio', keys: [], detail: 'Remove the current song and stop playback? You can add the file again.' },
   all: { title: 'all settings', keys: [], detail: 'Restore all visual and export settings, remove the logo, and restore the song filename? The current song will be kept.' },
@@ -250,7 +249,7 @@ function performReset(section) {
     resetMotion(); syncPlaybackState(); syncSettingsAvailability();
   } else {
     for (const key of resetSections[section].keys) settings[key] = defaults[key];
-    if (section === 'logo') setDisplayTitle(defaultTitle(selectedFile));
+    if (section === 'text') setDisplayTitle(defaultTitle(selectedFile));
     if (section === 'export') resetExportSettings();
     if (section === 'spectrum') resetMotion();
   }
@@ -269,10 +268,7 @@ $('resolution').onchange = setResolution;
 $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;
-  const hadLogo = !!logoFile;
   logo?.close?.(); logo = null; logoFile = null;
-  if (hadLogo) $('title').value = titleBeforeLogo ?? defaultTitle(selectedFile);
-  titleBeforeLogo = undefined;
   syncSettingsAvailability();
   $('logo-placement').hidden = true;
   syncFileCards();
@@ -288,9 +284,7 @@ $('logo-file').onchange = async event => {
     const image = await createImageBitmap(file);
     if (loadId !== logoLoadId) { image.close(); return; }
     const previous = logo;
-    if (!logoFile) titleBeforeLogo = $('title').value;
     logo = image; logoFile = file;
-    $('title').value = '';
     syncSettingsAvailability();
     previous?.close?.();
     syncFileCards();

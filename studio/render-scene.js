@@ -133,12 +133,15 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     } finally {
       ctx.restore();
     }
-  } else if (title) {
+  }
+  if (title) {
+    const family = { tektur: 'Tektur, sans-serif', sans: 'Arial, sans-serif', serif: 'Georgia, serif', mono: '"Courier New", monospace' }[settings.textFont ?? 'tektur'];
     let fontSize = Math.min(21 * scale, contentRadius * .21);
-    ctx.font = `600 ${fontSize}px Tektur, sans-serif`;
+    ctx.font = `600 ${fontSize}px ${family}`;
     const maxWidth = contentRadius * 1.55;
     if (ctx.measureText(title).width > maxWidth) fontSize *= maxWidth / ctx.measureText(title).width;
-    ctx.font = `600 ${fontSize}px Tektur, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#eeeff2'; ctx.fillText(title, x, y);
+    fontSize *= (settings.textSize ?? 100) / 100;
+    ctx.font = `600 ${fontSize}px ${family}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = settings.textColor ?? '#eeeff2'; ctx.fillText(title, x, y);
   }
   // Fill and logo reach the primary outline; the optional secondary rim overlays them.
   ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
