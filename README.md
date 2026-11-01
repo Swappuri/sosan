@@ -96,7 +96,7 @@ python server.py --no-browser      # Start without opening a browser
 1. Add your own MP3 or WAV file. No songs or sample recordings are bundled.
 2. Play the preview and adjust the settings. On smaller windows, switch between
    the Preview and Settings views.
-3. Optionally add a PNG, JPG, or WebP logo. Use the Text section to add text over the logo or on its own, and customize its color, size, and font.
+3. Optionally add a PNG, JPG, or WebP logo. Fit image and Fill shape restore centered placement at 100% zoom. Use the Text section to add text over the logo or on its own, and customize its color, size, and font. Text wraps inside the selected shape at your chosen size, shrinking only when the wrapped block cannot fit.
 4. Select the export resolution and frame rate, then click **Export video**.
 5. Keep the page open during the initial upload. Once analysis or rendering
    starts, you can close it and return later to download the finished MP4.

@@ -1,3 +1,4 @@
+import { layoutText } from './text-layout.js';
 "use strict";
 
 const particles = Array.from({ length: 100 }, (_, i) => ({ x: fract(Math.sin(i * 127.1 + 3) * 43758.5453), y: fract(Math.sin(i * 311.7 + 9) * 43758.5453), size: 0.6 + fract(Math.sin(i * 41.9) * 43758.5453) * 1.4, phase: i * 2.7 }));
@@ -90,7 +91,6 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 : 0;
   const radius = (settings.radius + pulse) * scale;
   const shape = settings.shape ?? 'circle';
-  const contentRadius = radius * (shape === 'triangle' ? .5 : shape === 'square' ? Math.SQRT1_2 : 1);
   const count = shape === 'circle' && settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
@@ -136,12 +136,17 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   if (title) {
     const family = { tektur: 'Tektur, sans-serif', sans: 'Arial, sans-serif', serif: 'Georgia, serif', mono: '"Courier New", monospace' }[settings.textFont ?? 'tektur'];
-    let fontSize = Math.min(21 * scale, contentRadius * .21);
-    ctx.font = `600 ${fontSize}px ${family}`;
-    const maxWidth = contentRadius * 1.55;
-    if (ctx.measureText(title).width > maxWidth) fontSize *= maxWidth / ctx.measureText(title).width;
-    fontSize *= (settings.textSize ?? 100) / 100;
-    ctx.font = `600 ${fontSize}px ${family}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = settings.textColor ?? '#eeeff2'; ctx.fillText(title, x, y);
+    const inset = radius * .9;
+    const layout = layoutText(title, shape, inset, 21 * scale * (settings.textSize ?? 100) / 100, (text, size) => {
+      ctx.font = `600 ${size}px ${family}`; return ctx.measureText(text).width;
+    });
+    ctx.save();
+    try {
+      traceShape(ctx, shape, x, y, inset); ctx.clip();
+      ctx.font = `600 ${layout.fontSize}px ${family}`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = settings.textColor ?? '#eeeff2';
+      for (const line of layout.lines) ctx.fillText(line.text, x, y + line.y);
+    } finally { ctx.restore(); }
   }
   // Fill and logo reach the primary outline; the optional secondary rim overlays them.
   ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;

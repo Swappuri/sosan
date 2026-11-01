@@ -204,9 +204,10 @@ function syncSettings() {
 for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
-for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
+for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
+document.querySelectorAll('input[name="logo-fit"]').forEach(input => { input.onclick = () => resetLogoPlacement(input.value); });
 $('textFont').onchange = () => { settings.textFont = $('textFont').value; };
 $('innerRing').onclick = () => { settings.innerRing = !settings.innerRing; syncSettings(); };
 const resetSections = {
@@ -297,8 +298,9 @@ $('logo-file').onchange = async event => {
 };
 $('logo-remove').onclick = clearLogo;
 $('audio-remove').onclick = () => performReset('audio');
-function resetLogoPlacement() {
-  for (const key of ['logoFit', 'logoZoom', 'logoX', 'logoY']) settings[key] = defaults[key];
+function resetLogoPlacement(fit = defaults.logoFit) {
+  settings.logoFit = fit;
+  for (const key of ['logoZoom', 'logoX', 'logoY']) settings[key] = defaults[key];
   syncSettings();
 }
 

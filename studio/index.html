@@ -67,10 +67,10 @@
         <fieldset class="control-section colors-settings" disabled>
           <div class="section-heading"><h3>Colors</h3><button class="text-button" data-reset="colors" aria-label="Reset colors">Reset</button></div>
           <div class="color-row">
-            <label for="primary-color">Primary<input id="primary-color" type="color" value="#a7f36b"><output id="primary-color-value" for="primary-color">#A7F36B</output></label>
-            <label for="secondary-color">Secondary<input id="secondary-color" type="color" value="#5de5ec"><output id="secondary-color-value" for="secondary-color">#5DE5EC</output></label>
-            <label for="innerFill-color">Surface<input id="innerFill-color" type="color" value="#0b1114"><output id="innerFill-color-value" for="innerFill-color">#0B1114</output></label>
-            <label for="background-color">Background<input id="background-color" type="color" value="#0b1114"><output id="background-color-value" for="background-color">#0B1114</output></label>
+            <label class="color-card" for="primary-color">Primary<input id="primary-color" type="color" value="#a7f36b"><output id="primary-color-value" for="primary-color">#A7F36B</output></label>
+            <label class="color-card" for="secondary-color">Secondary<input id="secondary-color" type="color" value="#5de5ec"><output id="secondary-color-value" for="secondary-color">#5DE5EC</output></label>
+            <label class="color-card" for="innerFill-color">Surface<input id="innerFill-color" type="color" value="#0b1114"><output id="innerFill-color-value" for="innerFill-color">#0B1114</output></label>
+            <label class="color-card" for="background-color">Background<input id="background-color" type="color" value="#0b1114"><output id="background-color-value" for="background-color">#0B1114</output></label>
           </div>
         </fieldset>
         <fieldset class="control-section spectrum-settings" disabled>
@@ -108,11 +108,11 @@
           <div class="section-heading"><h3>Text</h3><button class="text-button" data-reset="text" aria-label="Reset text">Reset</button></div>
           <label class="sr-only" for="title">Display text</label>
           <input id="title" type="text" placeholder="Display text" maxlength="50">
-          <div class="text-style-row">
-            <label for="textFont">Font<select id="textFont"><option value="tektur">Tektur</option><option value="sans">Arial</option><option value="serif">Georgia</option><option value="mono">Courier New</option></select></label>
-            <label for="textColor-color">Color<input id="textColor-color" type="color" value="#eeeff2"><output id="textColor-color-value" for="textColor-color">#EEEFF2</output></label>
+          <label class="text-font-control" for="textFont">Font<select id="textFont"><option value="tektur">Tektur</option><option value="sans">Arial</option><option value="serif">Georgia</option><option value="mono">Courier New</option></select></label>
+          <div class="text-format-row">
+            <label class="color-card" for="textColor-color">Color<input id="textColor-color" type="color" value="#eeeff2"><output id="textColor-color-value" for="textColor-color">#EEEFF2</output></label>
+            <div class="slider-field"><label class="slider-label" for="textSize">Size <output id="textSize-value" for="textSize">100%</output></label><input id="textSize" type="range" min="50" max="200" step="5" value="100"></div>
           </div>
-          <div class="slider-field"><label class="slider-label" for="textSize">Size <output id="textSize-value" for="textSize">100%</output></label><input id="textSize" type="range" min="50" max="200" step="5" value="100"></div>
         </fieldset>
         <fieldset class="control-section export-settings" disabled>
           <div class="section-heading"><h3>Export</h3><button class="text-button" data-reset="export" aria-label="Reset export">Reset</button></div>

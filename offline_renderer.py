@@ -14,6 +14,7 @@ import librosa
 import numpy as np
 
 from render_settings import DEFAULTS, validate_settings
+from text_layout import layout_text
 
 
 def analyze_track(source, settings, checkpoint=lambda *_: None):
@@ -149,40 +150,41 @@ class StudioRenderer:
         if family == 'tektur': candidates.insert(0, Path(__file__).resolve().parent / 'studio' / 'fonts' / 'Tektur.ttf')
         font_path = next((str(path) for path in candidates if path.is_file()), None)
         radius = self.settings['radius'] * self.scale
-        content_radius = radius * (.5 if self.settings['shape'] == 'triangle' else 1 / math.sqrt(2) if self.settings['shape'] == 'square' else 1)
-        size = max(1, round(min(21 * self.scale, content_radius * .21)))
-        font = ImageFont.truetype(font_path, size) if font_path else ImageFont.load_default()
-        title = self.settings['title']
-        box = font.getbbox(title)
-        image = Image.new('RGBA', (max(1, box[2] - box[0] + 4), max(1, box[3] - box[1] + 4)))
-        ImageDraw.Draw(image).text((2 - box[0], 2 - box[1]), title, font=font, fill=tuple(int(self.settings['textColor'][i:i + 2], 16) for i in (1, 3, 5)) + (255,))
+        fonts = {}
+        def font(size):
+            pixels = max(1, round(size))
+            if pixels not in fonts:
+                fonts[pixels] = ImageFont.truetype(font_path, pixels) if font_path else ImageFont.load_default()
+            return fonts[pixels]
+        layout = layout_text(self.settings['title'], self.settings['shape'], radius * .9,
+                             21 * self.scale * self.settings['textSize'] / 100,
+                             lambda text, size: font(size).getlength(text))
+        side = max(1, math.ceil(radius * 2))
+        image = Image.new('RGBA', (side, side))
+        draw = ImageDraw.Draw(image)
+        color = tuple(int(self.settings['textColor'][i:i + 2], 16) for i in (1, 3, 5)) + (255,)
+        for line in layout['lines']:
+            draw.text((side / 2, side / 2 + line['y']), line['text'], font=font(layout['fontSize']), fill=color, anchor='mm')
         return cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2BGRA)
 
     def _composite(self, image, asset, radius, is_logo):
         shape = self.settings['shape']
+        clip_radius = radius if is_logo else radius * .9
         if is_logo:
-            clip_radius = radius
             s = self.settings
             px, py, w, h = logo_placement(shape, clip_radius, asset.shape[1], asset.shape[0], s['logoFit'], s['logoZoom'], s['logoX'], s['logoY'])
-            # Warp only into the visible region, even for very wide/tall images at high zoom.
-            x0, y0 = max(0, math.floor(self.center[0] - clip_radius)), max(0, math.floor(self.center[1] - clip_radius))
-            x1, y1 = min(self.width, math.ceil(self.center[0] + clip_radius)), min(self.height, math.ceil(self.center[1] + clip_radius))
-            transform = np.array([[w / asset.shape[1], 0, self.center[0] + px - x0], [0, h / asset.shape[0], self.center[1] + py - y0]], np.float64)
-            resized = cv2.warpAffine(asset, transform, (x1 - x0, y1 - y0), flags=cv2.INTER_LINEAR)
-            yy, xx = np.ogrid[y0:y1, x0:x1]
-            reach = shape_radius(shape, clip_radius, np.arctan2(yy - self.center[1], xx - self.center[0]))
-            mask = ((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) <= reach ** 2
-            alpha = resized[:, :, 3:4].astype(np.float32) / 255 * mask[:, :, None]
-            image[y0:y1, x0:x1] = image[y0:y1, x0:x1] * (1 - alpha) + resized[:, :, :3] * alpha
-            return
-        content_radius = radius * (.5 if shape == 'triangle' else 1 / math.sqrt(2) if shape == 'square' else 1)
-        size = content_radius * 1.55
-        factor = min(1, size / asset.shape[1]) * self.settings['textSize'] / 100
-        w, h = max(1, round(asset.shape[1] * factor)), max(1, round(asset.shape[0] * factor))
-        resized = cv2.resize(asset, (w, h), interpolation=cv2.INTER_AREA)
-        x, y = self.center[0] - w // 2, self.center[1] - h // 2
-        alpha = resized[:, :, 3:4].astype(np.float32) / 255
-        image[y:y + h, x:x + w] = image[y:y + h, x:x + w] * (1 - alpha) + resized[:, :, :3] * alpha
+        else:
+            px, py, w, h = -radius, -radius, radius * 2, radius * 2
+        # Composite only within the shape, including text over a logo.
+        x0, y0 = max(0, math.floor(self.center[0] - clip_radius)), max(0, math.floor(self.center[1] - clip_radius))
+        x1, y1 = min(self.width, math.ceil(self.center[0] + clip_radius)), min(self.height, math.ceil(self.center[1] + clip_radius))
+        transform = np.array([[w / asset.shape[1], 0, self.center[0] + px - x0], [0, h / asset.shape[0], self.center[1] + py - y0]], np.float64)
+        resized = cv2.warpAffine(asset, transform, (x1 - x0, y1 - y0), flags=cv2.INTER_LINEAR)
+        yy, xx = np.ogrid[y0:y1, x0:x1]
+        reach = shape_radius(shape, clip_radius, np.arctan2(yy - self.center[1], xx - self.center[0]))
+        mask = ((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) <= reach ** 2
+        alpha = resized[:, :, 3:4].astype(np.float32) / 255 * mask[:, :, None]
+        image[y0:y1, x0:x1] = image[y0:y1, x0:x1] * (1 - alpha) + resized[:, :, :3] * alpha
 
     def frame(self, index, levels, bass, onset):
         s, scale, center = self.settings, self.scale, self.center
