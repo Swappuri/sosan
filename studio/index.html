@@ -48,7 +48,7 @@
       <div class="settings-content">
         <section class="control-section audio-settings">
           <div class="section-heading"><h3>Audio</h3><button class="text-button" data-reset="audio" aria-label="Reset audio" disabled>Reset</button></div>
-          <div class="file-card" id="audio-card"><button id="dropzone" class="dropzone"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="audio-name">Add audio</strong><small id="audio-hint">MP3, WAV · drop or browse</small></span></button><button id="audio-remove" class="text-button file-remove" aria-label="Remove audio" hidden>Remove</button></div>
+          <div class="file-card" id="audio-card"><button id="dropzone" class="dropzone"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="audio-name">Add audio</strong><small id="audio-hint">MP3, WAV · drop or browse</small></span></button><button id="audio-remove" class="text-button file-remove" aria-label="Remove audio" hidden><span>Remove</span></button></div>
           <input id="audio-file" type="file" accept=".mp3,.wav,audio/mpeg,audio/wav" hidden>
         </section>
         <fieldset class="control-section appearance-settings" aria-label="Appearance" disabled>
@@ -94,7 +94,7 @@
           <div class="section-heading"><h3>Logo & text</h3><button class="text-button" data-reset="logo" aria-label="Reset logo & text">Reset</button></div>
           <label class="sr-only" for="title">Display text</label>
           <input id="title" type="text" placeholder="Display text" maxlength="50">
-          <div class="file-card logo-row" id="logo-card"><button id="logo-upload" class="file-upload"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="logo-name">Add logo</strong><small id="logo-hint">PNG, JPG, WebP</small></span></button><button id="logo-remove" class="text-button file-remove" aria-label="Remove logo" hidden>Remove</button></div>
+          <div class="file-card logo-row" id="logo-card"><button id="logo-upload" class="file-upload"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="logo-name">Add logo</strong><small id="logo-hint">PNG, JPG, WebP</small></span></button><button id="logo-remove" class="text-button file-remove" aria-label="Remove logo" hidden><span>Remove</span></button></div>
           <div id="logo-placement" hidden>
             <div class="style-choices logo-fit-choices" role="radiogroup" aria-label="Logo fit">
               <label class="style-choice"><input class="sr-only" type="radio" name="logo-fit" value="contain"><span>Fit image</span></label>

@@ -197,7 +197,8 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .file-copy { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; }
 .file-copy strong { display: block; line-height: 1; transform: translateY(1px); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; }
 .file-copy small { display: block; line-height: 1; transform: translateY(1px); flex-shrink: 0; margin: 0; text-align: right; white-space: nowrap; color: var(--muted); font-size: 9px; }
-.file-remove { flex-shrink: 0; padding: 8px 10px; font-size: 10px; }
+.file-remove { display: flex; align-items: center; justify-content: center; flex-shrink: 0; height: 28px; padding: 4px 9px; font-size: 10px; }
+.file-remove > span { display: block; line-height: 1; font-weight: 500; transform: translateY(1px); }
 .logo-row { margin-top: 8px; }
 .color-row label { padding: 6px 4px; font-size: 9px; }
 .color-row output { font-size: 8px; }
