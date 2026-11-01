@@ -35,7 +35,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .app-header { height: 64px; flex-shrink: 0; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #414141; background: #202020; }
 .brand { color: var(--text); text-decoration: none; font-size: 25px; font-weight: 600; letter-spacing: -.8px; line-height: 1; }
 .brand > span { display: inline-flex; align-items: baseline; }
-.brand-o { width: .62em; height: .62em; align-self: center; margin: .09em .025em 0 .015em; overflow: visible; filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 7px var(--accent-border)); }
+.brand-initial { letter-spacing: 0; }
+.brand-o { width: .62em; height: .62em; align-self: center; margin: .09em .04em 0; overflow: visible; filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 7px var(--accent-border)); }
 .ring-primary { stop-color: var(--accent); }
 .ring-secondary { stop-color: var(--secondary); }
 .primary, .secondary { display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 32px; padding: 7px 12px; border-radius: 5px; font-weight: 500; text-decoration: none; white-space: nowrap; }
