@@ -60,6 +60,8 @@ function syncSettingsAvailability() {
   const disabled = !loaded || loading;
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
   $('title').disabled = disabled;
+  document.querySelectorAll('#logo-placement input').forEach(input => { input.disabled = disabled || !logo; });
+  $('logo-placement').classList.toggle('is-disabled', disabled || !logo);
   $('reset').disabled = disabled;
   document.querySelector('[data-reset="audio"]').disabled = disabled;
 }
@@ -163,6 +165,7 @@ function relativeLuminance(hex) {
   return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722;
 }
 function applyTheme() {
+  $('textColor-color-value').style.color = relativeLuminance(settings.textColor) > .179 ? '#111111' : '#ffffff';
   const color = settings.primary;
   const luminance = relativeLuminance(color);
   const darkLuminance = relativeLuminance('#101114');
@@ -272,7 +275,6 @@ function clearLogo() {
   logoLoadId++;
   logo?.close?.(); logo = null; logoFile = null;
   syncSettingsAvailability();
-  $('logo-placement').hidden = true;
   syncFileCards();
 }
 $('logo-file').onchange = async event => {
@@ -291,7 +293,6 @@ $('logo-file').onchange = async event => {
     previous?.close?.();
     syncFileCards();
     resetLogoPlacement();
-    $('logo-placement').hidden = false;
     status('Logo added.');
   } catch {
     if (loadId === logoLoadId) status('Could not read this image. Try another logo.', true);

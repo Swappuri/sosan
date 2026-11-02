@@ -48,6 +48,7 @@ export function setupSettingsPages(panel) {
     numbers.replaceChildren(...pages.map((page, index) => {
       const button = document.createElement('button');
       button.type = 'button';
+      button.title = page.map(section => section.querySelector('h3').textContent).join(' · ');
       button.textContent = index + 1;
       button.setAttribute('aria-label', `Settings page ${index + 1}: ${page.map(section => section.querySelector('h3').textContent).join(', ')}`);
       button.onclick = () => show(index);

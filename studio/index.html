@@ -93,14 +93,14 @@
         <fieldset class="control-section identity-settings" disabled>
           <div class="section-heading"><h3>Logo</h3><button class="text-button" data-reset="logo" aria-label="Reset logo">Reset</button></div>
           <div class="file-card logo-row" id="logo-card"><button id="logo-upload" class="file-upload"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="logo-name">Add logo</strong><small id="logo-hint">PNG, JPG, WebP</small></span></button><button id="logo-remove" class="text-button file-remove" aria-label="Remove logo" hidden><span>Remove</span></button></div>
-          <div id="logo-placement" hidden>
+          <div id="logo-placement" class="is-disabled">
             <div class="style-choices logo-fit-choices" role="radiogroup" aria-label="Logo fit">
-              <label class="style-choice"><input class="sr-only" type="radio" name="logo-fit" value="contain"><span>Fit image</span></label>
-              <label class="style-choice"><input class="sr-only" type="radio" name="logo-fit" value="cover" checked><span>Fill shape</span></label>
+              <label class="style-choice"><input class="sr-only" type="radio" disabled name="logo-fit" value="contain"><span>Fit image</span></label>
+              <label class="style-choice"><input class="sr-only" type="radio" disabled name="logo-fit" value="cover" checked><span>Fill shape</span></label>
             </div>
-            <div class="slider-field"><label class="slider-label" for="logoZoom">Zoom <output id="logoZoom-value" for="logoZoom">100%</output></label><input id="logoZoom" type="range" min="50" max="200" value="100"></div>
-            <div class="slider-field"><label class="slider-label" for="logoX">Horizontal position <output id="logoX-value" for="logoX">0%</output></label><input id="logoX" type="range" min="-100" max="100" value="0"></div>
-            <div class="slider-field"><label class="slider-label" for="logoY">Vertical position <output id="logoY-value" for="logoY">0%</output></label><input id="logoY" type="range" min="-100" max="100" value="0"></div>
+            <div class="slider-field"><label class="slider-label" for="logoZoom">Zoom <output id="logoZoom-value" for="logoZoom">100%</output></label><input id="logoZoom" type="range" disabled min="50" max="200" value="100"></div>
+            <div class="slider-field"><label class="slider-label" for="logoX">Horizontal position <output id="logoX-value" for="logoX">0%</output></label><input id="logoX" type="range" disabled min="-100" max="100" value="0"></div>
+            <div class="slider-field"><label class="slider-label" for="logoY">Vertical position <output id="logoY-value" for="logoY">0%</output></label><input id="logoY" type="range" disabled min="-100" max="100" value="0"></div>
           </div>
           <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
         </fieldset>
