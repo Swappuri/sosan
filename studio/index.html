@@ -106,11 +106,11 @@
         </fieldset>
         <fieldset class="control-section text-settings" disabled>
           <div class="section-heading"><h3>Text</h3><button class="text-button" data-reset="text" aria-label="Reset text">Reset</button></div>
-          <label class="sr-only" for="title">Display text</label>
+          <label class="text-input-label" for="title">Display text</label>
           <input id="title" type="text" placeholder="Display text" maxlength="50">
           <label class="text-font-control" for="textFont">Font<select id="textFont"><option value="tektur">Tektur</option><option value="sans">Arial</option><option value="serif">Georgia</option><option value="mono">Courier New</option></select></label>
           <div class="text-format-row">
-            <label class="color-card" for="textColor-color">Color<input id="textColor-color" type="color" value="#eeeff2"><output id="textColor-color-value" for="textColor-color">#EEEFF2</output></label>
+            <label class="text-color-control" for="textColor-color">Color<span class="text-color-field"><input id="textColor-color" type="color" value="#eeeff2"><output id="textColor-color-value" for="textColor-color">#EEEFF2</output></span></label>
             <div class="slider-field"><label class="slider-label" for="textSize">Size <output id="textSize-value" for="textSize">100%</output></label><input id="textSize" type="range" min="50" max="200" step="5" value="100"></div>
           </div>
         </fieldset>
@@ -124,7 +124,8 @@
       </div>
       <nav class="settings-pagination" aria-label="Settings pages">
         <button class="text-button" data-settings-page="previous" aria-label="Previous settings page">← Previous</button>
-        <span id="settings-page-label" aria-live="polite">1 / 1</span>
+        <div id="settings-page-numbers" class="settings-page-numbers"></div>
+        <span id="settings-page-label" class="sr-only" aria-live="polite">1 / 1</span>
         <button class="text-button" data-settings-page="next" aria-label="Next settings page">Next →</button>
       </nav>
     </aside>

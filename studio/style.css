@@ -224,3 +224,15 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .settings-pagination { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
 .settings-pagination .text-button { font-size: 10px; }
 .settings-pagination span { color: var(--muted); font-size: 10px; }
+
+.control-section.page-start { border-top: 0; padding-top: 0; }
+.settings-pagination { gap: 6px; }
+.settings-page-numbers { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.settings-page-numbers button { width: 26px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); font-size: 10px; }
+.settings-page-numbers button:hover { color: var(--text); background: var(--surface); }
+.settings-page-numbers button[aria-current=page] { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+.text-input-label, .text-color-control { display: block; color: var(--muted); font-size: 10px; }
+.text-input-label { margin-bottom: 5px; }
+.text-color-field { display: flex; align-items: center; gap: 10px; height: 30px; margin-top: 5px; padding: 4px 8px; border: 1px solid #414141; border-radius: 4px; background: var(--surface); }
+.text-color-field input[type=color] { flex: 1; height: 20px; }
+.text-color-field output { font-size: 9px; flex-shrink: 0; }

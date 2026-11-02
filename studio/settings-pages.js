@@ -5,11 +5,19 @@ export function setupSettingsPages(panel) {
   const previous = panel.querySelector('[data-settings-page="previous"]');
   const next = panel.querySelector('[data-settings-page="next"]');
   const label = panel.querySelector('#settings-page-label');
+  const numbers = panel.querySelector('#settings-page-numbers');
   let pages = [], current = 0, scheduled = false;
   function show(index) {
     current = Math.max(0, Math.min(index, pages.length - 1));
     const visible = pages[current] ?? [];
-    for (const section of sections) section.hidden = !visible.includes(section);
+    for (const section of sections) {
+      section.hidden = !visible.includes(section);
+      section.classList.toggle('page-start', section === visible[0]);
+    }
+    for (const [index, button] of [...numbers.children].entries()) {
+      if (index === current) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    }
     previous.disabled = current === 0;
     next.disabled = current >= pages.length - 1;
     label.textContent = `${current + 1} / ${Math.max(1, pages.length)}`;
@@ -20,7 +28,7 @@ export function setupSettingsPages(panel) {
     if (!content.clientHeight) return;
     const focusedSection = document.activeElement?.closest('.control-section');
     const anchor = sections.includes(focusedSection) && !focusedSection.hidden ? focusedSection : pages[current]?.[0] ?? sections[0];
-    for (const section of sections) section.hidden = false;
+    for (const section of sections) { section.hidden = false; section.classList.remove('page-start'); }
     const style = getComputedStyle(content);
     const available = content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
     const gap = parseFloat(style.rowGap) || 0;
@@ -28,13 +36,23 @@ export function setupSettingsPages(panel) {
     let page = [], used = 0;
     for (const section of sections) {
       const height = section.getBoundingClientRect().height;
+      const sectionStyle = getComputedStyle(section);
+      const divider = parseFloat(sectionStyle.borderTopWidth) + parseFloat(sectionStyle.paddingTop);
       if (page.length && used + gap + height > available + .5) {
         pages.push(page); page = []; used = 0;
       }
-      used += (page.length ? gap : 0) + height;
+      used += page.length ? gap + height : height - divider;
       page.push(section);
     }
     if (page.length) pages.push(page);
+    numbers.replaceChildren(...pages.map((page, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = index + 1;
+      button.setAttribute('aria-label', `Settings page ${index + 1}: ${page.map(section => section.querySelector('h3').textContent).join(', ')}`);
+      button.onclick = () => show(index);
+      return button;
+    }));
     show(Math.max(0, pages.findIndex(page => page.includes(anchor))));
   }
   function schedule() {
