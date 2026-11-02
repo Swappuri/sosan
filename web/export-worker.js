@@ -1,3 +1,4 @@
+import { exportBitrate } from '../studio/export-quality.js';
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioSampleSource, AudioSample, Quality, canEncodeVideo, canEncodeAudio } from 'mediabunny';
 import { registerAacEncoder } from '@mediabunny/aac-encoder';
 import { renderScene } from '../studio/render-scene.js';
@@ -8,10 +9,10 @@ self.onmessage = async ({ data }) => {
   try {
     const { settings, channels, sampleRate, font, fontSpec, logo } = data;
     const { width, height, fps } = settings;
-    const bitrate = height >= 1080 ? 7_000_000 : height >= 720 ? 3_800_000 : 1_800_000;
+    const bitrate = exportBitrate(height, fps);
     const quality = new Quality({ bitrate });
     if (!(await canEncodeVideo('avc', { width, height, frameRate: fps, quality }))) {
-      throw new Error('H.264 encoding is unavailable for these settings. Try 720p or 480p in an updated Chrome, Edge, or Safari browser.');
+      throw new Error('H.264 encoding is unavailable for this resolution and frame rate on your device. Try a lower resolution or frame rate.');
     }
     if (!(await canEncodeAudio('aac', { sampleRate, numberOfChannels: channels.length }))) registerAacEncoder();
     if (font && typeof FontFace !== 'undefined' && self.fonts) {

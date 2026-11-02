@@ -37,9 +37,9 @@ def validate_settings(value):
     for name in ('glow', 'particles', 'pulse', 'flashes', 'innerRing'):
         if type(result[name]) is not bool:
             raise ValueError(f'Invalid {name} switch.')
-    if type(result['width']) is not int or type(result['height']) is not int or (result['width'], result['height']) not in [(854, 480), (1280, 720), (1920, 1080)]:
+    if type(result['width']) is not int or type(result['height']) is not int or (result['width'], result['height']) not in [(640, 360), (854, 480), (1280, 720), (1920, 1080), (2560, 1440), (3840, 2160)]:
         raise ValueError('Invalid export resolution.')
-    if type(result['fps']) is not int or result['fps'] not in (30, 60):
+    if type(result['fps']) is not int or result['fps'] not in (15, 24, 25, 30, 50, 60, 120):
         raise ValueError('Invalid frame rate.')
     if not isinstance(result['title'], str) or len(result['title']) > 50:
         raise ValueError('Display name must be 50 characters or fewer.')

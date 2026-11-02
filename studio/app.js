@@ -7,6 +7,8 @@ import { syncPlaybackButton } from './playback-state.js';
 const browserMode = document.querySelector('meta[name="sosan-export-mode"]')?.content === 'browser' || new URLSearchParams(location.search).get('export') === 'browser' || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const $ = id => document.getElementById(id);
 const syncFontPicker = setupFontPicker($('textFont'));
+const syncResolutionPicker = setupFontPicker($('resolution'), { fontPreview: false, label: 'Resolution' });
+const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Frame rate' });
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
@@ -273,8 +275,9 @@ $('reset-dialog').addEventListener('close', () => {
   const section = pendingReset; pendingReset = undefined;
   if (section && $('reset-dialog').returnValue === 'reset') performReset(section);
 });
-function setResolution() { const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
+function setResolution() { syncResolutionPicker(); syncFpsPicker(); const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
 $('resolution').onchange = setResolution;
+$('fps').onchange = syncFpsPicker;
 $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;

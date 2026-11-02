@@ -109,3 +109,6 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .font-picker-options button { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 3px; background: transparent; color: #ddd; text-align: left; font-size: 16px; line-height: 24px; }
 .font-picker-options button[aria-selected=true] { background: var(--accent-soft); color: var(--accent); }
 .font-picker-options button:hover, .font-picker-options button:focus-visible { background: #333; outline: 1px solid var(--accent-border); outline-offset: -1px; }
+
+.select-row .font-picker-toggle { font-family: Poppins, sans-serif; font-size: 12px; }
+.settings-select-options button { font-family: Poppins, sans-serif; font-size: 12px; line-height: 20px; }

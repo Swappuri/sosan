@@ -1,28 +1,30 @@
 import { TEXT_FAMILIES } from './text-fonts.js';
 
-export function setupFontPicker(select) {
+export function setupFontPicker(select, { fontPreview = true, label = 'Animation font' } = {}) {
+  const prefix = select.id === 'textFont' ? 'text-font' : select.id;
   select.hidden = true;
   const trigger = document.createElement('button');
-  trigger.type = 'button'; trigger.id = 'text-font-toggle'; trigger.className = 'font-picker-toggle';
+  trigger.type = 'button'; trigger.id = `${prefix}-toggle`; trigger.className = 'font-picker-toggle';
   trigger.setAttribute('aria-haspopup', 'listbox'); trigger.setAttribute('aria-expanded', 'false');
-  trigger.setAttribute('aria-label', 'Animation font');
+  trigger.setAttribute('aria-label', label);
   select.parentElement.htmlFor = trigger.id;
   select.after(trigger);
   const list = document.createElement('div');
-  list.id = 'font-picker-options'; list.className = 'font-picker-options'; list.hidden = true;
-  list.setAttribute('role', 'listbox'); list.setAttribute('aria-label', 'Animation font');
+  list.id = `${prefix}-options`; list.className = 'font-picker-options'; list.hidden = true;
+  list.setAttribute('role', 'listbox'); list.setAttribute('aria-label', label);
+  if (!fontPreview) list.classList.add('settings-select-options');
   trigger.setAttribute('aria-controls', list.id);
   document.body.append(list);
   const options = [...select.options].map(option => {
     const button = document.createElement('button');
     button.type = 'button'; button.setAttribute('role', 'option'); button.dataset.value = option.value;
-    button.textContent = option.text; button.style.fontFamily = TEXT_FAMILIES[option.value];
+    button.textContent = option.text; if (fontPreview) button.style.fontFamily = TEXT_FAMILIES[option.value];
     button.onclick = () => { select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); sync(); close(true); };
     list.append(button); return button;
   });
   function sync() {
     trigger.textContent = select.selectedOptions[0]?.text ?? 'Choose font';
-    trigger.style.fontFamily = TEXT_FAMILIES[select.value];
+    if (fontPreview) trigger.style.fontFamily = TEXT_FAMILIES[select.value];
     for (const option of options) option.setAttribute('aria-selected', String(option.dataset.value === select.value));
   }
   function close(focus = false) {
@@ -40,7 +42,7 @@ export function setupFontPicker(select) {
     list.style.top = down ? `${rect.bottom + 6}px` : 'auto';
     list.style.bottom = down ? 'auto' : `${innerHeight - rect.top + 6}px`;
     list.hidden = false; trigger.setAttribute('aria-expanded', 'true');
-    for (const option of options) document.fonts.load(`16px ${TEXT_FAMILIES[option.dataset.value]}`).catch(() => {});
+    if (fontPreview) for (const option of options) document.fonts.load(`16px ${TEXT_FAMILIES[option.dataset.value]}`).catch(() => {});
     options.find(option => option.dataset.value === select.value)?.focus();
   }
   trigger.onclick = () => list.hidden ? open() : close();

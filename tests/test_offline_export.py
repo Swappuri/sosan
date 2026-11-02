@@ -17,6 +17,15 @@ from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
+    def test_export_resolution_and_frame_rate_choices(self):
+        for width, height in ((640, 360), (854, 480), (1280, 720), (1920, 1080), (2560, 1440), (3840, 2160)):
+            for fps in (15, 24, 25, 30, 50, 60, 120):
+                result = validate_settings({'width': width, 'height': height, 'fps': fps})
+                self.assertEqual((result['width'], result['height'], result['fps']), (width, height, fps))
+        for invalid in ({'width': 7680, 'height': 4320}, {'fps': 240}):
+            with self.assertRaises(ValueError):
+                validate_settings(invalid)
+
     def test_text_overlays_logo_with_custom_color_size_and_font(self):
         import cv2
         with tempfile.TemporaryDirectory() as directory:

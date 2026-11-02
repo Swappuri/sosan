@@ -1,3 +1,4 @@
+import { exportBitrate } from './export-quality.js';
 import { TEXT_FONTS } from './text-fonts.js';
 /** Static-site export: decode locally, render in a worker, then offer an MP4 Blob. */
 export function createBrowserExporter(callbacks) {
@@ -23,7 +24,7 @@ export function createBrowserExporter(callbacks) {
         await decoder.close(); decoder = null;
         if (id !== generation) return;
         if (decoded.numberOfChannels > 2) throw new Error('Browser export supports mono or stereo audio. Convert this multichannel WAV to stereo first.');
-        const bitrate = selection.settings.height >= 1080 ? 7_000_000 : selection.settings.height >= 720 ? 3_800_000 : 1_800_000;
+        const bitrate = exportBitrate(selection.settings.height, selection.settings.fps);
         if (decoded.duration > 600 || (bitrate + 192_000) * decoded.duration / 8 > 300 * 1024 ** 2) throw new Error('This export exceeds the browser memory budget. Try 480p, a track under 10 minutes, or the local Python version.');
         const channels = Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i).slice());
         const fontSpec = TEXT_FONTS[selection.settings.textFont] ?? TEXT_FONTS.poppins;
