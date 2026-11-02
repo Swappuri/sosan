@@ -30,3 +30,15 @@ The bundled Poppins Regular and Medium fonts are from
 [Google Fonts](https://github.com/google/fonts/tree/main/ofl/poppins).
 They are distributed under the SIL Open Font License 1.1, preserved in
 [studio/fonts/Poppins-OFL.txt](studio/fonts/Poppins-OFL.txt).
+
+## Inter
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/inter) under the SIL Open Font License 1.1. The license is preserved in `studio/fonts/Inter-OFL.txt`.
+
+## Montserrat
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/montserrat) under the SIL Open Font License 1.1. The license is preserved in `studio/fonts/Montserrat-OFL.txt`.
+
+## Lato
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/lato) under the SIL Open Font License 1.1. The license is preserved in `studio/fonts/Lato-OFL.txt`.

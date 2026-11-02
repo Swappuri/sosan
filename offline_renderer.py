@@ -144,10 +144,10 @@ class StudioRenderer:
     def _title_image(self):
         from PIL import Image, ImageDraw, ImageFont
         family = self.settings['textFont']
-        filenames = {'tektur': 'Tektur.ttf', 'sans': 'Arial.ttf', 'serif': 'Georgia.ttf', 'mono': 'Courier New.ttf'}
+        filenames = {'poppins': 'Poppins-Medium.ttf', 'inter': 'Inter.ttf', 'montserrat': 'Montserrat.ttf', 'lato': 'Lato.ttf', 'tektur': 'Tektur.ttf', 'sans': 'Arial.ttf', 'serif': 'Georgia.ttf', 'mono': 'Courier New.ttf'}
         linux_names = {'tektur': 'DejaVuSans.ttf', 'sans': 'DejaVuSans.ttf', 'serif': 'DejaVuSerif.ttf', 'mono': 'DejaVuSansMono.ttf'}
-        candidates = [Path('/System/Library/Fonts/Supplemental') / filenames[family], Path('/usr/share/fonts/truetype/dejavu') / linux_names[family]]
-        if family == 'tektur': candidates.insert(0, Path(__file__).resolve().parent / 'studio' / 'fonts' / 'Tektur.ttf')
+        candidates = [Path('/System/Library/Fonts/Supplemental') / filenames[family], Path('/usr/share/fonts/truetype/dejavu') / linux_names.get(family, 'DejaVuSans.ttf')]
+        if family in ('poppins', 'inter', 'montserrat', 'lato', 'tektur'): candidates.insert(0, Path(__file__).resolve().parent / 'studio' / 'fonts' / filenames[family])
         font_path = next((str(path) for path in candidates if path.is_file()), None)
         radius = self.settings['radius'] * self.scale
         fonts = {}

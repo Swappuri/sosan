@@ -23,7 +23,7 @@ class OfflineExportTests(unittest.TestCase):
             logo_path = Path(directory) / 'logo.png'
             cv2.imwrite(str(logo_path), np.zeros((100, 100, 3), np.uint8))
             frames = []
-            for font in ('tektur', 'sans', 'serif', 'mono'):
+            for font in ('poppins', 'inter', 'montserrat', 'lato', 'tektur', 'sans', 'serif', 'mono'):
                 for size in (50, 100, 200):
                     settings = validate_settings({'title': 'Overlay', 'textColor': '#ff0000', 'textSize': size, 'textFont': font, 'particles': False, 'glow': False, 'pulse': False})
                     renderer = StudioRenderer(settings, logo_path)

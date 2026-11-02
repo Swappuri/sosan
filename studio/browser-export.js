@@ -1,3 +1,4 @@
+import { TEXT_FONTS } from './text-fonts.js';
 /** Static-site export: decode locally, render in a worker, then offer an MP4 Blob. */
 export function createBrowserExporter(callbacks) {
   let worker, generation = 0, active = false;
@@ -25,7 +26,8 @@ export function createBrowserExporter(callbacks) {
         const bitrate = selection.settings.height >= 1080 ? 7_000_000 : selection.settings.height >= 720 ? 3_800_000 : 1_800_000;
         if (decoded.duration > 600 || (bitrate + 192_000) * decoded.duration / 8 > 300 * 1024 ** 2) throw new Error('This export exceeds the browser memory budget. Try 480p, a track under 10 minutes, or the local Python version.');
         const channels = Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i).slice());
-        const response = await fetch(new URL('./fonts/Tektur.ttf', import.meta.url));
+        const fontSpec = TEXT_FONTS[selection.settings.textFont] ?? TEXT_FONTS.poppins;
+        const response = await fetch(new URL(`./fonts/${fontSpec.file}`, import.meta.url));
         if (!response.ok) throw new Error('Could not load the export font. Reload the page and retry.');
         const font = await response.arrayBuffer();
         if (selection.logoFile) logo = await createImageBitmap(selection.logoFile);
@@ -40,7 +42,7 @@ export function createBrowserExporter(callbacks) {
         worker.onerror = event => { if (id === generation) { cleanup(); callbacks.failed(new Error(event.message || 'Export worker stopped. Try a lower resolution.')); } };
         const transfer = [...channels.map(channel => channel.buffer), font];
         if (logo) transfer.push(logo);
-        worker.postMessage({ settings: selection.settings, channels, sampleRate: decoded.sampleRate, font, logo }, transfer);
+        worker.postMessage({ settings: selection.settings, channels, sampleRate: decoded.sampleRate, font, fontSpec, logo }, transfer);
       } catch (error) {
         if (id === generation) { cleanup(); logo?.close(); callbacks.failed(error); }
       } finally { if (decoder) await decoder.close().catch(() => {}); }

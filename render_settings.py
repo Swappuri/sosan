@@ -3,7 +3,7 @@ import math
 
 DEFAULTS = {
     'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
-    'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'tektur',
+    'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'poppins',
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
     'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': True,
@@ -26,7 +26,7 @@ def validate_settings(value):
             raise ValueError(f'Invalid {name}.')
     if type(result['bars']) is not int or result['bars'] not in range(32, 193, 16):
         raise ValueError('Invalid spectrum bar count.')
-    if result['textFont'] not in ('tektur', 'sans', 'serif', 'mono'):
+    if result['textFont'] not in ('poppins', 'inter', 'montserrat', 'lato', 'tektur', 'sans', 'serif', 'mono'):
         raise ValueError('Invalid text font.')
     if result['logoFit'] not in ('contain', 'cover'):
         raise ValueError('Invalid logo fit.')

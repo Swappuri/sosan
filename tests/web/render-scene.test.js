@@ -241,7 +241,7 @@ test('polygon waves follow the original radial control points and band count', (
 
 
 test('text draws over logos with independent font, color, and relative size', () => {
-  for (const [textFont, family] of [['tektur', 'Tektur'], ['sans', 'Arial'], ['serif', 'Georgia'], ['mono', 'Courier New']]) {
+  for (const [textFont, family] of [['poppins', 'Poppins'], ['inter', 'Inter'], ['montserrat', 'Montserrat'], ['lato', 'Lato'], ['tektur', 'Tektur'], ['sans', 'Arial'], ['serif', 'Georgia'], ['mono', 'Courier New']]) {
     const events = [], fonts = [];
     const canvas = canvasContext();
     canvas.ctx.drawImage = () => events.push('logo');

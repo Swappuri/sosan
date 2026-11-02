@@ -6,7 +6,7 @@ import { SpectrumAnalysis, advanceMotion, frameCount } from '../studio/audio-ana
 self.onmessage = async ({ data }) => {
   let output;
   try {
-    const { settings, channels, sampleRate, font, logo } = data;
+    const { settings, channels, sampleRate, font, fontSpec, logo } = data;
     const { width, height, fps } = settings;
     const bitrate = height >= 1080 ? 7_000_000 : height >= 720 ? 3_800_000 : 1_800_000;
     const quality = new Quality({ bitrate });
@@ -15,7 +15,7 @@ self.onmessage = async ({ data }) => {
     }
     if (!(await canEncodeAudio('aac', { sampleRate, numberOfChannels: channels.length }))) registerAacEncoder();
     if (font && typeof FontFace !== 'undefined' && self.fonts) {
-      const face = new FontFace('Tektur', font, { weight: '400 900' });
+      const face = new FontFace(fontSpec.family, font, { weight: fontSpec.weight });
       await face.load(); self.fonts.add(face);
     }
     const canvas = new OffscreenCanvas(width, height);

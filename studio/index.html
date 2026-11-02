@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#2d2d2d">
-  <title>sosan — Music Visualizer</title>
+  <title>sosan</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preload" href="./fonts/Poppins-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="./fonts/Tektur.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="./style.css">
@@ -109,7 +110,7 @@
         <fieldset class="control-section text-settings" disabled>
           <div class="section-heading"><h3>Text</h3><button class="text-button" data-reset="text" aria-label="Reset text">Reset</button></div>
           <label class="text-input-control" for="title">Display text<input id="title" type="text" placeholder="Enter a title or message" maxlength="50"></label>
-          <label class="text-font-control" for="textFont">Font<select id="textFont"><option value="tektur">Tektur</option><option value="sans">Arial</option><option value="serif">Georgia</option><option value="mono">Courier New</option></select></label>
+          <label class="text-font-control" for="textFont">Font<select id="textFont"><option value="poppins" selected>Poppins</option><option value="inter">Inter</option><option value="montserrat">Montserrat</option><option value="lato">Lato</option><option value="tektur">Tektur</option><option value="sans">Arial</option><option value="serif">Georgia</option><option value="mono">Courier New</option></select></label>
           <div class="text-format-row">
             <label class="text-color-control" for="textColor-color"><span class="color-caption">Color</span><span class="text-color-field"><input id="textColor-color" type="color" value="#eeeff2"><output id="textColor-color-value" for="textColor-color">#EEEFF2</output></span></label>
             <div class="slider-field"><label class="slider-label" for="textSize">Size <output id="textSize-value" for="textSize">100%</output></label><input id="textSize" type="range" min="50" max="200" step="5" value="100"></div>

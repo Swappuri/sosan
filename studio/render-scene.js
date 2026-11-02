@@ -1,3 +1,4 @@
+import { TEXT_FAMILIES } from './text-fonts.js';
 import { layoutText } from './text-layout.js';
 "use strict";
 
@@ -135,7 +136,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     }
   }
   if (title) {
-    const family = { tektur: 'Tektur, sans-serif', sans: 'Arial, sans-serif', serif: 'Georgia, serif', mono: '"Courier New", monospace' }[settings.textFont ?? 'tektur'];
+    const family = TEXT_FAMILIES[settings.textFont ?? 'poppins'] ?? TEXT_FAMILIES.poppins;
     const inset = radius * .9;
     const layout = layoutText(title, shape, inset, 21 * scale * (settings.textSize ?? 100) / 100, (text, size) => {
       ctx.font = `600 ${size}px ${family}`; return ctx.measureText(text).width;
