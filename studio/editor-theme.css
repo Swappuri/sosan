@@ -1,0 +1,55 @@
+/* Restrained editor theme. Kept separate so the previous design is easy to restore. */
+.settings {
+  --control-gap: 10px;
+  --control-padding: 8px;
+  --control-height: 34px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+}
+.settings-content { gap: 22px; padding: 16px; }
+.control-section + .control-section { border-top: 0; padding-top: 0; }
+.section-heading { margin-bottom: 12px; }
+.section-heading h3 { font-family: Tektur, sans-serif; font-size: 12px; color: #e7e7e7; }
+.settings .text-button { font-size: 11px; color: #999; }
+.slider-field, .toggle-row, .text-input-control, .text-font-control, .text-color-control, .select-row > label, .color-card {
+  border: 0; background: transparent; border-radius: 0; padding: 0; color: #a6a6a6; font-size: 11px; line-height: 15px;
+}
+.slider-field { height: 38px; min-height: 38px; justify-content: flex-start; gap: 12px; }
+.slider-field input[type=range] { height: 2px; margin-bottom: 0; background: #414141; }
+.slider-label { font-size: 11px; line-height: 15px; }
+.slider-label output { font-size: 11px; color: #d0d0d0; }
+.slider-field + .slider-field { margin-top: 8px; }
+.toggle-row { height: 28px; min-height: 28px; }
+.effects-grid { gap: 6px 20px; }
+.toggle-row input { width: 26px; height: 14px; }
+.toggle-row input::before { width: 8px; height: 8px; }
+.toggle-row input:checked::before { left: 15px; }
+.text-input-control, .text-font-control, .select-row > label { height: 53px; gap: 6px; }
+.text-input-control input[type=text], .text-font-control select, .select-row select {
+  height: 32px; padding: 6px 9px; border: 1px solid #414141; border-radius: 4px; background: #222; color: #ddd; font-size: 12px;
+}
+.text-font-control, .text-format-row { margin-top: 12px; }
+.text-format-row { gap: 12px; }
+.style-choice > span, .shape-choices .style-choice > span, .logo-fit-choices .style-choice > span, .decoration-button {
+  height: 32px; min-height: 32px; padding: 6px 8px; font-size: 11px; line-height: 16px; background: #222; color: #aaa; border-color: #414141;
+}
+.style-choice input:checked + span, .decoration-button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+.style-choice svg { width: 18px; height: 16px; }
+.shape-choices .style-choice svg { width: 15px; height: 14px; }
+.file-card { height: 36px; min-height: 36px; background: #222; }
+.file-card.has-file { border-color: #484848; background: #222; color: #ddd; }
+.file-card.has-file .dropzone, .file-card.has-file .file-upload, .file-card.has-file .file-remove { color: #ddd; }
+.file-copy strong, .file-remove { font-size: 11px; font-weight: 400; }
+.file-copy small { font-size: 9px; }
+.color-row { gap: 8px; }
+.color-card { height: 48px; overflow: visible; display: flex; align-items: center; }
+.color-card input[type=color] { position: static; width: 24px; height: 24px; border: 1px solid #555; border-radius: 4px; padding: 2px; background: #222; }
+.color-caption { position: static; inset: auto; padding: 0; color: #aaa; font-size: 10px; font-weight: 400; line-height: 15px; }
+.color-card .color-caption { position: absolute; top: 30px; left: 0; right: 0; text-align: center; }
+.text-color-control { position: relative; overflow: visible; height: 30px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.text-color-control .color-caption { font-size: 11px; }
+.text-color-field { position: static; width: 32px; height: 26px; flex: 0 0 32px; border: 1px solid #555; border-radius: 4px; padding: 2px; background: #222; }
+.text-color-field input[type=color] { position: static; width: 100%; height: 100%; border-radius: 2px; }
+.settings-pagination { padding: 10px 16px; }
+.settings-page-numbers button { font-family: inherit; }
+.settings-page-tooltip { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #252525; border-color: #484848; font-size: 11px; }

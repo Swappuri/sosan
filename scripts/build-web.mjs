@@ -9,7 +9,7 @@ await mkdir(out, { recursive: true });
 await cp('studio', out, { recursive: true });
 const scripts = (await readdir('studio')).filter(file => file.endsWith('.js')).sort();
 const hash = createHash('sha256');
-for (const file of [...scripts.map(name => `studio/${name}`), 'studio/style.css', 'studio/index.html', 'web/export-worker.js', 'package-lock.json']) hash.update(await readFile(file));
+for (const file of [...scripts.map(name => `studio/${name}`), 'studio/style.css', 'studio/editor-theme.css', 'studio/index.html', 'web/export-worker.js', 'package-lock.json']) hash.update(await readFile(file));
 const version = hash.digest('hex').slice(0, 12);
 // Version the full module graph so Pages/browser caches cannot retain a fixed bug.
 for (const script of scripts) {
@@ -23,6 +23,7 @@ const html = await readFile(resolve(out, 'index.html'), 'utf8');
 await writeFile(resolve(out, 'index.html'), html
   .replace('./app.js', `./app.js?v=${version}`)
   .replace('./style.css', `./style.css?v=${version}`)
+  .replace('./editor-theme.css', `./editor-theme.css?v=${version}`)
   .replace('</head>', '<meta name="sosan-export-mode" content="browser">\n</head>'));
 await build({ entryPoints: ['web/export-worker.js'], outfile: resolve(out, 'export-worker.bundle.js'), bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true, legalComments: 'inline' });
 await mkdir(resolve(out, 'licenses'), { recursive: true });
