@@ -251,7 +251,7 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 @media (min-height: 1000px) and (min-width: 1000px) { .color-card output { height: 28px; } }
 
 /* A shared shell and rhythm for labeled settings controls. */
-.settings { --control-gap: 8px; --control-padding: 8px; --control-height: 60px; }
+.settings { --control-gap: 8px; --control-padding: 6px; --control-height: 46px; }
 .slider-field, .toggle-row, .text-input-control, .text-font-control, .text-color-control, .select-row > label, .color-card {
   border: 1px solid #414141; border-radius: 4px; background: var(--surface); padding: var(--control-padding); color: var(--muted); font-size: 10px; line-height: 13px;
 }
@@ -272,3 +272,13 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .logo-fit-choices { margin-bottom: var(--control-gap); }
 #logo-placement { margin-top: var(--control-gap); }
 .style-choice > span { padding: var(--control-padding); }
+
+/* Compact dimensions shared by upload cards, action choices, and labeled fields. */
+.text-input-control input[type=text], .text-font-control select, .select-row select, .text-color-field, .text-color-field input[type=color], .color-card input[type=color], .color-card output { height: 18px; }
+.file-card, .style-choice > span, .shape-choices .style-choice > span, .logo-fit-choices .style-choice > span, .decoration-button { height: var(--control-height); min-height: var(--control-height); }
+.style-choice > span, .shape-choices .style-choice > span, .logo-fit-choices .style-choice > span, .decoration-button { padding: var(--control-padding); }
+.shape-choices .style-choice > span { flex-direction: row; gap: 4px; }
+.shape-choices .style-choice svg { width: 18px; height: 16px; flex-shrink: 0; }
+.file-card .dropzone, .file-card .file-upload { height: 100%; min-height: 0; padding: var(--control-padding); }
+.file-card .file-remove, .file-card.has-file .file-remove { padding: var(--control-padding); }
+.decoration-button { margin-top: var(--control-gap); }
