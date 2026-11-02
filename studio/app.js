@@ -182,7 +182,9 @@ function syncPreviewVolume() {
   $('preview-volume').value = Math.round(level * 100);
   $('preview-volume').setAttribute('aria-valuetext', `${Math.round(level * 100)} percent`);
   $('preview-volume-value').value = `${Math.round(level * 100)}%`;
-  $('mute').classList.toggle('is-muted', level === 0);
+  $('volume-toggle').classList.toggle('is-muted', level === 0);
+  $('volume-toggle').setAttribute('aria-label', `Preview volume: ${Math.round(level * 100)} percent`);
+  $('mute').textContent = level === 0 ? 'Unmute' : 'Mute';
   $('mute').setAttribute('aria-pressed', String(level === 0));
   $('mute').setAttribute('aria-label', level === 0 ? 'Unmute preview' : 'Mute preview');
   $('mute').title = level === 0 ? 'Unmute preview' : 'Mute preview';
@@ -199,6 +201,19 @@ $('mute').onclick = () => {
   syncPreviewVolume();
 };
 syncPreviewVolume();
+const volumeControl = $('volume-toggle').parentElement;
+let volumePinned = false;
+function showVolume(open) {
+  $('volume-popover').hidden = !open;
+  $('volume-toggle').setAttribute('aria-expanded', String(open));
+}
+volumeControl.onpointerenter = event => { if (event.pointerType !== 'touch') showVolume(true); };
+volumeControl.onpointerleave = () => { if (!volumePinned && !volumeControl.contains(document.activeElement)) showVolume(false); };
+$('volume-toggle').onclick = () => { volumePinned = !volumePinned; showVolume(volumePinned); };
+volumeControl.onfocusin = () => showVolume(true);
+volumeControl.onfocusout = event => { if (!volumeControl.contains(event.relatedTarget)) { volumePinned = false; showVolume(false); } };
+document.addEventListener('pointerdown', event => { if (!volumeControl.contains(event.target)) { volumePinned = false; showVolume(false); } });
+volumeControl.onkeydown = event => { if (event.key === 'Escape') { event.preventDefault(); volumePinned = false; $('volume-toggle').focus(); showVolume(false); } };
 document.addEventListener('keydown', event => { if (event.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); togglePlay(); } });
 $('stage-browse').onclick = $('dropzone').onclick = () => $('audio-file').click();
 $('audio-file').onchange = event => { if (event.target.files[0]) loadSong(event.target.files[0]); event.target.value = ''; };
