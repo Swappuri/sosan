@@ -166,7 +166,7 @@ function relativeLuminance(hex) {
 }
 function applyTheme() {
   for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) {
-    $(key + '-color-value').style.color = relativeLuminance(settings[key]) > .179 ? '#111111' : '#ffffff';
+    $(key + '-color').closest('label').style.setProperty('--swatch-ink', relativeLuminance(settings[key]) > .179 ? '#111111' : '#ffffff');
   }
   const color = settings.primary;
   const luminance = relativeLuminance(color);

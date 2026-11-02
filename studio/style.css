@@ -282,3 +282,19 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .file-card .dropzone, .file-card .file-upload { height: 100%; min-height: 0; padding: var(--control-padding); }
 .file-card .file-remove, .file-card.has-file .file-remove { padding: var(--control-padding); }
 .decoration-button { margin-top: var(--control-gap); }
+
+/* Center content optically and give short action labels a stronger presence. */
+.settings { --control-padding: 8px; --control-height: 50px; }
+.slider-field, .toggle-row, .text-input-control, .text-font-control, .text-color-control, .select-row > label, .slider-label { font-size: 11px; line-height: 14px; }
+.text-input-control input[type=text], .text-font-control select, .select-row select { font-size: 12px; }
+.style-choice > span, .shape-choices .style-choice > span, .logo-fit-choices .style-choice > span, .decoration-button { font-size: 12px; line-height: 16px; }
+.style-choice > span, .decoration-button { display: flex; align-items: center; justify-content: center; }
+.file-copy strong, .file-remove { font-size: 11px; }
+.file-copy strong, .file-copy small, .file-remove > span { transform: none; line-height: 16px; }
+.file-copy, .file-add-icon, .style-choice svg { align-self: center; }
+.file-card .file-remove { height: 100%; }
+.color-card, .text-color-control { position: relative; overflow: hidden; padding: 0; }
+.color-card input[type=color], .text-color-field, .text-color-field input[type=color] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 3px; }
+.color-card output, .text-color-field output { display: none; }
+.color-caption { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 4px; color: var(--swatch-ink); font-size: 10px; line-height: 14px; font-weight: 600; pointer-events: none; }
+.text-color-control .color-caption { font-size: 11px; }
