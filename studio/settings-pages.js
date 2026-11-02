@@ -6,8 +6,25 @@ export function setupSettingsPages(panel) {
   const next = panel.querySelector('[data-settings-page="next"]');
   const label = panel.querySelector('#settings-page-label');
   const numbers = panel.querySelector('#settings-page-numbers');
+  const tooltip = document.createElement('div');
+  tooltip.id = 'settings-page-tooltip';
+  tooltip.className = 'settings-page-tooltip';
+  tooltip.setAttribute('role', 'tooltip');
+  tooltip.hidden = true;
+  document.body.append(tooltip);
+  function hideTooltip() { tooltip.hidden = true; }
+  function showTooltip(button, text) {
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    const rect = button.getBoundingClientRect();
+    const width = tooltip.getBoundingClientRect().width;
+    tooltip.style.left = `${Math.max(8, Math.min(innerWidth - width - 8, rect.left + rect.width / 2 - width / 2))}px`;
+    tooltip.style.top = `${rect.top - tooltip.getBoundingClientRect().height - 8}px`;
+  }
+  window.addEventListener('resize', hideTooltip);
   let pages = [], current = 0, scheduled = false;
   function show(index) {
+    hideTooltip();
     current = Math.max(0, Math.min(index, pages.length - 1));
     const visible = pages[current] ?? [];
     for (const section of sections) {
@@ -48,7 +65,11 @@ export function setupSettingsPages(panel) {
     numbers.replaceChildren(...pages.map((page, index) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.title = page.map(section => section.querySelector('h3').textContent).join(' · ');
+      const names = page.map(section => section.querySelector('h3').textContent).join(' · ');
+      button.setAttribute('aria-describedby', tooltip.id);
+      button.onpointerenter = button.onfocus = () => showTooltip(button, names);
+      button.onpointerleave = button.onblur = hideTooltip;
+      button.onkeydown = event => { if (event.key === 'Escape') hideTooltip(); };
       button.textContent = index + 1;
       button.setAttribute('aria-label', `Settings page ${index + 1}: ${page.map(section => section.querySelector('h3').textContent).join(', ')}`);
       button.onclick = () => show(index);

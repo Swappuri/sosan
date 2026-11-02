@@ -241,3 +241,11 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .text-color-field { position: relative; padding: 4px; }
 .text-color-field input[type=color] { width: 100%; }
 .text-color-field output { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-weight: 600; }
+
+.settings-page-tooltip { position: fixed; z-index: 100; max-width: min(260px, calc(100vw - 16px)); padding: 8px 10px; border: 1px solid var(--accent-border); border-radius: 5px; background: var(--surface); color: var(--text); font-size: 10px; line-height: 1.5; box-shadow: 0 4px 16px #0006; pointer-events: none; }
+.color-card { position: relative; }
+.color-card output { position: absolute; left: 4px; right: 4px; bottom: 6px; height: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; font-weight: 600; }
+.slider-field, .toggle-row { border: 1px solid #414141; border-radius: 4px; background: var(--surface); padding: 9px; }
+.toggle-row { min-height: 36px; }
+.effects-grid { gap: 8px; }
+@media (min-height: 1000px) and (min-width: 1000px) { .color-card output { height: 28px; } }

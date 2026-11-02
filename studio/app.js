@@ -165,7 +165,9 @@ function relativeLuminance(hex) {
   return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722;
 }
 function applyTheme() {
-  $('textColor-color-value').style.color = relativeLuminance(settings.textColor) > .179 ? '#111111' : '#ffffff';
+  for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) {
+    $(key + '-color-value').style.color = relativeLuminance(settings[key]) > .179 ? '#111111' : '#ffffff';
+  }
   const color = settings.primary;
   const luminance = relativeLuminance(color);
   const darkLuminance = relativeLuminance('#101114');
@@ -289,6 +291,7 @@ $('logo-file').onchange = async event => {
     if (loadId !== logoLoadId) { image.close(); return; }
     const previous = logo;
     logo = image; logoFile = file;
+    setDisplayTitle('');
     syncSettingsAvailability();
     previous?.close?.();
     syncFileCards();
