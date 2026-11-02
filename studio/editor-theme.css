@@ -116,3 +116,17 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .font-picker-options button:disabled { opacity: .35; cursor: not-allowed; }
 .font-picker-options button:disabled:hover { background: transparent; outline: none; }
 .export-support-note { margin: 10px 0 0; color: #999; font-size: 10px; line-height: 1.5; }
+
+.transport #seek { flex: 1; min-width: 0; }
+.preview-volume { display: flex; align-items: center; gap: 8px; width: 152px; flex-shrink: 0; }
+.preview-volume .icon-button { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; padding: 5px; }
+.preview-volume svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.volume-slash, .is-muted .volume-waves { display: none; }
+.is-muted .volume-slash { display: block; }
+#preview-volume { flex: 1; min-width: 0; }
+#preview-volume-value { width: 32px; flex-shrink: 0; color: #aaa; font-size: 10px; text-align: right; }
+@media (max-width: 499px) {
+  .transport .play { grid-column: 1; grid-row: 1; }
+  .preview-volume { grid-column: 2 / -1; grid-row: 1; justify-self: end; }
+  .preview-volume #mute { grid-column: auto; grid-row: auto; }
+}

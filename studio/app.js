@@ -70,6 +70,7 @@ async function prepareAudio() {
     analyser.smoothingTimeConstant = 0.55;
     spectrum = new Uint8Array(analyser.frequencyBinCount);
     monitor = context.createGain();
+    syncPreviewVolume();
     source.connect(analyser);
     analyser.connect(monitor);
     monitor.connect(context.destination);
@@ -144,8 +145,6 @@ async function loadSong(file) {
     selectedFile = file;
     setDisplayTitle(defaultTitle(file));
     $('empty-state').hidden = true;
-    $('track-name').textContent = file.name;
-    $('track-detail').textContent = `${file.name.split('.').pop().toUpperCase()} · ${timeLabel(audio.duration)}`;
     $('duration').textContent = timeLabel(audio.duration);
     $('seek').max = audio.duration;
     $('seek').value = 0;
@@ -154,7 +153,7 @@ async function loadSong(file) {
     $('export').disabled = exporting || exportPreparing;
     status('');
   } catch (error) {
-    if (loadId === activeLoad) { loaded = false; $('empty-state').hidden = false; $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'Choose another MP3 or WAV'; status(error.message, true); }
+    if (loadId === activeLoad) { loaded = false; $('empty-state').hidden = false; status(error.message, true); }
   } finally { if (loadId === activeLoad) { loading = false; syncFileCards(); syncPlaybackState(); syncSettingsAvailability(); } }
 }
 async function togglePlay() {
@@ -176,7 +175,30 @@ for (const event of ['play', 'playing', 'pause', 'ended', 'emptied', 'loadstart'
   audio.addEventListener(event, syncPlaybackState);
 }
 $('seek').oninput = () => { if (loaded) { audio.currentTime = Number($('seek').value); resetMotion(); } };
-$('mute').onclick = () => { if (monitor) { monitor.gain.value = monitor.gain.value ? 0 : 1; $('mute').textContent = monitor.gain.value ? '♪' : '×'; $('mute').setAttribute('aria-label', monitor.gain.value ? 'Mute audio' : 'Unmute audio'); } };
+let previewVolume = 1, previewMuted = false, lastPreviewVolume = 1;
+function syncPreviewVolume() {
+  const level = previewMuted ? 0 : previewVolume;
+  if (monitor) monitor.gain.value = level;
+  $('preview-volume').value = Math.round(level * 100);
+  $('preview-volume').setAttribute('aria-valuetext', `${Math.round(level * 100)} percent`);
+  $('preview-volume-value').value = `${Math.round(level * 100)}%`;
+  $('mute').classList.toggle('is-muted', level === 0);
+  $('mute').setAttribute('aria-pressed', String(level === 0));
+  $('mute').setAttribute('aria-label', level === 0 ? 'Unmute preview' : 'Mute preview');
+  $('mute').title = level === 0 ? 'Unmute preview' : 'Mute preview';
+}
+$('preview-volume').oninput = () => {
+  previewVolume = Number($('preview-volume').value) / 100;
+  previewMuted = false;
+  if (previewVolume > 0) lastPreviewVolume = previewVolume;
+  syncPreviewVolume();
+};
+$('mute').onclick = () => {
+  if (previewVolume === 0) { previewVolume = lastPreviewVolume; previewMuted = false; }
+  else previewMuted = !previewMuted;
+  syncPreviewVolume();
+};
+syncPreviewVolume();
 document.addEventListener('keydown', event => { if (event.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); togglePlay(); } });
 $('stage-browse').onclick = $('dropzone').onclick = () => $('audio-file').click();
 $('audio-file').onchange = event => { if (event.target.files[0]) loadSong(event.target.files[0]); event.target.value = ''; };
@@ -279,7 +301,6 @@ function performReset(section) {
     if (currentUrl) URL.revokeObjectURL(currentUrl);
     currentUrl = undefined;
     setDisplayTitle(''); $('empty-state').hidden = false;
-    $('track-name').textContent = 'No audio loaded'; $('track-detail').textContent = 'MP3 or WAV';
     $('elapsed').textContent = $('duration').textContent = '0:00';
     $('seek').value = 0; $('seek').max = 100;
     $('play').disabled = $('seek').disabled = $('export').disabled = true;

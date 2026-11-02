@@ -33,11 +33,14 @@
       </div>
       <div class="transport">
         <button id="play" class="play" aria-label="Play" title="Play / pause (Space)" disabled>▶</button>
-        <div class="track"><strong id="track-name">No audio loaded</strong><span id="track-detail">MP3 or WAV</span></div>
         <span class="time" id="elapsed">0:00</span>
         <input id="seek" type="range" min="0" max="100" value="0" step="0.01" aria-label="Song position" disabled>
         <span class="time" id="duration">0:00</span>
-        <button id="mute" class="icon-button" aria-label="Mute audio">♪</button>
+        <div class="preview-volume">
+          <button id="mute" class="icon-button" aria-label="Mute preview" aria-pressed="false" title="Mute preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path class="volume-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="volume-slash" d="m15 9 6 6m0-6-6 6"/></svg></button>
+          <input id="preview-volume" type="range" min="0" max="100" value="100" step="1" aria-label="Preview volume" aria-valuetext="100 percent">
+          <output id="preview-volume-value" for="preview-volume">100%</output>
+        </div>
       </div>
       <section class="export-panel" id="export-panel" hidden aria-live="polite">
         <div><strong id="export-title">Rendering…</strong><span id="export-detail"></span></div>
