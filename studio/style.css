@@ -249,3 +249,26 @@ fieldset:disabled input, fieldset:disabled select { cursor: not-allowed; }
 .toggle-row { min-height: 36px; }
 .effects-grid { gap: 8px; }
 @media (min-height: 1000px) and (min-width: 1000px) { .color-card output { height: 28px; } }
+
+/* A shared shell and rhythm for labeled settings controls. */
+.settings { --control-gap: 8px; --control-padding: 8px; --control-height: 60px; }
+.slider-field, .toggle-row, .text-input-control, .text-font-control, .text-color-control, .select-row > label, .color-card {
+  border: 1px solid #414141; border-radius: 4px; background: var(--surface); padding: var(--control-padding); color: var(--muted); font-size: 10px; line-height: 13px;
+}
+.slider-field, .toggle-row { height: var(--control-height); min-height: var(--control-height); }
+.slider-field { display: flex; flex-direction: column; justify-content: space-between; }
+.slider-label { margin: 0; }
+.slider-field input[type=range] { margin-bottom: 4px; }
+.slider-field + .slider-field { margin-top: var(--control-gap); }
+.effects-grid, .select-row, .color-row, .text-format-row, .style-choices, .shape-choices { gap: var(--control-gap); }
+.text-input-control, .text-font-control, .text-color-control, .select-row > label { display: flex; flex-direction: column; justify-content: space-between; height: var(--control-height); }
+.text-font-control, .text-format-row { margin-top: var(--control-gap); }
+.text-input-control input[type=text], .text-font-control select, .select-row select { height: 24px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.text-color-field { height: 24px; margin: 0; padding: 0; border: 0; border-radius: 2px; }
+.text-color-field input[type=color] { height: 24px; }
+.color-card { height: var(--control-height); justify-content: space-between; gap: 0; }
+.color-card input[type=color] { height: 24px; }
+.color-card output { left: var(--control-padding); right: var(--control-padding); bottom: var(--control-padding); height: 24px; }
+.logo-fit-choices { margin-bottom: var(--control-gap); }
+#logo-placement { margin-top: var(--control-gap); }
+.style-choice > span { padding: var(--control-padding); }
