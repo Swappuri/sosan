@@ -112,3 +112,7 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 
 .select-row .font-picker-toggle { font-family: Poppins, sans-serif; font-size: 12px; }
 .settings-select-options button { font-family: Poppins, sans-serif; font-size: 12px; line-height: 20px; }
+
+.font-picker-options button:disabled { opacity: .35; cursor: not-allowed; }
+.font-picker-options button:disabled:hover { background: transparent; outline: none; }
+.export-support-note { margin: 10px 0 0; color: #999; font-size: 10px; line-height: 1.5; }

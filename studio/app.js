@@ -1,3 +1,4 @@
+import { optionSupport, probeExportSupport } from './export-support.js';
 import { setupFontPicker } from './font-picker.js';
 import { setupSettingsPages } from './settings-pages.js';
 import { renderScene } from './render-scene.js';
@@ -22,6 +23,29 @@ let logoLoadId = 0, previewError;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
 let activeLoad = 0, exportPreparing = false;
 let statusTimer;
+let supportReady = !browserMode, supportedExports = new Set();
+const resolutionChoices = [...$('resolution').options].map(option => option.value);
+const fpsChoices = [...$('fps').options].map(option => option.value);
+function syncExportButton() {
+  $('export').disabled = !loaded || loading || exporting || exportPreparing || (browserMode && (!supportReady || !supportedExports.has(`${$('resolution').value}/${$('fps').value}`)));
+}
+function syncExportOptions() {
+  if (!browserMode) return;
+  const note = $('export-support-note');
+  const key = `${$('resolution').value}/${$('fps').value}`;
+  if (supportReady && supportedExports.size && !supportedExports.has(key)) {
+    const fallback = supportedExports.has('1280x720/30') ? '1280x720/30' : [...supportedExports][0];
+    const [resolution, fps] = fallback.split('/');
+    $('resolution').value = resolution; $('fps').value = fps;
+  }
+  const availability = optionSupport(supportedExports, $('resolution').value, $('fps').value, resolutionChoices, fpsChoices);
+  for (const [index, option] of [...$('resolution').options].entries()) option.disabled = !availability.resolutions[index];
+  for (const [index, option] of [...$('fps').options].entries()) option.disabled = !availability.frameRates[index];
+  $('resolution').disabled = $('fps').disabled = !supportReady || !supportedExports.size;
+  note.hidden = supportReady && supportedExports.size > 0 && !availability.resolutions.includes(false) && !availability.frameRates.includes(false);
+  note.textContent = !supportReady ? 'Checking browser export support…' : !supportedExports.size ? 'MP4 export is unavailable in this browser.' : 'Dimmed options are unsupported with the current selection.';
+  syncResolutionPicker(); syncFpsPicker(); syncExportButton();
+}
 function status(message, error = false) {
   clearTimeout(statusTimer);
   $('status').textContent = message;
@@ -54,7 +78,7 @@ async function prepareAudio() {
 }
 function setExportState(value) {
   exporting = value;
-  $('export').disabled = value || !loaded;
+  syncExportButton();
   $('export-panel').hidden = false;
   $('cancel-export').hidden = !value;
   $('cancel-export').disabled = false;
@@ -63,6 +87,7 @@ function syncPlaybackState() { syncPlaybackButton($('play'), audio, loaded && !l
 function syncSettingsAvailability() {
   const disabled = !loaded || loading;
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
+  syncExportButton();
   $('title').disabled = disabled;
   document.querySelectorAll('#logo-placement input').forEach(input => { input.disabled = disabled || !logo; });
   $('logo-placement').classList.toggle('is-disabled', disabled || !logo);
@@ -120,7 +145,7 @@ async function loadSong(file) {
     setDisplayTitle(defaultTitle(file));
     $('empty-state').hidden = true;
     $('track-name').textContent = file.name;
-    $('track-detail').textContent = `${file.name.split('.').pop().toUpperCase()} · ${timeLabel(audio.duration)} · full track`;
+    $('track-detail').textContent = `${file.name.split('.').pop().toUpperCase()} · ${timeLabel(audio.duration)}`;
     $('duration').textContent = timeLabel(audio.duration);
     $('seek').max = audio.duration;
     $('seek').value = 0;
@@ -275,9 +300,9 @@ $('reset-dialog').addEventListener('close', () => {
   const section = pendingReset; pendingReset = undefined;
   if (section && $('reset-dialog').returnValue === 'reset') performReset(section);
 });
-function setResolution() { syncResolutionPicker(); syncFpsPicker(); const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
+function setResolution() { syncExportOptions(); syncResolutionPicker(); syncFpsPicker(); const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
 $('resolution').onchange = setResolution;
-$('fps').onchange = syncFpsPicker;
+$('fps').onchange = setResolution;
 $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;
@@ -574,3 +599,13 @@ if (!browserMode) {
 }
 
 setupSettingsPages($('settings-panel'));
+
+if (browserMode) {
+  syncExportOptions();
+  probeExportSupport(resolutionChoices, fpsChoices).then(supported => {
+    supportedExports = supported; supportReady = true; setResolution();
+  }).catch(() => {
+    supportReady = true; syncExportOptions();
+    $('export-support-note').textContent = 'Could not check export support. Reload to retry.';
+  });
+}

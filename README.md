@@ -30,7 +30,7 @@ use the optional local version for larger exports and closed-tab rendering.
 - Customize spectrum colors, radius, reactivity, bar count, glow, particles,
   bass pulses, and beat flashes.
 - Add a logo and display text, with independent text color, size, and font controls.
-- Export at 360p, 480p, 720p, 1080p, 1440p, or 4K, with 15, 24, 25, 30, 50, 60, or 120 FPS. Browser encoding support depends on the device and selected combination.
+- Export at 360p, 480p, 720p, 1080p, 1440p, or 4K, with 15, 24, 25, 30, 50, 60, or 120 FPS. Browser encoding support is checked on-device; unsupported combinations are disabled in the export menus.
 - Export directly in the browser, or use the optional Python server for persistent background jobs.
 - Cancel an active render or download the completed MP4.
 - Keep audio, images, analysis, and rendering on your computer.

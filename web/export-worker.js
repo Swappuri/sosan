@@ -5,6 +5,18 @@ import { renderScene } from '../studio/render-scene.js';
 import { SpectrumAnalysis, advanceMotion, frameCount } from '../studio/audio-analysis.js';
 
 self.onmessage = async ({ data }) => {
+  if (data.type === 'capabilities') {
+    const supported = [];
+    // Probe in the same worker environment and with the same encoder settings as export.
+    for (const request of data.requests) {
+      try {
+        const quality = new Quality({ bitrate: exportBitrate(request.height, request.fps) });
+        if (await canEncodeVideo('avc', { width: request.width, height: request.height, frameRate: request.fps, quality })) supported.push(request.key);
+      } catch { /* An unavailable configuration remains disabled. */ }
+    }
+    self.postMessage({ type: 'capabilities', supported });
+    return;
+  }
   let output;
   try {
     const { settings, channels, sampleRate, font, fontSpec, logo } = data;

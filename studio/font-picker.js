@@ -19,13 +19,18 @@ export function setupFontPicker(select, { fontPreview = true, label = 'Animation
     const button = document.createElement('button');
     button.type = 'button'; button.setAttribute('role', 'option'); button.dataset.value = option.value;
     button.textContent = option.text; if (fontPreview) button.style.fontFamily = TEXT_FAMILIES[option.value];
-    button.onclick = () => { select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); sync(); close(true); };
+    button.onclick = () => { if (button.disabled) return; select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); sync(); close(true); };
     list.append(button); return button;
   });
   function sync() {
     trigger.textContent = select.selectedOptions[0]?.text ?? 'Choose font';
+    trigger.disabled = select.disabled;
     if (fontPreview) trigger.style.fontFamily = TEXT_FAMILIES[select.value];
-    for (const option of options) option.setAttribute('aria-selected', String(option.dataset.value === select.value));
+    for (const [index, option] of options.entries()) {
+      option.disabled = select.options[index].disabled;
+      option.setAttribute('aria-selected', String(option.dataset.value === select.value));
+      option.title = option.disabled ? 'Unsupported with the current export settings' : '';
+    }
   }
   function close(focus = false) {
     list.hidden = true; trigger.setAttribute('aria-expanded', 'false');
@@ -43,18 +48,20 @@ export function setupFontPicker(select, { fontPreview = true, label = 'Animation
     list.style.bottom = down ? 'auto' : `${innerHeight - rect.top + 6}px`;
     list.hidden = false; trigger.setAttribute('aria-expanded', 'true');
     if (fontPreview) for (const option of options) document.fonts.load(`16px ${TEXT_FAMILIES[option.dataset.value]}`).catch(() => {});
-    options.find(option => option.dataset.value === select.value)?.focus();
+    (options.find(option => !option.disabled && option.dataset.value === select.value) ?? options.find(option => !option.disabled))?.focus();
   }
   trigger.onclick = () => list.hidden ? open() : close();
   trigger.onkeydown = event => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); open(); } };
   list.onkeydown = event => {
-    const index = options.indexOf(document.activeElement);
+    const enabled = options.filter(option => !option.disabled);
+    const index = enabled.indexOf(document.activeElement);
     if (event.key === 'Escape') { event.preventDefault(); close(true); }
     else if (event.key === 'Tab') close(true);
     else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
       event.preventDefault();
-      const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
-      options[next].focus();
+      if (!enabled.length) return;
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? enabled.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + enabled.length) % enabled.length;
+      enabled[next].focus();
     }
   };
   document.addEventListener('pointerdown', event => { if (!trigger.contains(event.target) && !list.contains(event.target)) close(); });
