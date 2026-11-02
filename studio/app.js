@@ -180,6 +180,7 @@ function syncPreviewVolume() {
   const level = previewMuted ? 0 : previewVolume;
   if (monitor) monitor.gain.value = level;
   $('preview-volume').value = Math.round(level * 100);
+  $('preview-volume').style.setProperty('--volume-progress', `${level * 100}%`);
   $('preview-volume').setAttribute('aria-valuetext', `${Math.round(level * 100)} percent`);
   $('preview-volume-value').value = `${Math.round(level * 100)}%`;
   $('volume-toggle').classList.toggle('is-muted', level === 0);
@@ -445,6 +446,7 @@ function draw(now) {
   sampleAudio(dt);
   paintPreview(now);
   if (loaded) { $('elapsed').textContent = timeLabel(audio.currentTime); $('seek').value = audio.currentTime; }
+  $('seek').style.setProperty('--seek-progress', `${loaded && audio.duration > 0 ? audio.currentTime / audio.duration * 100 : 0}%`);
 }
 function paintPreview(now) {
   try {
