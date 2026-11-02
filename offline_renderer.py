@@ -144,10 +144,10 @@ class StudioRenderer:
     def _title_image(self):
         from PIL import Image, ImageDraw, ImageFont
         family = self.settings['textFont']
-        filenames = {'poppins': 'Poppins-Medium.ttf', 'inter': 'Inter.ttf', 'montserrat': 'Montserrat.ttf', 'lato': 'Lato.ttf', 'tektur': 'Tektur.ttf', 'sans': 'Arial.ttf', 'serif': 'Georgia.ttf', 'mono': 'Courier New.ttf'}
+        filenames = {'roboto': 'Roboto.ttf', 'opensans': 'OpenSans.ttf', 'lora': 'Lora.ttf', 'nunito': 'Nunito.ttf', 'raleway': 'Raleway.ttf', 'oswald': 'Oswald.ttf', 'playfair': 'PlayfairDisplay.ttf', 'merriweather': 'Merriweather.ttf', 'rubik': 'Rubik.ttf', 'bebas': 'BebasNeue.ttf', 'poppins': 'Poppins-Medium.ttf', 'inter': 'Inter.ttf', 'montserrat': 'Montserrat.ttf', 'lato': 'Lato.ttf', 'tektur': 'Tektur.ttf', 'sans': 'Arial.ttf', 'serif': 'Georgia.ttf', 'mono': 'Courier New.ttf'}
         linux_names = {'tektur': 'DejaVuSans.ttf', 'sans': 'DejaVuSans.ttf', 'serif': 'DejaVuSerif.ttf', 'mono': 'DejaVuSansMono.ttf'}
         candidates = [Path('/System/Library/Fonts/Supplemental') / filenames[family], Path('/usr/share/fonts/truetype/dejavu') / linux_names.get(family, 'DejaVuSans.ttf')]
-        if family in ('poppins', 'inter', 'montserrat', 'lato', 'tektur'): candidates.insert(0, Path(__file__).resolve().parent / 'studio' / 'fonts' / filenames[family])
+        if family not in ('sans', 'serif', 'mono'): candidates.insert(0, Path(__file__).resolve().parent / 'studio' / 'fonts' / filenames[family])
         font_path = next((str(path) for path in candidates if path.is_file()), None)
         radius = self.settings['radius'] * self.scale
         fonts = {}

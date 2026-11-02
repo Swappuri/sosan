@@ -26,7 +26,7 @@ def validate_settings(value):
             raise ValueError(f'Invalid {name}.')
     if type(result['bars']) is not int or result['bars'] not in range(32, 193, 16):
         raise ValueError('Invalid spectrum bar count.')
-    if result['textFont'] not in ('poppins', 'inter', 'montserrat', 'lato', 'tektur', 'sans', 'serif', 'mono'):
+    if result['textFont'] not in ('roboto', 'opensans', 'lora', 'nunito', 'raleway', 'oswald', 'playfair', 'merriweather', 'rubik', 'bebas', 'poppins', 'inter', 'montserrat', 'lato', 'tektur', 'sans', 'serif', 'mono'):
         raise ValueError('Invalid text font.')
     if result['logoFit'] not in ('contain', 'cover'):
         raise ValueError('Invalid logo fit.')

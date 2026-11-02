@@ -1,3 +1,4 @@
+import { setupFontPicker } from './font-picker.js';
 import { setupSettingsPages } from './settings-pages.js';
 import { renderScene } from './render-scene.js';
 import { createBrowserExporter } from './browser-export.js';
@@ -5,6 +6,7 @@ import { syncPlaybackButton } from './playback-state.js';
 
 const browserMode = document.querySelector('meta[name="sosan-export-mode"]')?.content === 'browser' || new URLSearchParams(location.search).get('export') === 'browser' || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const $ = id => document.getElementById(id);
+const syncFontPicker = setupFontPicker($('textFont'));
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
@@ -192,6 +194,7 @@ function syncSettings() {
   }
   applyTheme();
   $('textFont').value = settings.textFont;
+  syncFontPicker();
   $('innerRing').setAttribute('aria-pressed', String(settings.innerRing));
   for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key] && (name !== 'logo-fit' || (settings.logoZoom === defaults.logoZoom && settings.logoX === defaults.logoX && settings.logoY === defaults.logoY)); });
@@ -214,7 +217,7 @@ for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
 document.querySelectorAll('input[name="logo-fit"]').forEach(input => { input.onclick = () => resetLogoPlacement(input.value); });
-$('textFont').onchange = () => { settings.textFont = $('textFont').value; };
+$('textFont').onchange = () => { settings.textFont = $('textFont').value; syncFontPicker(); };
 $('innerRing').onclick = () => { settings.innerRing = !settings.innerRing; syncSettings(); };
 const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },

@@ -42,3 +42,43 @@ Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/montse
 ## Lato
 
 Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/lato) under the SIL Open Font License 1.1. The license is preserved in `studio/fonts/Lato-OFL.txt`.
+
+## Roboto
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/roboto) under the SIL Open Font License 1.1. License: `studio/fonts/Roboto-OFL.txt`.
+
+## Open Sans
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/opensans) under the SIL Open Font License 1.1. License: `studio/fonts/OpenSans-OFL.txt`.
+
+## Lora
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/lora) under the SIL Open Font License 1.1. License: `studio/fonts/Lora-OFL.txt`.
+
+## Nunito
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/nunito) under the SIL Open Font License 1.1. License: `studio/fonts/Nunito-OFL.txt`.
+
+## Raleway
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/raleway) under the SIL Open Font License 1.1. License: `studio/fonts/Raleway-OFL.txt`.
+
+## Oswald
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/oswald) under the SIL Open Font License 1.1. License: `studio/fonts/Oswald-OFL.txt`.
+
+## Playfair Display
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/playfairdisplay) under the SIL Open Font License 1.1. License: `studio/fonts/PlayfairDisplay-OFL.txt`.
+
+## Merriweather
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/merriweather) under the SIL Open Font License 1.1. License: `studio/fonts/Merriweather-OFL.txt`.
+
+## Rubik
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/rubik) under the SIL Open Font License 1.1. License: `studio/fonts/Rubik-OFL.txt`.
+
+## Bebas Neue
+
+Bundled from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/bebasneue) under the SIL Open Font License 1.1. License: `studio/fonts/BebasNeue-OFL.txt`.

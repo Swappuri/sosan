@@ -82,3 +82,30 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 @font-face { font-family: Montserrat; src: url('./fonts/Montserrat.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
 
 @font-face { font-family: Lato; src: url('./fonts/Lato.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+
+@font-face { font-family: 'Roboto'; src: url('./fonts/Roboto.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Open Sans'; src: url('./fonts/OpenSans.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Lora'; src: url('./fonts/Lora.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Nunito'; src: url('./fonts/Nunito.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Raleway'; src: url('./fonts/Raleway.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Oswald'; src: url('./fonts/Oswald.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Playfair Display'; src: url('./fonts/PlayfairDisplay.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Merriweather'; src: url('./fonts/Merriweather.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Rubik'; src: url('./fonts/Rubik.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+@font-face { font-family: 'Bebas Neue'; src: url('./fonts/BebasNeue.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+
+.font-picker-toggle { width: 100%; min-height: 32px; padding: 6px 28px 6px 9px; position: relative; border: 1px solid #414141; border-radius: 4px; background: #222; color: #ddd; font-size: 12px; text-align: left; }
+.font-picker-toggle::after { content: '⌄'; position: absolute; right: 10px; font-family: Poppins, sans-serif; }
+.font-picker-options { position: fixed; z-index: 110; overflow-y: auto; padding: 4px; border: 1px solid #484848; border-radius: 5px; background: #222; box-shadow: 0 8px 24px #0008; scrollbar-width: thin; }
+.font-picker-options button { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 3px; background: transparent; color: #ddd; text-align: left; font-size: 16px; line-height: 24px; }
+.font-picker-options button[aria-selected=true] { background: var(--accent-soft); color: var(--accent); }
+.font-picker-options button:hover, .font-picker-options button:focus-visible { background: #333; outline: 1px solid var(--accent-border); outline-offset: -1px; }
