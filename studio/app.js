@@ -201,15 +201,35 @@ $('volume-toggle').onclick = () => {
 syncPreviewVolume();
 const volumeControl = $('volume-toggle').parentElement;
 function showVolume(open) {
-  $('volume-popover').hidden = !open;
+  volumeControl.classList.toggle('is-open', open);
+  $('volume-popover').inert = !open;
   $('volume-toggle').setAttribute('aria-expanded', String(open));
 }
 volumeControl.onpointerenter = event => { if (event.pointerType !== 'touch') showVolume(true); };
-volumeControl.onpointerleave = () => { if (document.activeElement !== $('preview-volume')) showVolume(false); };
+volumeControl.onpointerleave = () => showVolume(false);
 volumeControl.onfocusin = () => showVolume(true);
 volumeControl.onfocusout = event => { if (!volumeControl.contains(event.relatedTarget)) { showVolume(false); } };
 document.addEventListener('pointerdown', event => { if (!volumeControl.contains(event.target)) { showVolume(false); } });
 volumeControl.onkeydown = event => { if (event.key === 'Escape') { event.preventDefault(); $('volume-toggle').focus(); showVolume(false); } };
+const fullscreenPanel = $('preview-panel');
+function syncFullscreen() {
+  const active = document.fullscreenElement === fullscreenPanel || document.webkitFullscreenElement === fullscreenPanel;
+  $('fullscreen').classList.toggle('is-fullscreen', active);
+  $('fullscreen').setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
+  $('fullscreen').title = active ? 'Exit fullscreen' : 'Fullscreen';
+}
+$('fullscreen').onclick = async () => {
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else document.webkitExitFullscreen?.();
+    } else if (fullscreenPanel.requestFullscreen) await fullscreenPanel.requestFullscreen();
+    else if (fullscreenPanel.webkitRequestFullscreen) fullscreenPanel.webkitRequestFullscreen();
+    else status('Fullscreen is unavailable in this browser.', true);
+  } catch { status('Could not enter fullscreen. Check your browser permissions.', true); }
+};
+document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('webkitfullscreenchange', syncFullscreen);
 document.addEventListener('keydown', event => { if (event.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); togglePlay(); } });
 $('stage-browse').onclick = $('dropzone').onclick = () => $('audio-file').click();
 $('audio-file').onchange = event => { if (event.target.files[0]) loadSong(event.target.files[0]); event.target.value = ''; };

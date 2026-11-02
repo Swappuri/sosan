@@ -32,16 +32,20 @@
         </div>
       </div>
       <div class="transport">
-        <button id="play" class="play" aria-label="Play" title="Play / pause (Space)" disabled>▶</button>
-        <span class="time" id="elapsed">0:00</span>
         <input id="seek" type="range" min="0" max="100" value="0" step="0.01" aria-label="Song position" disabled>
-        <span class="time" id="duration">0:00</span>
-        <div class="preview-volume">
-          <button id="volume-toggle" class="icon-button" aria-label="Preview volume" aria-expanded="false" aria-controls="volume-popover" title="Preview volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path class="volume-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="volume-slash" d="m15 9 6 6m0-6-6 6"/></svg></button>
-          <div id="volume-popover" class="volume-popover" hidden>
-          <input id="preview-volume" type="range" min="0" max="100" value="100" step="1" aria-label="Preview volume" aria-valuetext="100 percent" aria-orientation="vertical">
-          <output id="preview-volume-value" for="preview-volume">100%</output>
+        <div class="transport-row">
+          <div class="transport-left">
+            <button id="play" class="play" aria-label="Play" title="Play / pause (Space)" disabled>▶</button>
+            <div class="preview-volume">
+              <button id="volume-toggle" class="icon-button" aria-label="Mute preview" aria-expanded="false" aria-controls="volume-popover" title="Mute preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path class="volume-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="volume-slash" d="m15 9 6 6m0-6-6 6"/></svg></button>
+              <div id="volume-popover" class="volume-popover" inert>
+                <input id="preview-volume" type="range" min="0" max="100" value="100" step="1" aria-label="Preview volume" aria-valuetext="100 percent" aria-orientation="horizontal">
+                <output id="preview-volume-value" for="preview-volume">100%</output>
+              </div>
+            </div>
+            <span class="time playback-time"><span id="elapsed">0:00</span><span class="time-separator"> / </span><span id="duration">0:00</span></span>
           </div>
+          <button id="fullscreen" class="icon-button fullscreen-button" aria-label="Enter fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fullscreen-enter" d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><path class="fullscreen-exit" d="M3 8h5V3m8 0v5h5M8 21v-5H3m18 0h-5v5"/></svg></button>
         </div>
       </div>
       <section class="export-panel" id="export-panel" hidden aria-live="polite">

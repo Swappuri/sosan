@@ -137,3 +137,36 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .volume-popover { width: 54px; right: -10px; flex-direction: column; gap: 12px; padding: 14px 10px 10px; }
 #preview-volume { writing-mode: vertical-lr; direction: rtl; width: 3px; height: 104px; flex: none; }
 #preview-volume-value { text-align: center; }
+
+/* Player controls: full-width timeline above a compact left/right toolbar. */
+.transport { display: flex; flex-direction: column; align-items: stretch; gap: 9px; padding: 14px 16px 10px; min-height: 66px; }
+.transport #seek { flex: none; width: 100%; height: 3px; margin: 0; }
+.transport-row, .transport-left { display: flex; align-items: center; }
+.transport-row { justify-content: space-between; gap: 12px; min-width: 0; }
+.transport-left { gap: 10px; min-width: 0; }
+.transport .play { width: 30px; height: 30px; min-height: 30px; padding: 0; background: transparent; border: 0; border-radius: 4px; color: #ddd; font-size: 16px; }
+.transport .play:hover, .transport .icon-button:hover { background: #ffffff0b; }
+.playback-time { white-space: nowrap; font-size: 11px; color: #c5c5c5; font-variant-numeric: tabular-nums; }
+.time-separator { color: #777; }
+.preview-volume { position: static; display: flex; align-items: center; gap: 0; width: auto; flex-shrink: 0; }
+.volume-popover { position: static; display: flex; flex-direction: row; align-items: center; gap: 8px; width: 110px; max-width: 0; height: 30px; padding: 0; border: 0; background: transparent; box-shadow: none; opacity: 0; visibility: hidden; overflow: hidden; transition: max-width 160ms ease, opacity 120ms ease, visibility 160ms; }
+.volume-popover::after { display: none; }
+.preview-volume.is-open .volume-popover { max-width: 110px; opacity: 1; visibility: visible; padding-left: 8px; }
+#preview-volume { writing-mode: horizontal-tb; direction: ltr; width: 64px; min-width: 64px; height: 3px; flex: none; margin: 0; }
+#preview-volume-value { width: 30px; font-size: 9px; text-align: right; }
+.fullscreen-button { display: flex; align-items: center; justify-content: center; flex: 0 0 30px; width: 30px; height: 30px; padding: 5px; }
+.fullscreen-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.fullscreen-exit, .is-fullscreen .fullscreen-enter { display: none; }
+.is-fullscreen .fullscreen-exit { display: block; }
+#preview-panel:is(:fullscreen, :-webkit-full-screen) { display: flex; flex-direction: column; width: 100vw; height: 100dvh; border: 0; border-radius: 0; background: #111; }
+#preview-panel:is(:fullscreen, :-webkit-full-screen) .panel-heading, #preview-panel:is(:fullscreen, :-webkit-full-screen) .export-panel { display: none; }
+#preview-panel:is(:fullscreen, :-webkit-full-screen) .stage { margin: 0; border: 0; border-radius: 0; }
+@media (max-width: 499px) {
+  .transport { display: flex; padding: 12px 12px 8px; }
+  .transport-left { gap: 6px; }
+  .preview-volume { width: auto; }
+  .preview-volume.is-open .volume-popover { max-width: 96px; }
+  #preview-volume { width: 50px; min-width: 50px; }
+  .playback-time { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .volume-popover { transition: none; } }
