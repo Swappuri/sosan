@@ -67,3 +67,12 @@
 .text-color-control { height: 53px; flex-direction: column; align-items: stretch; gap: 6px; }
 .text-color-control .color-caption { display: block; font-size: 11px; line-height: 15px; }
 .text-color-field { width: 100%; height: 32px; flex: 0 0 32px; border: 1px solid #414141; border-radius: 4px; padding: 5px; background: #222; }
+
+@font-face { font-family: Poppins; src: url('./fonts/Poppins-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: Poppins; src: url('./fonts/Poppins-Medium.ttf') format('truetype'); font-weight: 500 900; font-display: swap; }
+body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Poppins, sans-serif; }
+.brand { font-family: Tektur, sans-serif; }
+.color-card, .text-color-control { height: 53px; display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; gap: 6px; }
+.color-card .color-caption, .text-color-control .color-caption { position: static; display: block; font-size: 10px; line-height: 15px; text-align: left; color: #a6a6a6; }
+.color-card input[type=color], .text-color-field { height: 32px; width: 100%; border: 1px solid #414141; border-radius: 4px; padding: 5px; background: #222; }
+.text-color-field { flex: 0 0 32px; }

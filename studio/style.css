@@ -13,11 +13,11 @@
   --line: #383838;
   --text: #ededed;
   --muted: #ababab;
-  --accent: #a7f36b;
-  --secondary: #5de5ec;
+  --accent: #59ff9b;
+  --secondary: #59ff9b;
   --preview-bg: #0b1114;
   --accent-ink: #101114;
-  --accent-focus: #a7f36b;
+  --accent-focus: #59ff9b;
   --accent-soft: rgba(167, 243, 107, .09);
   --accent-border: rgba(167, 243, 107, .45);
   font: 12px/1.45 'Tektur', sans-serif;

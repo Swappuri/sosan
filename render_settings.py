@@ -2,11 +2,11 @@
 import math
 
 DEFAULTS = {
-    'primary': '#a7f36b', 'secondary': '#5de5ec', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
+    'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
     'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'tektur',
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
     'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0,
-    'glow': True, 'particles': True, 'pulse': True, 'flashes': False,
+    'glow': True, 'particles': True, 'pulse': True, 'flashes': True,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',
 }
 

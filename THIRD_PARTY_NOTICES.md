@@ -23,3 +23,10 @@ encoder's FFmpeg implementation notices are available in the upstream repository
 https://github.com/Vanilagy/mediabunny
 
 These dependencies are used unmodified. Application source remains MIT licensed.
+
+## Poppins
+
+The bundled Poppins Regular and Medium fonts are from
+[Google Fonts](https://github.com/google/fonts/tree/main/ofl/poppins).
+They are distributed under the SIL Open Font License 1.1, preserved in
+[studio/fonts/Poppins-OFL.txt](studio/fonts/Poppins-OFL.txt).
