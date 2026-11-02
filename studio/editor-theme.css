@@ -53,3 +53,17 @@
 .settings-pagination { padding: 10px 16px; }
 .settings-page-numbers button { font-family: inherit; }
 .settings-page-tooltip { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #252525; border-color: #484848; font-size: 11px; }
+
+/* Keep sosan's typography and accent treatment within the restrained layout. */
+.settings, .settings-page-tooltip { font-family: Tektur, sans-serif; }
+.control-section + .control-section { border-top: 1px solid #343434; padding-top: 16px; }
+.control-section.page-start { border-top: 0; padding-top: 0; }
+.settings-content { gap: 16px; }
+.file-card.has-file { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+.file-card.has-file .dropzone, .file-card.has-file .file-upload, .file-card.has-file .file-remove { color: var(--accent); }
+.color-card { height: 54px; align-items: stretch; gap: 6px; }
+.color-card .color-caption { position: static; display: block; text-align: left; font-size: 9px; line-height: 14px; }
+.color-card input[type=color] { width: 100%; height: 28px; border: 1px solid #414141; border-radius: 4px; padding: 4px; background: #222; }
+.text-color-control { height: 53px; flex-direction: column; align-items: stretch; gap: 6px; }
+.text-color-control .color-caption { display: block; font-size: 11px; line-height: 15px; }
+.text-color-field { width: 100%; height: 32px; flex: 0 0 32px; border: 1px solid #414141; border-radius: 4px; padding: 5px; background: #222; }
