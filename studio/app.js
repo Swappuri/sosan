@@ -1,3 +1,4 @@
+import { setupSettingsPages } from './settings-pages.js';
 import { renderScene } from './render-scene.js';
 import { createBrowserExporter } from './browser-export.js';
 import { syncPlaybackButton } from './playback-state.js';
@@ -561,3 +562,5 @@ if (!browserMode) {
   } catch { /* Optional recovery. */ }
   if (exportJobId && /^[a-f0-9]{32}$/.test(exportJobId)) pollExport();
 }
+
+setupSettingsPages($('settings-panel'));
