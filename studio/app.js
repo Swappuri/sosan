@@ -182,7 +182,6 @@ function syncPreviewVolume() {
   $('preview-volume').value = Math.round(level * 100);
   $('preview-volume').style.setProperty('--volume-progress', `${level * 100}%`);
   $('preview-volume').setAttribute('aria-valuetext', `${Math.round(level * 100)} percent`);
-  $('preview-volume-value').value = `${Math.round(level * 100)}%`;
   $('volume-toggle').classList.toggle('is-muted', level === 0);
   $('volume-toggle').setAttribute('aria-label', level === 0 ? 'Unmute preview' : 'Mute preview');
   $('volume-toggle').setAttribute('aria-pressed', String(level === 0));

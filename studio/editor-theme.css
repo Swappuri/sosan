@@ -186,3 +186,16 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .playback-time #elapsed, #preview-volume-value { color: var(--accent-focus); }
 .playback-time #elapsed { font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .transport .play, .transport .icon-button { transition: none; } }
+
+/* One aligned control size, without a tinted toolbar or oversized play halo. */
+.transport { background: transparent; }
+.transport-row, .transport-left, .preview-volume { align-items: center; }
+.transport .play, .transport .icon-button { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; min-height: 32px; flex: 0 0 32px; padding: 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--accent-focus); box-shadow: none; }
+.transport .play { font-size: 15px; line-height: 18px; border-color: var(--accent-border); background: var(--accent-soft); }
+.transport .play:hover, .transport .play[aria-label=Pause] { background: var(--accent-soft); box-shadow: none; }
+.preview-volume svg, .fullscreen-button svg { width: 18px; height: 18px; flex: 0 0 18px; }
+.volume-popover { width: 76px; height: 32px; gap: 0; }
+.preview-volume.is-open .volume-popover { max-width: 76px; }
+.playback-time { display: inline-flex; align-items: center; height: 32px; line-height: 16px; }
+.time-separator { white-space: pre; }
+@media (max-width: 499px) { .preview-volume.is-open .volume-popover { max-width: 60px; } }
