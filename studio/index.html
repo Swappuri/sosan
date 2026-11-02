@@ -39,8 +39,7 @@
         <div class="preview-volume">
           <button id="volume-toggle" class="icon-button" aria-label="Preview volume" aria-expanded="false" aria-controls="volume-popover" title="Preview volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path class="volume-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="volume-slash" d="m15 9 6 6m0-6-6 6"/></svg></button>
           <div id="volume-popover" class="volume-popover" hidden>
-          <button id="mute" class="text-button" aria-label="Mute preview" aria-pressed="false">Mute</button>
-          <input id="preview-volume" type="range" min="0" max="100" value="100" step="1" aria-label="Preview volume" aria-valuetext="100 percent">
+          <input id="preview-volume" type="range" min="0" max="100" value="100" step="1" aria-label="Preview volume" aria-valuetext="100 percent" aria-orientation="vertical">
           <output id="preview-volume-value" for="preview-volume">100%</output>
           </div>
         </div>
