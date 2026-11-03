@@ -101,8 +101,12 @@
             <label class="toggle-row">Bass pulse <input id="pulse" type="checkbox" role="switch" checked></label>
             <label class="toggle-row">Beat flashes <input id="flashes" type="checkbox" role="switch" checked></label>
             <label class="toggle-row" title="Two lights trail around the shape and brighten with the bass">Orbiting lights <input id="orbitLights" type="checkbox" role="switch"></label>
-            <label class="toggle-row" title="Expanding outlines that respond to bass energy">Echo rings <input id="echoRings" type="checkbox" role="switch"></label>
+            <label class="toggle-row" title="Outlines emerge behind the shape on detected bass beats">Echo rings <input id="echoRings" type="checkbox" role="switch"></label>
             <label class="toggle-row" title="Darken the edges for a cinematic frame">Vignette <input id="vignette" type="checkbox" role="switch"></label>
+          </div>
+          <div class="effect-strength-controls">
+            <label class="text-font-control effect-select-control" for="effect-strength-select">Adjust effect<select id="effect-strength-select"><option value="glow">Glow</option><option value="aura">Aura</option><option value="particles">Particles</option><option value="pulse">Bass pulse</option><option value="flashes">Beat flashes</option><option value="orbitLights">Orbiting lights</option><option value="echoRings">Echo rings</option><option value="vignette">Vignette</option></select></label>
+            <div class="slider-field"><label class="slider-label" for="effectStrength">Strength <output id="effectStrength-value" for="effectStrength">100%</output></label><input id="effectStrength" type="range" min="0" max="200" step="5" value="100"></div>
           </div>
         </fieldset>
         <fieldset class="control-section identity-settings" disabled>

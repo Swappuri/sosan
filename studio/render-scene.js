@@ -1,3 +1,4 @@
+import { ECHO_LIFETIME } from './effect-motion.js';
 import { TEXT_FAMILIES } from './text-fonts.js';
 import { layoutText } from './text-layout.js';
 "use strict";
@@ -83,12 +84,13 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
       ctx.drawImage(backgroundImage, placement.x, placement.y, placement.width, placement.height);
     } finally { ctx.restore(); }
   }
-  const ambient = settings.aura ?? true;
-  const flashLight = settings.flashes ? motion.flash * .1 : 0;
+  const strength = name => (settings[name + 'Strength'] ?? 100) / 100;
+  const ambient = (settings.aura ?? true) ? strength('aura') : 0;
+  const flashLight = settings.flashes ? motion.flash * .1 * strength('flashes') : 0;
   if (ambient || flashLight > 0) {
     const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
-    aura.addColorStop(0, rgba(settings.primary, (ambient ? .09 : 0) + flashLight));
-    aura.addColorStop(.55, rgba(settings.secondary, ambient ? .025 : 0));
+    aura.addColorStop(0, rgba(settings.primary, .09 * ambient + flashLight));
+    aura.addColorStop(.55, rgba(settings.secondary, .025 * ambient));
     aura.addColorStop(1, rgba(settings.background, 0));
     ctx.fillStyle = aura; ctx.fillRect(0, 0, width, height);
   }
@@ -97,21 +99,24 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     for (const p of particles) {
       const px = fract(p.x + Math.cos(p.phase) * songTime * .003) * width;
       const py = fract(p.y - songTime * .004 * (p.size / 2)) * height;
-      ctx.globalAlpha = .15 + .3 * (0.5 + 0.5 * Math.sin(songTime * .8 + p.phase));
+      ctx.globalAlpha = Math.min(1, (.15 + .3 * (0.5 + .5 * Math.sin(songTime * .8 + p.phase))) * strength('particles'));
       ctx.fillStyle = settings.primary; ctx.beginPath(); ctx.arc(px, py, p.size * scale, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
-  const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 : 0;
+  const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 * strength('pulse') : 0;
   const radius = (settings.radius + pulse) * scale;
   const shape = settings.shape ?? 'circle';
-  if (settings.echoRings) {
+  if (settings.echoRings && strength('echoRings') > 0) {
     ctx.save();
-    for (let ring = 0; ring < 3; ring++) {
-      const phase = fract(songTime * .45 + ring / 3);
-      ctx.strokeStyle = rgba(ring % 2 ? settings.secondary : settings.primary, (1 - phase) ** 2 * (.12 + Math.min(1, motion.bass) * .5));
+    for (const [ring, beat] of (motion.echoes ?? []).entries()) {
+      const age = songTime - beat.time;
+      if (age < 0 || age >= ECHO_LIFETIME) continue;
+      const phase = age / ECHO_LIFETIME;
+      ctx.strokeStyle = rgba(ring % 2 ? settings.secondary : settings.primary, Math.min(1, (1 - phase) ** 2 * beat.strength * .55 * strength('echoRings')));
       ctx.lineWidth = 1.2 * scale;
-      traceShape(ctx, shape, x, y, radius + (14 + phase * 100) * scale); ctx.stroke();
+      // The pulse begins inside the silhouette; the foreground fill masks it until it emerges.
+      traceShape(ctx, shape, x, y, settings.radius * scale * .92 + phase * 130 * scale); ctx.stroke();
     }
     ctx.restore();
   }
@@ -135,7 +140,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
       continue;
     }
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
-    ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale : 0;
+    ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale * strength('glow') : 0;
     ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale));
     ctx.lineTo(x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)); ctx.stroke();
   }
@@ -143,7 +148,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   for (let i = 0; i < wave.length; i++) {
     const point = wave[i], previous = wave[(i + wave.length - 1) % wave.length], next = wave[(i + 1) % wave.length];
     ctx.strokeStyle = point.color; ctx.lineWidth = Math.max(1, 2.2 * scale);
-    ctx.shadowColor = point.color; ctx.shadowBlur = settings.glow ? (9 + point.level * 9) * scale : 0;
+    ctx.shadowColor = point.color; ctx.shadowBlur = settings.glow ? (9 + point.level * 9) * scale * strength('glow') : 0;
     ctx.beginPath(); ctx.moveTo((previous.x + point.x) / 2, (previous.y + point.y) / 2);
     ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2); ctx.stroke();
   }
@@ -174,7 +179,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     } finally { ctx.restore(); }
   }
   // Fill and logo reach the primary outline; the optional secondary rim overlays them.
-  ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale : 0;
+  ctx.shadowColor = settings.primary; ctx.shadowBlur = settings.glow ? 16 * scale * strength('glow') : 0;
   ctx.lineWidth = 1.5 * scale; ctx.strokeStyle = settings.primary;
   traceShape(ctx, shape, x, y, radius); ctx.stroke();
   ctx.shadowBlur = 0;
@@ -184,15 +189,15 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     traceShape(ctx, shape, x, y, insetRadius); ctx.stroke();
   }
 
-  if (settings.orbitLights) {
+  if (settings.orbitLights && strength('orbitLights') > 0) {
+    const reach = orbitRadius(radius, levels, scale, settings.glow, settings.glowStrength ?? 100);
     ctx.save();
     for (let light = 0; light < 2; light++) {
       const color = light ? settings.secondary : settings.primary;
       for (let trail = 12; trail >= 0; trail--) {
         const angle = songTime * .7 + light * Math.PI - trail * .025;
-        const reach = shapeRadius(shape, radius, angle) + (20 + Math.min(1, motion.bass) * 14) * scale;
         const px = x + Math.cos(angle) * reach, py = y + Math.sin(angle) * reach;
-        const alpha = (1 - trail / 13) * (.35 + Math.min(1, motion.bass) * .65);
+        const alpha = Math.min(1, (1 - trail / 13) * (.35 + Math.min(1, motion.bass) * .65) * strength('orbitLights'));
         ctx.fillStyle = rgba(color, alpha); ctx.beginPath();
         ctx.arc(px, py, (trail === 0 ? 3 : 1.4) * scale, 0, Math.PI * 2); ctx.fill();
         if (trail === 0) {
@@ -206,7 +211,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   if (settings.vignette) {
     const edge = ctx.createRadialGradient(x, y, 0, x, y, Math.hypot(x, y));
-    edge.addColorStop(0, 'rgba(0,0,0,0)'); edge.addColorStop(.35, 'rgba(0,0,0,0)'); edge.addColorStop(1, 'rgba(0,0,0,.6)');
+    edge.addColorStop(0, 'rgba(0,0,0,0)'); edge.addColorStop(.35, 'rgba(0,0,0,0)'); edge.addColorStop(1, `rgba(0,0,0,${Math.min(.9, .6 * strength('vignette'))})`);
     ctx.fillStyle = edge; ctx.fillRect(0, 0, width, height);
   }
 
@@ -215,4 +220,11 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
 export function backgroundPlacement(width, height, imageWidth, imageHeight, fit = 'cover', zoom = 100, offsetX = 0, offsetY = 0) {
   const factor = (fit === 'contain' ? Math.min : Math.max)(width / imageWidth, height / imageHeight) * zoom / 100;
   return { x: (width - imageWidth * factor) / 2 + offsetX / 100 * width / 2, y: (height - imageHeight * factor) / 2 + offsetY / 100 * height / 2, width: imageWidth * factor, height: imageHeight * factor };
+}
+
+export function orbitRadius(radius, levels, scale, glow = true, glowStrength = 100) {
+  const peak = Math.max(0, ...levels);
+  const longest = 3 + peak ** 1.35 * 67;
+  const clearance = 24 + (glow ? 18 * glowStrength / 100 : 0);
+  return radius + (8 + longest + clearance) * scale;
 }

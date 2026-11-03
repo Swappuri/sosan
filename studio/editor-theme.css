@@ -212,3 +212,6 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 #background-image-controls { margin-top: 8px; }
 #background-image-controls.is-disabled { opacity: .45; }
 .background-fit-choices { margin-bottom: 12px; }
+
+.effect-strength-controls { display: grid; gap: 12px; margin-top: 16px; }
+.effect-strength-controls .effect-select-control { margin: 0; }

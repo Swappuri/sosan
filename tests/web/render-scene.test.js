@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, backgroundPlacement } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, backgroundPlacement, orbitRadius } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -299,5 +299,27 @@ test('new effects render together on all shapes and restore canvas state', () =>
     renderScene(canvas.ctx, 854, 480, { ...settings, shape, orbitLights: true, echoRings: true, vignette: true }, motion, 1.5, null, 'Effects');
     assert.equal(canvas.saves, 0);
     assert.ok(canvas.text.length > 0);
+  }
+});
+
+test('echo rings start beneath the foreground silhouette', () => {
+  const canvas = canvasContext(), events = []; let radius;
+  canvas.ctx.arc = (x, y, r) => { radius = r; };
+  canvas.ctx.stroke = () => events.push(['stroke', radius]);
+  canvas.ctx.fill = () => events.push(['fill', radius]);
+  renderScene(canvas.ctx, 854, 480, { ...settings, particles: false, pulse: false, echoRings: true }, { ...motion, echoes: [{ time: 1, strength: 1 }] }, 1, null, '');
+  assert.equal(events[0][0], 'stroke');
+  const fill = events.find(event => event[0] === 'fill');
+  assert.ok(events[0][1] < fill[1]);
+});
+test('orbits clear the tallest possible bar in all shape directions', () => {
+  const levels = new Float32Array([0, .2, .8, 1.2]);
+  const orbit = orbitRadius(140, levels, 1, true, 200);
+  for (const shape of ['circle', 'square', 'triangle']) {
+    for (let i = 0; i < 128; i++) {
+      const angle = i / 128 * Math.PI * 2;
+      const tip = shapeRadius(shape, 140, angle) + 8 + 3 + Math.max(...levels) ** 1.35 * 67;
+      assert.ok(orbit - tip >= 50);
+    }
   }
 });

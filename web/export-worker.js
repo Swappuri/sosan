@@ -46,7 +46,7 @@ self.onmessage = async ({ data }) => {
     let audioCursor = 0;
     for (let frame = 0; frame < total; frame++) {
       const timestamp = frame / fps;
-      advanceMotion(motion, analysis.frame(timestamp), 1 / fps);
+      advanceMotion(motion, analysis.frame(timestamp), 1 / fps, timestamp);
       renderScene(ctx, width, height, settings, motion, timestamp, logo, settings.title, backgroundImage);
       await video.add(timestamp, 1 / fps);
       const end = Math.min(channels[0].length, Math.round((frame + 1) / fps * sampleRate));

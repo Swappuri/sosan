@@ -1,3 +1,4 @@
+import { updateEchoes } from './effect-motion.js';
 import { optionSupport, probeExportSupport } from './export-support.js';
 import { setupFontPicker } from './font-picker.js';
 import { setupSettingsPages } from './settings-pages.js';
@@ -7,18 +8,20 @@ import { syncPlaybackButton } from './playback-state.js';
 
 const browserMode = document.querySelector('meta[name="sosan-export-mode"]')?.content === 'browser' || new URLSearchParams(location.search).get('export') === 'browser' || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const $ = id => document.getElementById(id);
+const syncEffectPicker = setupFontPicker($('effect-strength-select'), { fontPreview: false, label: 'Adjust effect strength' });
 const syncFontPicker = setupFontPicker($('textFont'));
 const syncResolutionPicker = setupFontPicker($('resolution'), { fontPreview: false, label: 'Resolution' });
 const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Frame rate' });
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 100, echoRingsStrength: 100, vignetteStrength: 100 };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let backgroundImage, backgroundFile, backgroundLoadId = 0;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
+const echoState = {};
 let lastTime = 0;
 let logoLoadId = 0, previewError;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
@@ -116,7 +119,7 @@ function syncFileCards() {
   $('logo-card').classList.toggle('has-file', !!logoFile);
 }
 function setDisplayTitle(value) { $('title').value = value; }
-function resetMotion() { smooth.fill(0); bass = previousBass = flash = 0; }
+function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
   if (!/\.(mp3|wav)$/i.test(file.name)) { status('Choose an MP3 or WAV audio file.', true); return; }
@@ -275,7 +278,16 @@ function applyTheme() {
   const focusContrast = (Math.max(luminance, surfaceLuminance) + .05) / (Math.min(luminance, surfaceLuminance) + .05);
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
+function syncEffectStrength() {
+  const key = $('effect-strength-select').value + 'Strength';
+  $('effectStrength').value = settings[key];
+  $('effectStrength-value').value = `${settings[key]}%`;
+  syncEffectPicker();
+}
+$('effect-strength-select').onchange = syncEffectStrength;
+$('effectStrength').oninput = () => { settings[$('effect-strength-select').value + 'Strength'] = Number($('effectStrength').value); syncEffectStrength(); };
 function syncSettings() {
+  syncEffectStrength();
   for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) {
     $(key + '-color').value = settings[key];
     $(key + '-color-value').value = settings[key].toUpperCase();
@@ -311,7 +323,7 @@ const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
-  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette'], detail: 'Restore the default effects?' },
+  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'glowStrength', 'auraStrength', 'particlesStrength', 'pulseStrength', 'flashesStrength', 'orbitLightsStrength', 'echoRingsStrength', 'vignetteStrength'], detail: 'Restore the default effects?' },
   backgroundImage: { title: 'Background Image', keys: ['backgroundFit', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY'], detail: 'Remove the background image and restore its default settings?' },
   logo: { title: 'Logo', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY', 'logoOpacity'], detail: 'Restore default logo placement and opacity? The uploaded logo will be kept.' },
   text: { title: 'Text', keys: ['textColor', 'textSize', 'textFont'], detail: 'Restore the song filename and default text color, size, and font?' },
@@ -441,7 +453,9 @@ function sampleAudio(dt) {
     const delta = Math.max(0, targetBass - previousBass);
     previousBass = targetBass;
     bass += (targetBass - bass) * (1 - Math.exp(-dt * (targetBass > bass ? 22 : 6)));
-    flash = Math.max(flash * Math.exp(-dt * 9), Math.min(1, delta * 6));
+    const onset = Math.min(1, delta * 6);
+    flash = Math.max(flash * Math.exp(-dt * 9), onset);
+    updateEchoes(echoState, onset, audio.currentTime);
     for (let i = 0; i < count; i++) {
       const low = 35 * Math.pow(14000 / 35, i / count);
       const high = 35 * Math.pow(14000 / 35, (i + 1) / count);
@@ -485,7 +499,7 @@ function draw(now) {
 }
 function paintPreview(now) {
   try {
-    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '', loaded ? backgroundImage : null);
+    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash, echoes: echoState.echoes ?? [] }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '', loaded ? backgroundImage : null);
     if (previewError && $('status').textContent.startsWith('Preview rendering failed:')) status('');
     previewError = undefined;
   } catch (error) {

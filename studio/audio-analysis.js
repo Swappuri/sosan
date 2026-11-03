@@ -1,3 +1,4 @@
+import { updateEchoes } from './effect-motion.js';
 /** Frame-clock spectrum analysis; independent of playback and browser timers. */
 export function frameCount(samples, sampleRate, fps) {
   return Math.ceil(samples / sampleRate * fps);
@@ -80,7 +81,8 @@ export class SpectrumAnalysis {
   }
 }
 
-export function advanceMotion(motion, target, dt) {
+export function advanceMotion(motion, target, dt, time = (motion.echoTime ?? -dt) + dt) {
+  updateEchoes(motion, target.onset, time);
   for (let i = 0; i < motion.levels.length; i++) {
     const rate = target.levels[i] > motion.levels[i] ? 24 : 8;
     motion.levels[i] += (target.levels[i] - motion.levels[i]) * (1 - Math.exp(-dt * rate));

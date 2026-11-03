@@ -121,6 +121,9 @@ class StudioRenderer:
         self.background = np.array(bgr(settings['background']))
         self.levels = np.zeros(settings['bars'] // 2)
         self.bass = self.flash = 0.
+        self.echoes = []
+        self.last_echo_beat = -math.inf
+        self.echo_time = 0.
         yy, xx = np.ogrid[:self.height, :self.width]
         distance = np.sqrt((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) / (360 * self.scale)
         inner = np.clip(1 - distance / .55, 0, 1).astype(np.float32)
@@ -141,13 +144,13 @@ class StudioRenderer:
             placed = cv2.warpAffine(asset, transform, (self.width, self.height))
             alpha = placed[:, :, 3:4].astype(np.float32) / 255 * settings['backgroundOpacity'] / 100
             backdrop = backdrop * (1 - alpha) + placed[:, :, :3] * alpha
-        ambient = inner[:, :, None] * self.primary * .09 + outer[:, :, None] * self.secondary * .025 if settings['aura'] else 0
+        ambient = inner[:, :, None] * self.primary * .09 * settings['auraStrength'] / 100 + outer[:, :, None] * self.secondary * .025 * settings['auraStrength'] / 100 if settings['aura'] else 0
         self.base = np.clip(backdrop + ambient, 0, 255).astype(np.uint8)
         self.vignette = None
         if settings['vignette']:
             edge_distance = np.hypot(xx - self.center[0], yy - self.center[1]) / math.hypot(*self.center)
-            self.vignette = 1 - np.clip((edge_distance - .35) / .65, 0, 1).astype(np.float32) * .6
-        self.flash_aura = inner[:, :, None] * self.primary * .1
+            self.vignette = 1 - np.clip((edge_distance - .35) / .65, 0, 1).astype(np.float32) * min(.9, .6 * settings['vignetteStrength'] / 100)
+        self.flash_aura = inner[:, :, None] * self.primary * .1 * settings['flashesStrength'] / 100
         self.particles = []
         for i in range(100):
             self.particles.append(((math.sin(i * 127.1 + 3) * 43758.5453) % 1, (math.sin(i * 311.7 + 9) * 43758.5453) % 1, .6 + (math.sin(i * 41.9) * 43758.5453) % 1 * 1.4, i * 2.7))
@@ -209,29 +212,38 @@ class StudioRenderer:
 
     def frame(self, index, levels, bass, onset):
         s, scale, center = self.settings, self.scale, self.center
+        strength = lambda name: s[name + 'Strength'] / 100
         dt = 1 / s['fps']
         self.levels += (levels - self.levels) * (1 - np.exp(-dt * np.where(levels > self.levels, 24, 8)))
         self.bass += (bass - self.bass) * (1 - math.exp(-dt * (22 if bass > self.bass else 6)))
         self.flash = max(self.flash * math.exp(-dt * 9), onset)
         image = np.clip(self.base + self.flash_aura * self.flash, 0, 255).astype(np.uint8) if s['flashes'] else self.base.copy()
         clock = index / s['fps']
-        if s['particles']:
+        if clock < self.echo_time - .01:
+            self.echoes = []; self.last_echo_beat = -math.inf
+        self.echo_time = clock
+        self.echoes = [(time, value) for time, value in self.echoes if 0 <= clock - time < 1.6]
+        if onset > .1 and clock - self.last_echo_beat >= .22:
+            self.echoes.append((clock, .4 + .6 * min(1, onset)))
+            self.echoes = self.echoes[-8:]
+            self.last_echo_beat = clock
+        if s['particles'] and strength('particles') > 0:
             for x, y, size, phase in self.particles:
                 px = round((x + math.cos(phase) * clock * .003) % 1 * self.width)
                 py = round((y - clock * .004 * size / 2) % 1 * self.height)
-                alpha = .15 + .3 * (.5 + .5 * math.sin(clock * .8 + phase))
+                alpha = min(1, (.15 + .3 * (.5 + .5 * math.sin(clock * .8 + phase))) * strength('particles'))
                 color = tuple(int(c) for c in self.primary * alpha + self.background * (1 - alpha))
                 cv2.circle(image, (px, py), max(1, round(size * scale)), color, -1, cv2.LINE_AA)
-        radius = (s['radius'] + (min(1, self.bass) * 12 if s['pulse'] else 0)) * scale
-        if s['echoRings']:
-            for ring in range(3):
-                phase = (clock * .45 + ring / 3) % 1
-                alpha = (1 - phase) ** 2 * (.12 + min(1, self.bass) * .5)
+        radius = (s['radius'] + (min(1, self.bass) * 12 * strength('pulse') if s['pulse'] else 0)) * scale
+        if s['echoRings'] and strength('echoRings') > 0:
+            for ring, (time, value) in enumerate(self.echoes):
+                phase = (clock - time) / 1.6
+                alpha = min(1, (1 - phase) ** 2 * value * .55 * strength('echoRings'))
                 overlay = image.copy()
                 color = tuple(int(c) for c in (self.secondary if ring % 2 else self.primary))
-                draw_shape(overlay, s['shape'], center, radius + (14 + phase * 100) * scale, color, max(1, round(1.2 * scale)))
+                draw_shape(overlay, s['shape'], center, s['radius'] * scale * .92 + phase * 130 * scale, color, max(1, round(1.2 * scale)))
                 image = cv2.addWeighted(image, 1 - alpha, overlay, alpha, 0)
-        glow = np.zeros_like(image) if s['glow'] else None
+        glow = np.zeros_like(image) if s['glow'] and strength('glow') > 0 else None
         levels = smooth_spectrum(self.levels, s['smoothing'])
         wave = []
         count = max(512, s['bars']) if s['shape'] == 'circle' and s['style'] == 'wave' else s['bars']
@@ -275,20 +287,22 @@ class StudioRenderer:
         if glow is not None:
             draw_shape(glow, s['shape'], center, radius, primary, max(1, round(3 * scale)))
             small = cv2.resize(glow, (self.width // 2, self.height // 2))
-            small = cv2.GaussianBlur(small, (0, 0), 3 * scale)
-            image = cv2.addWeighted(image, 1, cv2.resize(small, (self.width, self.height)), .8, 0)
+            small = cv2.GaussianBlur(small, (0, 0), max(.1, 3 * scale * strength('glow')))
+            image = cv2.addWeighted(image, 1, cv2.resize(small, (self.width, self.height)), .8 * strength('glow'), 0)
         if s['innerRing']:
             rim = tuple(int(c) for c in self.secondary * .4 + self.background * .6)
             inset_radius = radius - 5 * scale / (.5 if s['shape'] == 'triangle' else 1 / math.sqrt(2) if s['shape'] == 'square' else 1)
             draw_shape(image, s['shape'], center, inset_radius, rim, max(1, round(scale)))
-        if s['orbitLights']:
+        if s['orbitLights'] and strength('orbitLights') > 0:
+            peak = max(0, float(np.max(levels)))
+            orbit_reach = radius + (8 + 3 + peak ** 1.35 * 67 + 24 + (18 * strength('glow') if s['glow'] else 0)) * scale
             for light in range(2):
                 color = self.secondary if light else self.primary
                 for trail in range(12, -1, -1):
                     angle = clock * .7 + light * math.pi - trail * .025
-                    reach = float(shape_radius(s['shape'], radius, angle)) + (20 + min(1, self.bass) * 14) * scale
+                    reach = orbit_reach
                     px, py = round(center[0] + math.cos(angle) * reach), round(center[1] + math.sin(angle) * reach)
-                    alpha = (1 - trail / 13) * (.35 + min(1, self.bass) * .65)
+                    alpha = min(1, (1 - trail / 13) * (.35 + min(1, self.bass) * .65) * strength('orbitLights'))
                     if trail == 0:
                         size = max(1, math.ceil(14 * scale))
                         x0, y0, x1, y1 = max(0, px - size), max(0, py - size), min(self.width, px + size + 1), min(self.height, py + size + 1)
