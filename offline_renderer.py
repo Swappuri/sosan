@@ -143,6 +143,10 @@ class StudioRenderer:
             backdrop = backdrop * (1 - alpha) + placed[:, :, :3] * alpha
         ambient = inner[:, :, None] * self.primary * .09 + outer[:, :, None] * self.secondary * .025 if settings['aura'] else 0
         self.base = np.clip(backdrop + ambient, 0, 255).astype(np.uint8)
+        self.vignette = None
+        if settings['vignette']:
+            edge_distance = np.hypot(xx - self.center[0], yy - self.center[1]) / math.hypot(*self.center)
+            self.vignette = 1 - np.clip((edge_distance - .35) / .65, 0, 1).astype(np.float32) * .6
         self.flash_aura = inner[:, :, None] * self.primary * .1
         self.particles = []
         for i in range(100):
@@ -219,6 +223,14 @@ class StudioRenderer:
                 color = tuple(int(c) for c in self.primary * alpha + self.background * (1 - alpha))
                 cv2.circle(image, (px, py), max(1, round(size * scale)), color, -1, cv2.LINE_AA)
         radius = (s['radius'] + (min(1, self.bass) * 12 if s['pulse'] else 0)) * scale
+        if s['echoRings']:
+            for ring in range(3):
+                phase = (clock * .45 + ring / 3) % 1
+                alpha = (1 - phase) ** 2 * (.12 + min(1, self.bass) * .5)
+                overlay = image.copy()
+                color = tuple(int(c) for c in (self.secondary if ring % 2 else self.primary))
+                draw_shape(overlay, s['shape'], center, radius + (14 + phase * 100) * scale, color, max(1, round(1.2 * scale)))
+                image = cv2.addWeighted(image, 1 - alpha, overlay, alpha, 0)
         glow = np.zeros_like(image) if s['glow'] else None
         levels = smooth_spectrum(self.levels, s['smoothing'])
         wave = []
@@ -269,4 +281,28 @@ class StudioRenderer:
             rim = tuple(int(c) for c in self.secondary * .4 + self.background * .6)
             inset_radius = radius - 5 * scale / (.5 if s['shape'] == 'triangle' else 1 / math.sqrt(2) if s['shape'] == 'square' else 1)
             draw_shape(image, s['shape'], center, inset_radius, rim, max(1, round(scale)))
+        if s['orbitLights']:
+            for light in range(2):
+                color = self.secondary if light else self.primary
+                for trail in range(12, -1, -1):
+                    angle = clock * .7 + light * math.pi - trail * .025
+                    reach = float(shape_radius(s['shape'], radius, angle)) + (20 + min(1, self.bass) * 14) * scale
+                    px, py = round(center[0] + math.cos(angle) * reach), round(center[1] + math.sin(angle) * reach)
+                    alpha = (1 - trail / 13) * (.35 + min(1, self.bass) * .65)
+                    if trail == 0:
+                        size = max(1, math.ceil(14 * scale))
+                        x0, y0, x1, y1 = max(0, px - size), max(0, py - size), min(self.width, px + size + 1), min(self.height, py + size + 1)
+                        if x1 > x0 and y1 > y0:
+                            hy, hx = np.ogrid[y0:y1, x0:x1]
+                            glow_alpha = np.clip(1 - np.hypot(hx - px, hy - py) / (14 * scale), 0, 1)[:, :, None] * alpha * .5
+                            image[y0:y1, x0:x1] = image[y0:y1, x0:x1] * (1 - glow_alpha) + color * glow_alpha
+                    dot_radius = max(1, round((3 if trail == 0 else 1.4) * scale))
+                    x0, y0, x1, y1 = max(0, px - dot_radius - 1), max(0, py - dot_radius - 1), min(self.width, px + dot_radius + 2), min(self.height, py + dot_radius + 2)
+                    if x1 > x0 and y1 > y0:
+                        region = image[y0:y1, x0:x1]
+                        overlay = region.copy()
+                        cv2.circle(overlay, (px - x0, py - y0), dot_radius, tuple(int(c) for c in color), -1, cv2.LINE_AA)
+                        image[y0:y1, x0:x1] = cv2.addWeighted(region, 1 - alpha, overlay, alpha, 0)
+        if self.vignette is not None:
+            image = (image * self.vignette[:, :, None]).astype(np.uint8)
         return image

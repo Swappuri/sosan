@@ -292,3 +292,12 @@ test('ambient aura can be disabled independently of bar glow and beat flashes', 
     assert.equal(gradients, expected);
   }
 });
+
+test('new effects render together on all shapes and restore canvas state', () => {
+  for (const shape of ['circle', 'square', 'triangle']) {
+    const canvas = canvasContext();
+    renderScene(canvas.ctx, 854, 480, { ...settings, shape, orbitLights: true, echoRings: true, vignette: true }, motion, 1.5, null, 'Effects');
+    assert.equal(canvas.saves, 0);
+    assert.ok(canvas.text.length > 0);
+  }
+});

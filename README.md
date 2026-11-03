@@ -27,8 +27,8 @@ use the optional local version for larger exports and closed-tab rendering.
 ## Features
 
 - Drag and drop MP3 or WAV audio.
-- Customize spectrum colors, radius, reactivity, bar count, glow, particles,
-  bass pulses, and beat flashes.
+- Customize spectrum colors, radius, reactivity, and bar count.
+- Toggle eight effects: Glow, Aura, Particles, Bass pulse, Beat flashes, Orbiting lights, Echo rings, and Vignette.
 - Add a PNG, JPG, or WebP background image with Fit/Fill, opacity, zoom, and position controls.
 - Add a logo and display text, with independent text color, size, and font controls.
 - Export at 360p, 480p, 720p, 1080p, 1440p, or 4K, with 15, 24, 25, 30, 50, 60, or 120 FPS. Browser encoding support is checked on-device; unsupported combinations are disabled in the export menus.

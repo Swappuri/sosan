@@ -17,6 +17,22 @@ from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
+    def test_new_effects_are_visible_and_deterministic_for_each_shape(self):
+        levels = np.full(64, .5)
+        for shape in ('circle', 'square', 'triangle'):
+            base = {'shape': shape, 'width': 854, 'height': 480, 'background': '#666666', 'particles': False, 'glow': False, 'aura': False, 'flashes': False, 'pulse': False}
+            plain = StudioRenderer(validate_settings(base)).frame(20, levels, .6, 0)
+            for effect in ('orbitLights', 'echoRings', 'vignette'):
+                with self.subTest(shape=shape, effect=effect):
+                    settings = validate_settings({**base, effect: True})
+                    first = StudioRenderer(settings).frame(20, levels, .6, 0)
+                    repeat = StudioRenderer(settings).frame(20, levels, .6, 0)
+                    self.assertFalse(np.array_equal(first, plain))
+                    np.testing.assert_array_equal(first, repeat)
+                    if effect == 'orbitLights':
+                        later = StudioRenderer(settings).frame(50, levels, .6, 0)
+                        self.assertFalse(np.array_equal(first, later))
+
     def test_aura_can_be_disabled_without_disabling_glow(self):
         off = StudioRenderer(validate_settings({'aura': False, 'glow': True}))
         on = StudioRenderer(validate_settings({'aura': True, 'glow': True}))
@@ -84,7 +100,7 @@ class OfflineExportTests(unittest.TestCase):
                 self.assertFalse(np.array_equal(first, second))
 
     def test_settings_validation(self):
-        for invalid in ({'aura': 'false'}, {'backgroundZoom': 49}, {'backgroundX': 101}, {'backgroundY': -101}, {'logoOpacity': 101}, {'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'orbitLights': 1}, {'echoRings': 'yes'}, {'vignette': None}, {'aura': 'false'}, {'backgroundZoom': 49}, {'backgroundX': 101}, {'backgroundY': -101}, {'logoOpacity': 101}, {'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 

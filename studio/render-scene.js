@@ -105,6 +105,16 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const pulse = settings.pulse ? Math.min(1, motion.bass) * 12 : 0;
   const radius = (settings.radius + pulse) * scale;
   const shape = settings.shape ?? 'circle';
+  if (settings.echoRings) {
+    ctx.save();
+    for (let ring = 0; ring < 3; ring++) {
+      const phase = fract(songTime * .45 + ring / 3);
+      ctx.strokeStyle = rgba(ring % 2 ? settings.secondary : settings.primary, (1 - phase) ** 2 * (.12 + Math.min(1, motion.bass) * .5));
+      ctx.lineWidth = 1.2 * scale;
+      traceShape(ctx, shape, x, y, radius + (14 + phase * 100) * scale); ctx.stroke();
+    }
+    ctx.restore();
+  }
   const count = shape === 'circle' && settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
@@ -172,6 +182,32 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     ctx.strokeStyle = rgba(settings.secondary, .4); ctx.lineWidth = scale;
     const insetRadius = radius - 5 * scale / (shape === 'triangle' ? .5 : shape === 'square' ? Math.SQRT1_2 : 1);
     traceShape(ctx, shape, x, y, insetRadius); ctx.stroke();
+  }
+
+  if (settings.orbitLights) {
+    ctx.save();
+    for (let light = 0; light < 2; light++) {
+      const color = light ? settings.secondary : settings.primary;
+      for (let trail = 12; trail >= 0; trail--) {
+        const angle = songTime * .7 + light * Math.PI - trail * .025;
+        const reach = shapeRadius(shape, radius, angle) + (20 + Math.min(1, motion.bass) * 14) * scale;
+        const px = x + Math.cos(angle) * reach, py = y + Math.sin(angle) * reach;
+        const alpha = (1 - trail / 13) * (.35 + Math.min(1, motion.bass) * .65);
+        ctx.fillStyle = rgba(color, alpha); ctx.beginPath();
+        ctx.arc(px, py, (trail === 0 ? 3 : 1.4) * scale, 0, Math.PI * 2); ctx.fill();
+        if (trail === 0) {
+          const halo = ctx.createRadialGradient(px, py, 0, px, py, 14 * scale);
+          halo.addColorStop(0, rgba(color, alpha * .5)); halo.addColorStop(1, rgba(color, 0));
+          ctx.fillStyle = halo; ctx.fillRect(px - 14 * scale, py - 14 * scale, 28 * scale, 28 * scale);
+        }
+      }
+    }
+    ctx.restore();
+  }
+  if (settings.vignette) {
+    const edge = ctx.createRadialGradient(x, y, 0, x, y, Math.hypot(x, y));
+    edge.addColorStop(0, 'rgba(0,0,0,0)'); edge.addColorStop(.35, 'rgba(0,0,0,0)'); edge.addColorStop(1, 'rgba(0,0,0,.6)');
+    ctx.fillStyle = edge; ctx.fillRect(0, 0, width, height);
   }
 
 }
