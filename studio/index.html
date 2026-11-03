@@ -84,18 +84,6 @@
             <label class="color-card" for="background-color"><span class="color-caption">Background</span><input id="background-color" type="color" value="#0b1114"><output id="background-color-value" for="background-color">#0B1114</output></label>
           </div>
         </fieldset>
-        <fieldset class="control-section background-settings" disabled>
-          <div class="section-heading"><h3>Background image</h3><button class="text-button" data-reset="backgroundImage" aria-label="Reset background image">Reset</button></div>
-          <div class="file-card" id="background-image-card"><button id="background-image-upload" class="file-upload"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="background-image-name">Add image</strong><small id="background-image-hint">PNG, JPG, WebP</small></span></button><button id="background-image-remove" class="text-button file-remove" aria-label="Remove background image" hidden><span>Remove</span></button></div>
-          <div id="background-image-controls" class="is-disabled">
-            <div class="style-choices background-fit-choices" role="radiogroup" aria-label="Background image fit">
-              <label class="style-choice"><input class="sr-only" type="radio" name="background-fit" value="contain" disabled><span>Fit image</span></label>
-              <label class="style-choice"><input class="sr-only" type="radio" name="background-fit" value="cover" checked disabled><span>Fill preview</span></label>
-            </div>
-            <div class="slider-field"><label class="slider-label" for="backgroundOpacity">Opacity <output id="backgroundOpacity-value" for="backgroundOpacity">100%</output></label><input id="backgroundOpacity" type="range" min="0" max="100" value="100" disabled></div>
-          </div>
-          <input id="background-image-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-        </fieldset>
         <fieldset class="control-section spectrum-settings" disabled>
           <div class="section-heading"><h3>Spectrum</h3><button class="text-button" data-reset="spectrum" aria-label="Reset spectrum">Reset</button></div>
           <div class="slider-field"><label class="slider-label" for="radius">Shape size <output id="radius-value" for="radius">115 px</output></label><input id="radius" type="range" min="55" max="140" value="115"></div>
@@ -121,11 +109,27 @@
               <label class="style-choice"><input class="sr-only" type="radio" disabled name="logo-fit" value="contain"><span>Fit image</span></label>
               <label class="style-choice"><input class="sr-only" type="radio" disabled name="logo-fit" value="cover" checked><span>Fill shape</span></label>
             </div>
+            <div class="slider-field"><label class="slider-label" for="logoOpacity">Opacity <output id="logoOpacity-value" for="logoOpacity">100%</output></label><input id="logoOpacity" type="range" min="0" max="100" value="100" disabled></div>
             <div class="slider-field"><label class="slider-label" for="logoZoom">Zoom <output id="logoZoom-value" for="logoZoom">100%</output></label><input id="logoZoom" type="range" disabled min="50" max="200" value="100"></div>
             <div class="slider-field"><label class="slider-label" for="logoX">Horizontal position <output id="logoX-value" for="logoX">0%</output></label><input id="logoX" type="range" disabled min="-100" max="100" value="0"></div>
             <div class="slider-field"><label class="slider-label" for="logoY">Vertical position <output id="logoY-value" for="logoY">0%</output></label><input id="logoY" type="range" disabled min="-100" max="100" value="0"></div>
           </div>
           <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </fieldset>
+        <fieldset class="control-section background-settings" disabled>
+          <div class="section-heading"><h3>Background Image</h3><button class="text-button" data-reset="backgroundImage" aria-label="Reset Background Image">Reset</button></div>
+          <div class="file-card" id="background-image-card"><button id="background-image-upload" class="file-upload"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="background-image-name">Add image</strong><small id="background-image-hint">PNG, JPG, WebP</small></span></button><button id="background-image-remove" class="text-button file-remove" aria-label="Remove background image" hidden><span>Remove</span></button></div>
+          <div id="background-image-controls" class="is-disabled">
+            <div class="style-choices background-fit-choices" role="radiogroup" aria-label="Background image fit">
+              <label class="style-choice"><input class="sr-only" type="radio" name="background-fit" value="contain" disabled><span>Fit image</span></label>
+              <label class="style-choice"><input class="sr-only" type="radio" name="background-fit" value="cover" checked disabled><span>Fill preview</span></label>
+            </div>
+            <div class="slider-field"><label class="slider-label" for="backgroundOpacity">Opacity <output id="backgroundOpacity-value" for="backgroundOpacity">100%</output></label><input id="backgroundOpacity" type="range" min="0" max="100" value="100" disabled></div>
+            <div class="slider-field"><label class="slider-label" for="backgroundZoom">Zoom <output id="backgroundZoom-value" for="backgroundZoom">100%</output></label><input id="backgroundZoom" type="range" min="50" max="200" value="100" disabled></div>
+            <div class="slider-field"><label class="slider-label" for="backgroundX">Horizontal position <output id="backgroundX-value" for="backgroundX">0%</output></label><input id="backgroundX" type="range" min="-100" max="100" value="0" disabled></div>
+            <div class="slider-field"><label class="slider-label" for="backgroundY">Vertical position <output id="backgroundY-value" for="backgroundY">0%</output></label><input id="backgroundY" type="range" min="-100" max="100" value="0" disabled></div>
+          </div>
+          <input id="background-image-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
         </fieldset>
         <fieldset class="control-section text-settings" disabled>
           <div class="section-heading"><h3>Text</h3><button class="text-button" data-reset="text" aria-label="Reset text">Reset</button></div>

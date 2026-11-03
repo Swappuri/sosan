@@ -76,7 +76,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const x = width / 2, y = height / 2;
   ctx.fillStyle = settings.background; ctx.fillRect(0, 0, width, height);
   if (backgroundImage && backgroundImage.width > 0 && backgroundImage.height > 0) {
-    const placement = backgroundPlacement(width, height, backgroundImage.width, backgroundImage.height, settings.backgroundFit);
+    const placement = backgroundPlacement(width, height, backgroundImage.width, backgroundImage.height, settings.backgroundFit, settings.backgroundZoom, settings.backgroundX, settings.backgroundY);
     ctx.save();
     try {
       ctx.globalAlpha = (settings.backgroundOpacity ?? 100) / 100;
@@ -138,6 +138,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     ctx.save(); traceShape(ctx, shape, x, y, radius); ctx.clip();
     const placement = logoPlacement(shape, radius, logo.width, logo.height, settings.logoFit, settings.logoZoom, settings.logoX, settings.logoY);
     try {
+      ctx.globalAlpha = (settings.logoOpacity ?? 100) / 100;
       ctx.drawImage(logo, x + placement.x, y + placement.y, placement.width, placement.height);
     } finally {
       ctx.restore();
@@ -170,7 +171,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
 
 }
 
-export function backgroundPlacement(width, height, imageWidth, imageHeight, fit = 'cover') {
-  const factor = (fit === 'contain' ? Math.min : Math.max)(width / imageWidth, height / imageHeight);
-  return { x: (width - imageWidth * factor) / 2, y: (height - imageHeight * factor) / 2, width: imageWidth * factor, height: imageHeight * factor };
+export function backgroundPlacement(width, height, imageWidth, imageHeight, fit = 'cover', zoom = 100, offsetX = 0, offsetY = 0) {
+  const factor = (fit === 'contain' ? Math.min : Math.max)(width / imageWidth, height / imageHeight) * zoom / 100;
+  return { x: (width - imageWidth * factor) / 2 + offsetX / 100 * width / 2, y: (height - imageHeight * factor) / 2 + offsetY / 100 * height / 2, width: imageWidth * factor, height: imageHeight * factor };
 }

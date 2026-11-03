@@ -135,8 +135,8 @@ class StudioRenderer:
                 asset = cv2.cvtColor(asset, cv2.COLOR_GRAY2BGRA)
             elif asset.shape[2] == 3:
                 asset = cv2.cvtColor(asset, cv2.COLOR_BGR2BGRA)
-            factor = (min if settings['backgroundFit'] == 'contain' else max)(self.width / asset.shape[1], self.height / asset.shape[0])
-            x, y = (self.width - asset.shape[1] * factor) / 2, (self.height - asset.shape[0] * factor) / 2
+            factor = (min if settings['backgroundFit'] == 'contain' else max)(self.width / asset.shape[1], self.height / asset.shape[0]) * settings['backgroundZoom'] / 100
+            x, y = (self.width - asset.shape[1] * factor) / 2 + settings['backgroundX'] / 100 * self.width / 2, (self.height - asset.shape[0] * factor) / 2 + settings['backgroundY'] / 100 * self.height / 2
             transform = np.array([[factor, 0, x], [0, factor, y]], np.float64)
             placed = cv2.warpAffine(asset, transform, (self.width, self.height))
             alpha = placed[:, :, 3:4].astype(np.float32) / 255 * settings['backgroundOpacity'] / 100
@@ -199,7 +199,7 @@ class StudioRenderer:
         yy, xx = np.ogrid[y0:y1, x0:x1]
         reach = shape_radius(shape, clip_radius, np.arctan2(yy - self.center[1], xx - self.center[0]))
         mask = ((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) <= reach ** 2
-        alpha = resized[:, :, 3:4].astype(np.float32) / 255 * mask[:, :, None]
+        alpha = resized[:, :, 3:4].astype(np.float32) / 255 * mask[:, :, None] * (self.settings['logoOpacity'] / 100 if is_logo else 1)
         image[y0:y1, x0:x1] = image[y0:y1, x0:x1] * (1 - alpha) + resized[:, :, :3] * alpha
 
     def frame(self, index, levels, bass, onset):

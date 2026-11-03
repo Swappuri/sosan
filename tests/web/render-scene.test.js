@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement } from '../../studio/render-scene.js';
+import { renderScene, spectrumBandPosition, smoothSpectrum, shapeRadius, logoPlacement, backgroundPlacement } from '../../studio/render-scene.js';
 import { syncPlaybackButton } from '../../studio/playback-state.js';
 
 const settings = { primary: '#a7f36b', secondary: '#5de5ec', background: '#0b1114', radius: 115, bars: 128, particles: true, pulse: true, glow: true };
@@ -266,5 +266,20 @@ test('background images render before foreground content with independent opacit
   assert.equal(calls[0].alpha, .4);
   assert.ok(Math.abs(calls[0].rect[2] - 853.3333333333) < .001);
   assert.equal(calls[1].asset, logo);
+  assert.equal(canvas.saves, 0);
+});
+
+test('background zoom and pan operate independently of image fitting', () => {
+  const fit = backgroundPlacement(800, 400, 100, 100, 'contain');
+  assert.deepEqual(fit, { x: 200, y: 0, width: 400, height: 400 });
+  assert.deepEqual(backgroundPlacement(800, 400, 100, 100, 'contain', 150, 25, -50), { x: 200, y: -200, width: 600, height: 600 });
+});
+test('logo opacity affects the image while text remains visible', () => {
+  const canvas = canvasContext();
+  let alpha;
+  canvas.ctx.drawImage = () => { alpha = canvas.ctx.globalAlpha; };
+  renderScene(canvas.ctx, 854, 480, { ...settings, logoOpacity: 25 }, motion, 1, { width: 100, height: 100 }, 'Overlay');
+  assert.equal(alpha, .25);
+  assert.equal(canvas.text[0][0], 'Overlay');
   assert.equal(canvas.saves, 0);
 });

@@ -3,9 +3,9 @@ import math
 
 DEFAULTS = {
     'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
-    'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'poppins', 'backgroundFit': 'cover', 'backgroundOpacity': 100,
+    'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'poppins', 'backgroundFit': 'cover', 'backgroundOpacity': 100, 'backgroundZoom': 100, 'backgroundX': 0, 'backgroundY': 0,
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
-    'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0,
+    'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0, 'logoOpacity': 100,
     'glow': True, 'particles': True, 'pulse': True, 'flashes': True,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',
 }
@@ -20,7 +20,7 @@ def validate_settings(value):
     for name in ('primary', 'secondary', 'innerFill', 'background', 'textColor'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')
-    for name, minimum, maximum in [('backgroundOpacity', 0, 100), ('textSize', 50, 200), ('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100), ('logoZoom', 50, 200), ('logoX', -100, 100), ('logoY', -100, 100)]:
+    for name, minimum, maximum in [('backgroundOpacity', 0, 100), ('backgroundZoom', 50, 200), ('backgroundX', -100, 100), ('backgroundY', -100, 100), ('logoOpacity', 0, 100), ('textSize', 50, 200), ('radius', 55, 140), ('sensitivity', .3, 2.5), ('rotation', 0, 180), ('smoothing', 0, 100), ('logoZoom', 50, 200), ('logoX', -100, 100), ('logoY', -100, 100)]:
         number = result[name]
         if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number) or not minimum <= number <= maximum:
             raise ValueError(f'Invalid {name}.')
