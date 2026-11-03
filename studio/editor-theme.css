@@ -104,9 +104,9 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 @font-face { font-family: 'Bebas Neue'; src: url('./fonts/BebasNeue.ttf') format('truetype'); font-weight: 600; font-display: swap; }
 
 .font-picker-toggle { width: 100%; min-height: 32px; padding: 6px 28px 6px 9px; position: relative; border: 1px solid #414141; border-radius: 4px; background: #222; color: #ddd; font-size: 12px; text-align: left; }
-.font-picker-toggle::after { content: '⌄'; position: absolute; right: 10px; font-family: Poppins, sans-serif; }
+.font-picker-toggle::after { content: ''; position: absolute; top: 50%; right: 11px; width: 5px; height: 5px; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
 .font-picker-options { position: fixed; z-index: 110; overflow-y: auto; padding: 4px; border: 1px solid #484848; border-radius: 5px; background: #222; box-shadow: 0 8px 24px #0008; scrollbar-width: thin; }
-.font-picker-options button { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 3px; background: transparent; color: #ddd; text-align: left; font-size: 16px; line-height: 24px; }
+.font-picker-options button { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 3px; background: transparent; color: #ddd; text-align: left; font-size: 12px; line-height: 18px; }
 .font-picker-options button[aria-selected=true] { background: var(--accent-soft); color: var(--accent); }
 .font-picker-options button:hover, .font-picker-options button:focus-visible { background: #333; outline: 1px solid var(--accent-border); outline-offset: -1px; }
 
@@ -204,3 +204,7 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .text-style-pair { margin-top: 12px; }
 .text-style-pair .text-font-control { margin-top: 0; }
 .text-style-pair > label { min-width: 0; }
+
+.font-picker-toggle { line-height: 18px; }
+#export { gap: 7px; line-height: 18px; }
+#export .export-icon { display: block; width: 16px; height: 16px; }
