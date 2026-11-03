@@ -141,7 +141,8 @@ class StudioRenderer:
             placed = cv2.warpAffine(asset, transform, (self.width, self.height))
             alpha = placed[:, :, 3:4].astype(np.float32) / 255 * settings['backgroundOpacity'] / 100
             backdrop = backdrop * (1 - alpha) + placed[:, :, :3] * alpha
-        self.base = np.clip(backdrop + inner[:, :, None] * self.primary * .09 + outer[:, :, None] * self.secondary * .025, 0, 255).astype(np.uint8)
+        ambient = inner[:, :, None] * self.primary * .09 + outer[:, :, None] * self.secondary * .025 if settings['aura'] else 0
+        self.base = np.clip(backdrop + ambient, 0, 255).astype(np.uint8)
         self.flash_aura = inner[:, :, None] * self.primary * .1
         self.particles = []
         for i in range(100):

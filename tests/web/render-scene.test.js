@@ -283,3 +283,12 @@ test('logo opacity affects the image while text remains visible', () => {
   assert.equal(canvas.text[0][0], 'Overlay');
   assert.equal(canvas.saves, 0);
 });
+
+test('ambient aura can be disabled independently of bar glow and beat flashes', () => {
+  for (const [aura, flashes, flash, expected] of [[false, false, 0, 0], [true, false, 0, 1], [false, true, .8, 1]]) {
+    const canvas = canvasContext(); let gradients = 0;
+    canvas.ctx.createRadialGradient = () => { gradients++; return { addColorStop() {} }; };
+    renderScene(canvas.ctx, 854, 480, { ...settings, aura, flashes, glow: true }, { ...motion, flash }, 1, null, '');
+    assert.equal(gradients, expected);
+  }
+});

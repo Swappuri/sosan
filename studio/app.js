@@ -13,7 +13,7 @@ const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Fr
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, particles: true, pulse: true, flashes: true };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let backgroundImage, backgroundFile, backgroundLoadId = 0;
@@ -288,7 +288,7 @@ function syncSettings() {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key] && (name !== 'logo-fit' || (settings.logoZoom === 100 && settings.logoX === 0 && settings.logoY === 0)) && (name !== 'background-fit' || (settings.backgroundZoom === 100 && settings.backgroundX === 0 && settings.backgroundY === 0)); });
   }
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY', 'logoOpacity']) $(key).value = settings[key];
-  for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
+  for (const key of ['glow', 'aura', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
   for (const key of ['logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY', 'logoOpacity']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
@@ -300,7 +300,7 @@ function syncSettings() {
 }
 for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY', 'logoOpacity']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
-for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
+for (const key of ['glow', 'aura', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
@@ -311,7 +311,7 @@ const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
-  effects: { title: 'Effects', keys: ['glow', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },
+  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },
   backgroundImage: { title: 'Background Image', keys: ['backgroundFit', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY'], detail: 'Remove the background image and restore its default settings?' },
   logo: { title: 'Logo', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY', 'logoOpacity'], detail: 'Restore default logo placement and opacity? The uploaded logo will be kept.' },
   text: { title: 'Text', keys: ['textColor', 'textSize', 'textFont'], detail: 'Restore the song filename and default text color, size, and font?' },

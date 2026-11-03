@@ -17,6 +17,13 @@ from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
+    def test_aura_can_be_disabled_without_disabling_glow(self):
+        off = StudioRenderer(validate_settings({'aura': False, 'glow': True}))
+        on = StudioRenderer(validate_settings({'aura': True, 'glow': True}))
+        self.assertTrue(np.all(off.base == off.background))
+        self.assertFalse(np.array_equal(on.base, off.base))
+        self.assertTrue(np.any(off.flash_aura > 0))
+
     def test_logo_opacity_composites_over_the_surface(self):
         import cv2
         with tempfile.TemporaryDirectory() as directory:
@@ -77,7 +84,7 @@ class OfflineExportTests(unittest.TestCase):
                 self.assertFalse(np.array_equal(first, second))
 
     def test_settings_validation(self):
-        for invalid in ({'backgroundZoom': 49}, {'backgroundX': 101}, {'backgroundY': -101}, {'logoOpacity': 101}, {'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'aura': 'false'}, {'backgroundZoom': 49}, {'backgroundX': 101}, {'backgroundY': -101}, {'logoOpacity': 101}, {'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 

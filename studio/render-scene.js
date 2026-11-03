@@ -83,10 +83,15 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
       ctx.drawImage(backgroundImage, placement.x, placement.y, placement.width, placement.height);
     } finally { ctx.restore(); }
   }
-  const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
-  aura.addColorStop(0, rgba(settings.primary, .09 + (settings.flashes ? motion.flash * .1 : 0)));
-  aura.addColorStop(.55, rgba(settings.secondary, .025)); aura.addColorStop(1, rgba(settings.background, 0));
-  ctx.fillStyle = aura; ctx.fillRect(0, 0, width, height);
+  const ambient = settings.aura ?? true;
+  const flashLight = settings.flashes ? motion.flash * .1 : 0;
+  if (ambient || flashLight > 0) {
+    const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
+    aura.addColorStop(0, rgba(settings.primary, (ambient ? .09 : 0) + flashLight));
+    aura.addColorStop(.55, rgba(settings.secondary, ambient ? .025 : 0));
+    aura.addColorStop(1, rgba(settings.background, 0));
+    ctx.fillStyle = aura; ctx.fillRect(0, 0, width, height);
+  }
   // A restrained star field drifts outwards with the song clock.
   if (settings.particles) {
     for (const p of particles) {
