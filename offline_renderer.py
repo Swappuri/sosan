@@ -112,7 +112,7 @@ def bgr(color):
 
 class StudioRenderer:
     """Offline counterpart of the canvas: colors, geometry, effects, logo and title."""
-    def __init__(self, settings, logo_path=None):
+    def __init__(self, settings, logo_path=None, background_path=None):
         self.settings = settings
         self.width, self.height = settings['width'], settings['height']
         self.scale = min(self.width / 854, self.height / 480)
@@ -125,7 +125,23 @@ class StudioRenderer:
         distance = np.sqrt((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) / (360 * self.scale)
         inner = np.clip(1 - distance / .55, 0, 1).astype(np.float32)
         outer = np.clip(1 - abs(distance - .55) / .55, 0, 1).astype(np.float32)
-        self.base = np.clip(self.background + inner[:, :, None] * self.primary * .09 + outer[:, :, None] * self.secondary * .025, 0, 255).astype(np.uint8)
+        backdrop = np.empty((self.height, self.width, 3), np.float32)
+        backdrop[:] = self.background
+        if background_path:
+            asset = cv2.imread(str(background_path), cv2.IMREAD_UNCHANGED)
+            if asset is None:
+                raise ValueError('Could not decode the background image.')
+            if asset.ndim == 2:
+                asset = cv2.cvtColor(asset, cv2.COLOR_GRAY2BGRA)
+            elif asset.shape[2] == 3:
+                asset = cv2.cvtColor(asset, cv2.COLOR_BGR2BGRA)
+            factor = (min if settings['backgroundFit'] == 'contain' else max)(self.width / asset.shape[1], self.height / asset.shape[0])
+            x, y = (self.width - asset.shape[1] * factor) / 2, (self.height - asset.shape[0] * factor) / 2
+            transform = np.array([[factor, 0, x], [0, factor, y]], np.float64)
+            placed = cv2.warpAffine(asset, transform, (self.width, self.height))
+            alpha = placed[:, :, 3:4].astype(np.float32) / 255 * settings['backgroundOpacity'] / 100
+            backdrop = backdrop * (1 - alpha) + placed[:, :, :3] * alpha
+        self.base = np.clip(backdrop + inner[:, :, None] * self.primary * .09 + outer[:, :, None] * self.secondary * .025, 0, 255).astype(np.uint8)
         self.flash_aura = inner[:, :, None] * self.primary * .1
         self.particles = []
         for i in range(100):

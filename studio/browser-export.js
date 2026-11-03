@@ -14,7 +14,7 @@ export function createBrowserExporter(callbacks) {
       if (active) return;
       const id = ++generation;
       active = true; callbacks.started();
-      let decoder, logo;
+      let decoder, logo, backgroundImage;
       try {
         if (!window.Worker || !window.OffscreenCanvas || !window.VideoEncoder) throw new Error('MP4 export requires WebCodecs. Use an updated Chrome, Edge, or Safari browser.');
         if (selection.file.size > 100 * 1024 ** 2) throw new Error('Browser export supports audio files up to 100 MB. Use the local Python version for larger files.');
@@ -31,8 +31,9 @@ export function createBrowserExporter(callbacks) {
         const response = await fetch(new URL(`./fonts/${fontSpec.file}`, import.meta.url));
         if (!response.ok) throw new Error('Could not load the export font. Reload the page and retry.');
         const font = await response.arrayBuffer();
+        if (selection.backgroundFile) backgroundImage = await createImageBitmap(selection.backgroundFile);
         if (selection.logoFile) logo = await createImageBitmap(selection.logoFile);
-        if (id !== generation) { logo?.close(); return; }
+        if (id !== generation) { logo?.close(); backgroundImage?.close(); return; }
         worker = new Worker(new URL('./export-worker.bundle.js', import.meta.url), { type: 'module' });
         worker.onmessage = ({ data }) => {
           if (id !== generation) return;
@@ -43,9 +44,10 @@ export function createBrowserExporter(callbacks) {
         worker.onerror = event => { if (id === generation) { cleanup(); callbacks.failed(new Error(event.message || 'Export worker stopped. Try a lower resolution.')); } };
         const transfer = [...channels.map(channel => channel.buffer), font];
         if (logo) transfer.push(logo);
-        worker.postMessage({ settings: selection.settings, channels, sampleRate: decoded.sampleRate, font, fontSpec, logo }, transfer);
+        if (backgroundImage) transfer.push(backgroundImage);
+        worker.postMessage({ settings: selection.settings, channels, sampleRate: decoded.sampleRate, font, fontSpec, logo, backgroundImage }, transfer);
       } catch (error) {
-        if (id === generation) { cleanup(); logo?.close(); callbacks.failed(error); }
+        if (id === generation) { cleanup(); logo?.close(); backgroundImage?.close(); callbacks.failed(error); }
       } finally { if (decoder) await decoder.close().catch(() => {}); }
     },
   };

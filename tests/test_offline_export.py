@@ -17,6 +17,23 @@ from render_worker import run_job
 
 
 class OfflineExportTests(unittest.TestCase):
+    def test_background_opacity_and_transparency(self):
+        import cv2
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'background.png'
+            asset = np.zeros((100, 100, 4), np.uint8)
+            asset[:] = (0, 0, 255, 255)
+            cv2.imwrite(str(path), asset)
+            base = StudioRenderer(validate_settings({'backgroundOpacity': 0}), background_path=path).base
+            full = StudioRenderer(validate_settings({'backgroundOpacity': 100}), background_path=path).base
+            half = StudioRenderer(validate_settings({'backgroundOpacity': 50}), background_path=path).base
+            np.testing.assert_array_equal(full[0, 0], [0, 0, 255])
+            np.testing.assert_allclose(half[0, 0], (base[0, 0].astype(float) + full[0, 0]) / 2, atol=1)
+            asset[:, :, 3] = 0
+            cv2.imwrite(str(path), asset)
+            transparent = StudioRenderer(validate_settings({}), background_path=path).base
+            np.testing.assert_array_equal(transparent, base)
+
     def test_export_resolution_and_frame_rate_choices(self):
         for width, height in ((640, 360), (854, 480), (1280, 720), (1920, 1080), (2560, 1440), (3840, 2160)):
             for fps in (15, 24, 25, 30, 50, 60, 120):
@@ -47,7 +64,7 @@ class OfflineExportTests(unittest.TestCase):
                 self.assertFalse(np.array_equal(first, second))
 
     def test_settings_validation(self):
-        for invalid in ({'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 

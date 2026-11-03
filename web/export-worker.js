@@ -19,7 +19,7 @@ self.onmessage = async ({ data }) => {
   }
   let output;
   try {
-    const { settings, channels, sampleRate, font, fontSpec, logo } = data;
+    const { settings, channels, sampleRate, font, fontSpec, logo, backgroundImage } = data;
     const { width, height, fps } = settings;
     const bitrate = exportBitrate(height, fps);
     const quality = new Quality({ bitrate });
@@ -47,7 +47,7 @@ self.onmessage = async ({ data }) => {
     for (let frame = 0; frame < total; frame++) {
       const timestamp = frame / fps;
       advanceMotion(motion, analysis.frame(timestamp), 1 / fps);
-      renderScene(ctx, width, height, settings, motion, timestamp, logo, settings.title);
+      renderScene(ctx, width, height, settings, motion, timestamp, logo, settings.title, backgroundImage);
       await video.add(timestamp, 1 / fps);
       const end = Math.min(channels[0].length, Math.round((frame + 1) / fps * sampleRate));
       const count = end - audioCursor;

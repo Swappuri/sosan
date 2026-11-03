@@ -48,7 +48,7 @@ def run_job(folder):
         source = folder / 'audio'
         levels, bass, onsets, duration = analyze_track(source, settings, checkpoint)
         checkpoint()
-        renderer = StudioRenderer(settings, folder / 'logo' if (folder / 'logo').is_file() else None)
+        renderer = StudioRenderer(settings, folder / 'logo' if (folder / 'logo').is_file() else None, folder / 'background' if (folder / 'background').is_file() else None)
         width, height, fps = settings['width'], settings['height'], settings['fps']
         command = [ffmpeg, '-y', '-v', 'error', '-f', 'rawvideo', '-pix_fmt', 'bgr24',
                    '-s', f'{width}x{height}', '-r', str(fps), '-i', 'pipe:0', '-i', str(source),
@@ -99,7 +99,7 @@ def run_job(folder):
                 pass
         partial.unlink(missing_ok=True)
         # The finished MP4 and job metadata remain; uploaded source copies are temporary.
-        for name in ('audio', 'logo'):
+        for name in ('audio', 'logo', 'background'):
             (folder / name).unlink(missing_ok=True)
 
 

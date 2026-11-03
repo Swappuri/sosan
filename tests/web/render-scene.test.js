@@ -256,3 +256,15 @@ test('text draws over logos with independent font, color, and relative size', ()
     assert.ok(Math.abs(sizes[2] / sizes[1] - 2) < 1e-6);
   }
 });
+
+test('background images render before foreground content with independent opacity', () => {
+  const canvas = canvasContext(), calls = [];
+  const backdrop = { width: 1600, height: 900 }, logo = { width: 100, height: 100 };
+  canvas.ctx.drawImage = (asset, ...rect) => calls.push({ asset, rect, alpha: canvas.ctx.globalAlpha });
+  renderScene(canvas.ctx, 854, 480, { ...settings, backgroundFit: 'contain', backgroundOpacity: 40, particles: false }, motion, 1, logo, 'Title', backdrop);
+  assert.equal(calls[0].asset, backdrop);
+  assert.equal(calls[0].alpha, .4);
+  assert.ok(Math.abs(calls[0].rect[2] - 853.3333333333) < .001);
+  assert.equal(calls[1].asset, logo);
+  assert.equal(canvas.saves, 0);
+});

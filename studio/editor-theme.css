@@ -208,3 +208,7 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .font-picker-toggle { line-height: 18px; }
 #export { gap: 7px; line-height: 18px; }
 #export .export-icon { display: block; width: 16px; height: 16px; }
+
+#background-image-controls { margin-top: 8px; }
+#background-image-controls.is-disabled { opacity: .45; }
+.background-fit-choices { margin-bottom: 12px; }

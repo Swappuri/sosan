@@ -71,10 +71,18 @@ function traceShape(ctx, shape, x, y, radius) {
   ctx.closePath();
 }
 
-export function renderScene(ctx, width, height, settings, motion, songTime, logo, title) {
+export function renderScene(ctx, width, height, settings, motion, songTime, logo, title, backgroundImage = null) {
   const scale = Math.min(width / 854, height / 480);
   const x = width / 2, y = height / 2;
   ctx.fillStyle = settings.background; ctx.fillRect(0, 0, width, height);
+  if (backgroundImage && backgroundImage.width > 0 && backgroundImage.height > 0) {
+    const placement = backgroundPlacement(width, height, backgroundImage.width, backgroundImage.height, settings.backgroundFit);
+    ctx.save();
+    try {
+      ctx.globalAlpha = (settings.backgroundOpacity ?? 100) / 100;
+      ctx.drawImage(backgroundImage, placement.x, placement.y, placement.width, placement.height);
+    } finally { ctx.restore(); }
+  }
   const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
   aura.addColorStop(0, rgba(settings.primary, .09 + (settings.flashes ? motion.flash * .1 : 0)));
   aura.addColorStop(.55, rgba(settings.secondary, .025)); aura.addColorStop(1, rgba(settings.background, 0));
@@ -160,4 +168,9 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     traceShape(ctx, shape, x, y, insetRadius); ctx.stroke();
   }
 
+}
+
+export function backgroundPlacement(width, height, imageWidth, imageHeight, fit = 'cover') {
+  const factor = (fit === 'contain' ? Math.min : Math.max)(width / imageWidth, height / imageHeight);
+  return { x: (width - imageWidth * factor) / 2, y: (height - imageHeight * factor) / 2, width: imageWidth * factor, height: imageHeight * factor };
 }

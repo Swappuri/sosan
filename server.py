@@ -172,7 +172,7 @@ class StudioHandler(SimpleHTTPRequestHandler):
                         if state['state'] == 'uploading':
                             state.update(state='cancelled', message='Export cancelled.')
                             (folder / 'job.json').write_text(json.dumps(state))
-                            for name in ('audio', 'logo'):
+                            for name in ('audio', 'logo', 'background'):
                                 (folder / name).unlink(missing_ok=True)
                         self.json_response(202, {'state': 'cancelling'})
                 elif parts[3] == 'start':
@@ -213,7 +213,7 @@ class StudioHandler(SimpleHTTPRequestHandler):
         temporary = None
         try:
             parts = self.path.strip('/').split('/')
-            if len(parts) != 4 or parts[:2] != ['api', 'exports'] or parts[3] not in {'audio', 'logo'}:
+            if len(parts) != 4 or parts[:2] != ['api', 'exports'] or parts[3] not in {'audio', 'logo', 'background'}:
                 self.send_error(404)
                 return
             folder = self.job_folder(parts[2])

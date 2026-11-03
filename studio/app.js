@@ -13,9 +13,10 @@ const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Fr
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: true };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, glow: true, particles: true, pulse: true, flashes: true };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
+let backgroundImage, backgroundFile, backgroundLoadId = 0;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 let lastTime = 0;
@@ -90,12 +91,19 @@ function syncSettingsAvailability() {
   document.querySelectorAll('.settings-content fieldset').forEach(section => { section.disabled = disabled; });
   syncExportButton();
   $('title').disabled = disabled;
+  document.querySelectorAll('#background-image-controls input').forEach(input => { input.disabled = disabled || !backgroundImage; });
+  $('background-image-controls').classList.toggle('is-disabled', disabled || !backgroundImage);
   document.querySelectorAll('#logo-placement input').forEach(input => { input.disabled = disabled || !logo; });
   $('logo-placement').classList.toggle('is-disabled', disabled || !logo);
   $('reset').disabled = disabled;
   document.querySelector('[data-reset="audio"]').disabled = disabled;
 }
 function syncFileCards() {
+  $('background-image-name').textContent = backgroundFile?.name || 'Add image';
+  $('background-image-name').title = backgroundFile?.name || '';
+  $('background-image-hint').hidden = !!backgroundFile;
+  $('background-image-remove').hidden = !backgroundFile;
+  $('background-image-card').classList.toggle('has-file', !!backgroundFile);
   $('audio-name').textContent = selectedFile?.name || (loading ? 'Loading audio…' : 'Add audio');
   $('audio-name').title = selectedFile?.name || '';
   $('audio-hint').hidden = !!selectedFile;
@@ -276,12 +284,12 @@ function syncSettings() {
   $('textFont').value = settings.textFont;
   syncFontPicker();
   $('innerRing').setAttribute('aria-pressed', String(settings.innerRing));
-  for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit']]) {
+  for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit'], ['background-fit', 'backgroundFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key] && (name !== 'logo-fit' || (settings.logoZoom === defaults.logoZoom && settings.logoX === defaults.logoX && settings.logoY === defaults.logoY)); });
   }
-  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize']) $(key).value = settings[key];
+  for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity']) $(key).value = settings[key];
   for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).checked = settings[key];
-  for (const key of ['logoZoom', 'logoX', 'logoY', 'textSize']) $(key + '-value').value = `${settings[key]}%`;
+  for (const key of ['logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
   $('bars-value').value = settings.bars;
@@ -291,9 +299,9 @@ function syncSettings() {
   $('rotation').setAttribute('aria-valuetext', `${settings.rotation} degrees down both sides`);
 }
 for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
-for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
+for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
 for (const key of ['glow', 'particles', 'pulse', 'flashes']) $(key).onchange = () => { settings[key] = $(key).checked; };
-for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
+for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['background-fit', 'backgroundFit']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
 document.querySelectorAll('input[name="logo-fit"]').forEach(input => { input.onclick = () => resetLogoPlacement(input.value); });
@@ -304,11 +312,12 @@ const resetSections = {
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
   effects: { title: 'Effects', keys: ['glow', 'particles', 'pulse', 'flashes'], detail: 'Restore the default effects?' },
+  backgroundImage: { title: 'Background image', keys: ['backgroundFit', 'backgroundOpacity'], detail: 'Remove the background image and restore its default settings?' },
   logo: { title: 'Logo', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY'], detail: 'Restore default logo placement? The uploaded logo will be kept.' },
   text: { title: 'Text', keys: ['textColor', 'textSize', 'textFont'], detail: 'Restore the song filename and default text color, size, and font?' },
   export: { title: 'Export', keys: [], detail: 'Restore 720p and 30 FPS?' },
   audio: { title: 'Audio', keys: [], detail: 'Remove the current song and stop playback? You can add the file again.' },
-  all: { title: 'all settings', keys: [], detail: 'Restore all visual and export settings, remove the logo, and restore the song filename? The current song will be kept.' },
+  all: { title: 'all settings', keys: [], detail: 'Restore all visual and export settings, remove uploaded images, and restore the song filename? The current song will be kept.' },
 };
 let pendingReset;
 function requestReset(section) {
@@ -325,7 +334,7 @@ function resetExportSettings() {
 function performReset(section) {
   if (section === 'all') {
     settings = { ...defaults };
-    setDisplayTitle(defaultTitle(selectedFile)); clearLogo(); resetExportSettings(); resetMotion();
+    setDisplayTitle(defaultTitle(selectedFile)); clearLogo(); clearBackgroundImage(); resetExportSettings(); resetMotion();
   } else if (section === 'audio') {
     activeLoad++; audio.pause(); loaded = false; selectedFile = null;
     audio.removeAttribute('src'); audio.load();
@@ -338,6 +347,7 @@ function performReset(section) {
     resetMotion(); syncPlaybackState(); syncSettingsAvailability();
   } else {
     for (const key of resetSections[section].keys) settings[key] = defaults[key];
+    if (section === 'backgroundImage') clearBackgroundImage();
     if (section === 'text') setDisplayTitle(defaultTitle(selectedFile));
     if (section === 'export') resetExportSettings();
     if (section === 'spectrum') resetMotion();
@@ -355,6 +365,25 @@ $('reset-dialog').addEventListener('close', () => {
 function setResolution() { syncExportOptions(); syncResolutionPicker(); syncFpsPicker(); const [width, height] = $('resolution').value.split('x').map(Number); $('resolution-label').textContent = `${width} × ${height}`; }
 $('resolution').onchange = setResolution;
 $('fps').onchange = setResolution;
+function clearBackgroundImage() {
+  backgroundLoadId++;
+  backgroundImage?.close?.(); backgroundImage = null; backgroundFile = null;
+  syncFileCards(); syncSettingsAvailability();
+}
+$('background-image-upload').onclick = () => $('background-image-file').click();
+$('background-image-remove').onclick = clearBackgroundImage;
+$('background-image-file').onchange = async event => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file) return;
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 20 * 1024 ** 2) { status('Choose a PNG, JPG, or WebP image under 20 MB.', true); return; }
+  const id = ++backgroundLoadId;
+  try {
+    const image = await createImageBitmap(file);
+    if (id !== backgroundLoadId) { image.close(); return; }
+    backgroundImage?.close?.(); backgroundImage = image; backgroundFile = file;
+    syncFileCards(); syncSettingsAvailability();
+  } catch { if (id === backgroundLoadId) status('Could not read this background image.', true); }
+};
 $('logo-upload').onclick = () => $('logo-file').click();
 function clearLogo() {
   logoLoadId++;
@@ -449,7 +478,7 @@ function draw(now) {
 }
 function paintPreview(now) {
   try {
-    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '');
+    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '', loaded ? backgroundImage : null);
     if (previewError && $('status').textContent.startsWith('Preview rendering failed:')) status('');
     previewError = undefined;
   } catch (error) {
@@ -544,7 +573,7 @@ const startServerExport = async () => {
   $('export-progress').value = 0;
   uploadController = new AbortController();
   const signal = uploadController.signal;
-  const exportAudio = selectedFile, exportLogo = logoFile;
+  const exportAudio = selectedFile, exportLogo = logoFile, exportBackground = backgroundFile;
   const [width, height] = $('resolution').value.split('x').map(Number);
   const snapshot = { ...settings, width, height, fps: Number($('fps').value), title: $('title').value.trim() };
   const filename = $('title').value.trim() || exportAudio.name.replace(/\.[^.]+$/, '');
@@ -556,6 +585,7 @@ const startServerExport = async () => {
     rememberJob(job.id);
     await api(`/api/exports/${job.id}/audio`, { method: 'PUT', body: exportAudio, signal });
     if (exportLogo) await api(`/api/exports/${job.id}/logo`, { method: 'PUT', body: exportLogo, signal });
+    if (exportBackground) await api(`/api/exports/${job.id}/background`, { method: 'PUT', body: exportBackground, signal });
     await api(`/api/exports/${job.id}/start`, { method: 'POST', signal });
     exportPreparing = false;
     uploadController = null;
@@ -632,7 +662,7 @@ $('export').onclick = () => {
   const [width, height] = $('resolution').value.split('x').map(Number);
   const title = $('title').value.trim();
   browserFilename = `${(title || selectedFile.name.replace(/\.[^.]+$/, '')).replace(/[\\/:*?"<>|]/g, '_')}.mp4`;
-  browserExporter.start({ file: selectedFile, logoFile, settings: { ...settings, width, height, fps: Number($('fps').value), title } });
+  browserExporter.start({ file: selectedFile, logoFile, backgroundFile, settings: { ...settings, width, height, fps: Number($('fps').value), title } });
 };
 $('cancel-export').onclick = () => browserMode ? browserExporter.cancel() : cancelServerExport();
 $('export').title = browserMode ? 'Render an MP4 on this device. Keep this tab open during export.' : 'Render an MP4 in the local background server.';
