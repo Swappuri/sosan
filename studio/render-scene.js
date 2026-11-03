@@ -86,11 +86,11 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   const strength = name => (settings[name + 'Strength'] ?? 100) / 100;
   const ambient = (settings.aura ?? true) ? strength('aura') : 0;
-  const flashLight = settings.flashes ? motion.flash * .1 * strength('flashes') : 0;
+  const flashLight = settings.flashes ? motion.flash * .38 * strength('flashes') : 0;
   if (ambient || flashLight > 0) {
     const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
-    aura.addColorStop(0, rgba(settings.primary, .09 * ambient + flashLight));
-    aura.addColorStop(.55, rgba(settings.secondary, .025 * ambient));
+    aura.addColorStop(0, rgba(settings.primary, Math.min(.9, .09 * ambient + flashLight)));
+    aura.addColorStop(.55, rgba(settings.secondary, Math.min(.7, .025 * ambient + flashLight * .6)));
     aura.addColorStop(1, rgba(settings.background, 0));
     ctx.fillStyle = aura; ctx.fillRect(0, 0, width, height);
   }

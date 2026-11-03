@@ -124,6 +124,8 @@ class StudioRenderer:
         self.echoes = []
         self.last_echo_beat = -math.inf
         self.echo_time = 0.
+        self.beat_times = []
+        self.echo_period = self.next_echo = None
         yy, xx = np.ogrid[:self.height, :self.width]
         distance = np.sqrt((xx - self.center[0]) ** 2 + (yy - self.center[1]) ** 2) / (360 * self.scale)
         inner = np.clip(1 - distance / .55, 0, 1).astype(np.float32)
@@ -150,7 +152,7 @@ class StudioRenderer:
         if settings['vignette']:
             edge_distance = np.hypot(xx - self.center[0], yy - self.center[1]) / math.hypot(*self.center)
             self.vignette = 1 - np.clip((edge_distance - .35) / .65, 0, 1).astype(np.float32) * min(.9, .6 * settings['vignetteStrength'] / 100)
-        self.flash_aura = inner[:, :, None] * self.primary * .1 * settings['flashesStrength'] / 100
+        self.flash_aura = inner[:, :, None] * self.primary * .38 * settings['flashesStrength'] / 100
         self.particles = []
         for i in range(100):
             self.particles.append(((math.sin(i * 127.1 + 3) * 43758.5453) % 1, (math.sin(i * 311.7 + 9) * 43758.5453) % 1, .6 + (math.sin(i * 41.9) * 43758.5453) % 1 * 1.4, i * 2.7))
@@ -220,13 +222,29 @@ class StudioRenderer:
         image = np.clip(self.base + self.flash_aura * self.flash, 0, 255).astype(np.uint8) if s['flashes'] else self.base.copy()
         clock = index / s['fps']
         if clock < self.echo_time - .01:
-            self.echoes = []; self.last_echo_beat = -math.inf
+            self.echoes = []; self.beat_times = []; self.echo_period = self.next_echo = None
         self.echo_time = clock
         self.echoes = [(time, value) for time, value in self.echoes if 0 <= clock - time < 1.6]
-        if onset > .1 and clock - self.last_echo_beat >= .22:
-            self.echoes.append((clock, .4 + .6 * min(1, onset)))
-            self.echoes = self.echoes[-8:]
-            self.last_echo_beat = clock
+        beats = self.beat_times
+        if onset > .1 and clock - (beats[-1] if beats else -math.inf) >= .28:
+            if beats and clock - beats[-1] > 2:
+                beats.clear(); self.echo_period = self.next_echo = None
+            beats.append(clock)
+            if len(beats) > 12: beats.pop(0)
+            if len(beats) >= 4:
+                intervals = []
+                for previous, current in zip(beats, beats[1:]):
+                    interval = current - previous
+                    while interval > .85: interval /= 2
+                    while interval < .35: interval *= 2
+                    intervals.append(interval)
+                estimate = sorted(intervals)[len(intervals) // 2]
+                self.echo_period = self.echo_period * .9 + estimate * .1 if self.echo_period else estimate
+                if self.next_echo is None: self.next_echo = beats[0] + self.echo_period * 4
+        if self.echo_period and beats and clock - beats[-1] < 2 and clock >= self.next_echo:
+            scheduled = self.next_echo
+            self.next_echo += (math.floor((clock - scheduled) / (self.echo_period * 4)) + 1) * self.echo_period * 4
+            if clock - scheduled < 1.6: self.echoes.append((scheduled, 1.))
         if s['particles'] and strength('particles') > 0:
             for x, y, size, phase in self.particles:
                 px = round((x + math.cos(phase) * clock * .003) % 1 * self.width)

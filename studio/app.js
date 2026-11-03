@@ -8,7 +8,6 @@ import { syncPlaybackButton } from './playback-state.js';
 
 const browserMode = document.querySelector('meta[name="sosan-export-mode"]')?.content === 'browser' || new URLSearchParams(location.search).get('export') === 'browser' || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const $ = id => document.getElementById(id);
-const syncEffectPicker = setupFontPicker($('effect-strength-select'), { fontPreview: false, label: 'Adjust effect strength' });
 const syncFontPicker = setupFontPicker($('textFont'));
 const syncResolutionPicker = setupFontPicker($('resolution'), { fontPreview: false, label: 'Resolution' });
 const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Frame rate' });
@@ -119,7 +118,7 @@ function syncFileCards() {
   $('logo-card').classList.toggle('has-file', !!logoFile);
 }
 function setDisplayTitle(value) { $('title').value = value; }
-function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; smooth.fill(0); bass = previousBass = flash = 0; }
+function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; echoState.beatTimes = []; echoState.nextEcho = undefined; echoState.period = undefined; smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
   if (!/\.(mp3|wav)$/i.test(file.name)) { status('Choose an MP3 or WAV audio file.', true); return; }
@@ -278,14 +277,18 @@ function applyTheme() {
   const focusContrast = (Math.max(luminance, surfaceLuminance) + .05) / (Math.min(luminance, surfaceLuminance) + .05);
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
+const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette'];
 function syncEffectStrength() {
-  const key = $('effect-strength-select').value + 'Strength';
-  $('effectStrength').value = settings[key];
-  $('effectStrength-value').value = `${settings[key]}%`;
-  syncEffectPicker();
+  for (const name of effectNames) {
+    const key = name + 'Strength';
+    $(key).value = settings[key];
+    $(key + '-value').value = `${settings[key]}%`;
+  }
 }
-$('effect-strength-select').onchange = syncEffectStrength;
-$('effectStrength').oninput = () => { settings[$('effect-strength-select').value + 'Strength'] = Number($('effectStrength').value); syncEffectStrength(); };
+for (const name of effectNames) {
+  const key = name + 'Strength';
+  $(key).oninput = () => { settings[key] = Number($(key).value); syncEffectStrength(); };
+}
 function syncSettings() {
   syncEffectStrength();
   for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) {
@@ -467,6 +470,7 @@ function sampleAudio(dt) {
       smooth[i] += (level - smooth[i]) * (1 - Math.exp(-dt * (level > smooth[i] ? 24 : 8)));
     }
   } else {
+    echoState.echoes = []; echoState.nextEcho = undefined; echoState.beatTimes = [];
     bass *= Math.exp(-dt * 6); flash *= Math.exp(-dt * 9);
     for (let i = 0; i < smooth.length; i++) smooth[i] *= Math.exp(-dt * 7);
   }

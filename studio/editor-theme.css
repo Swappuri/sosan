@@ -213,5 +213,8 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 #background-image-controls.is-disabled { opacity: .45; }
 .background-fit-choices { margin-bottom: 12px; }
 
-.effect-strength-controls { display: grid; gap: 12px; margin-top: 16px; }
-.effect-strength-controls .effect-select-control { margin: 0; }
+
+.effect-control { min-width: 0; padding: 6px 0 10px; }
+.effect-control .slider-field { margin: 4px 0 0; }
+.effect-control .slider-label { font-size: 10px; }
+.effects-grid { gap: 6px 18px; }

@@ -24,7 +24,12 @@ class OfflineExportTests(unittest.TestCase):
         renderer = StudioRenderer(validate_settings({**base, 'echoRings': True}))
         np.testing.assert_array_equal(renderer.frame(0, levels, 0, 0), plain)
         np.testing.assert_array_equal(renderer.frame(1, levels, 0, 1), plain)
-        self.assertFalse(np.array_equal(renderer.frame(10, levels, 0, 0), plain))
+        np.testing.assert_array_equal(renderer.frame(10, levels, 0, 0), plain)
+        renderer = StudioRenderer(validate_settings({**base, 'echoRings': True}))
+        for index in range(76):
+            frame = renderer.frame(index, levels, 0, 1 if index % 15 == 0 else 0)
+        self.assertFalse(np.array_equal(frame, plain))
+        self.assertAlmostEqual(renderer.echo_period, .5)
 
     def test_zero_strength_disables_each_effect(self):
         effects = ('glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette')
@@ -43,8 +48,8 @@ class OfflineExportTests(unittest.TestCase):
         levels = np.full(64, .5)
         def render(settings, index):
             renderer = StudioRenderer(settings)
-            renderer.frame(0, levels, .6, 1)
-            return renderer.frame(index, levels, .6, 0)
+            for beat in (0, 15, 30, 45, 60): renderer.frame(beat, levels, .6, 1)
+            return renderer.frame(60 + index, levels, .6, 0)
         for shape in ('circle', 'square', 'triangle'):
             base = {'shape': shape, 'width': 854, 'height': 480, 'background': '#666666', 'particles': False, 'glow': False, 'aura': False, 'flashes': False, 'pulse': False}
             plain = render(validate_settings(base), 20)
