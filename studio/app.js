@@ -763,4 +763,5 @@ for (const name of document.querySelectorAll('[data-effect-tip]')) {
   name.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
 }
 addEventListener('resize', () => { effectTooltip.hidden = true; });
-document.querySelector('.settings-pagination').addEventListener('click', () => { effectTooltip.hidden = true; });
+$('settings-panel').addEventListener('settings-section-change', () => { effectTooltip.hidden = true; });
+document.querySelector('.settings-content').addEventListener('scroll', () => { effectTooltip.hidden = true; }, { passive: true });

@@ -237,3 +237,12 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .effect-percentage:hover:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
 .effect-percentage[aria-pressed=false] { color: var(--muted); }
 .effect-percentage:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+/* Continuous inspector with a fixed section navigator. */
+.settings-content { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #555 transparent; scroll-padding-top: 16px; }
+.settings-content > .control-section { flex: 0 0 auto; }
+.settings-section-links { flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.settings-section-links button { min-width: 0; border: 1px solid transparent; border-radius: 4px; padding: 6px 4px; background: transparent; color: var(--muted); font: inherit; font-size: 10px; line-height: 14px; }
+.settings-section-links button:hover { background: var(--surface); color: var(--text); }
+.settings-section-links button[aria-current=location] { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
+.settings-section-links button:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }

@@ -28,7 +28,7 @@ use the optional local version for larger exports and closed-tab rendering.
 
 - Drag and drop MP3 or WAV audio.
 - Customize spectrum colors, radius, reactivity, and bar count.
-- Navigate settings with numbered pages, Previous/Next controls, and page tooltips listing their sections.
+- Scroll through all settings in one panel, or use the section shortcuts at the top to jump directly to a section. The current section is highlighted as you scroll.
 - Adjust 14 effects with individual strength sliders (0% turns an effect off): Glow, Aura, Particles, Bass pulse, Beat flashes, Orbiting lights, Echo rings, Vignette, Nebula, Aurora, Constellation, Perspective grid, Fireflies, and Scan lines. Click an effect percentage to switch between off and its last nonzero strength. Particles speed up with bass energy and brighten on beats.
 - Add a PNG, JPG, or WebP background image with Fit/Fill, opacity, zoom, and position controls.
 - Add a logo and display text, with independent text color, size, and font controls.

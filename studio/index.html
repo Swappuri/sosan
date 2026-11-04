@@ -56,7 +56,8 @@
     </section>
     <aside class="settings panel" id="settings-panel" aria-label="Visualizer settings">
       <div class="panel-heading"><h2>Settings</h2><button id="reset" class="text-button" disabled>Reset all</button></div>
-      <div class="settings-content">
+      <nav id="settings-section-links" class="settings-section-links" aria-label="Jump to settings section"></nav>
+      <div class="settings-content" tabindex="0" aria-label="Settings controls">
         <section class="control-section audio-settings">
           <div class="section-heading"><h3>Audio</h3><button class="text-button" data-reset="audio" aria-label="Reset audio" disabled>Reset</button></div>
           <div class="file-card" id="audio-card"><button id="dropzone" class="dropzone"><svg class="file-add-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg><span class="file-copy"><strong id="audio-name">Add audio</strong><small id="audio-hint">MP3, WAV · drop or browse</small></span></button><button id="audio-remove" class="text-button file-remove" aria-label="Remove audio" hidden><span>Remove</span></button></div>
@@ -162,12 +163,7 @@
           <p id="export-support-note" class="export-support-note" role="status" hidden></p>
         </fieldset>
       </div>
-      <nav class="settings-pagination" aria-label="Settings pages">
-        <button class="text-button" data-settings-page="previous" aria-label="Previous settings page">← Previous</button>
-        <div id="settings-page-numbers" class="settings-page-numbers"></div>
-        <span id="settings-page-label" class="sr-only" aria-live="polite">1 / 1</span>
-        <button class="text-button" data-settings-page="next" aria-label="Next settings page">Next →</button>
-      </nav>
+
     </aside>
   </main>
   <dialog id="reset-dialog" aria-labelledby="reset-dialog-title" aria-describedby="reset-dialog-detail">
