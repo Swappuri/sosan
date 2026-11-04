@@ -32,8 +32,8 @@ export function setupSettingsPages(panel) {
     panel.classList.add('measuring-settings');
     sections.forEach(section => { section.hidden = false; section.classList.add('page-start'); });
     const style = getComputedStyle(content);
-    const available = content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    const gap = 16;
+    const available = content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 6;
+    const gap = parseFloat(style.rowGap) || 16;
     const heights = new Map(sections.map(section => [section, section.getBoundingClientRect().height]));
     groups = [];
     for (const category of categories) {
@@ -51,7 +51,6 @@ export function setupSettingsPages(panel) {
         sections: batch,
       }));
     }
-    sections.forEach(section => section.style.setProperty('--section-weight', heights.get(section)));
     panel.classList.remove('measuring-settings');
     buttons = groups.map((group, index) => {
       const button = document.createElement('button');

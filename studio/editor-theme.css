@@ -245,20 +245,13 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .effect-percentage[aria-pressed=false] { color: var(--muted); }
 .effect-percentage:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 760px) { .settings { max-height: calc(100dvh - 148px); } }
-/* Both panels share the workspace height; controls distribute through that space. */
+/* Both panels share the workspace height; controls retain compact natural spacing. */
 .settings { align-self: stretch; height: 100%; max-height: none; }
 .settings-content { flex: 1; overflow: hidden; gap: 16px; }
 .settings-tabs { flex-wrap: wrap; padding: 8px 12px; }
 .settings-tabs button { flex: 1 0 auto; }
-.settings-content > .control-section:not([hidden]) { display: flex; flex-direction: column; flex: var(--section-weight, 1) 1 0; min-height: 0; justify-content: space-between; }
 .settings-content > .control-section > .section-heading { flex-shrink: 0; }
 .settings-content > .control-section > .slider-field { flex-shrink: 0; }
-.settings-content #logo-placement, .settings-content #background-image-controls { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; gap: 8px; }
-.settings-content .effects-grid { flex: 1; grid-auto-rows: 1fr; align-items: center; }
-.measuring-settings .settings-content { display: block; }
-.measuring-settings .settings-content > .control-section:not([hidden]) { display: block; flex: none; }
-.measuring-settings .effects-grid { grid-auto-rows: auto; }
-.measuring-settings #logo-placement, .measuring-settings #background-image-controls { display: block; }
 @media (max-height: 620px) {
   .settings-content { padding: 10px 14px; gap: 10px; }
   .settings-content .section-heading { margin-bottom: 8px; }
@@ -270,3 +263,15 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .settings-tabs button { min-width: 0; }
 
 .settings-tabs button { white-space: normal; line-height: 14px; }
+
+.settings-content { justify-content: flex-start; gap: 16px; }
+.settings-content > .control-section:not([hidden]) { display: block; flex: 0 0 auto; }
+.settings-content .slider-field + .slider-field { margin-top: 10px; }
+.settings-content #logo-placement, .settings-content #background-image-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin-top: 10px; }
+.settings-content #logo-placement > .style-choices, .settings-content #background-image-controls > .style-choices { grid-column: 1 / -1; margin: 0; }
+.settings-content #logo-placement .slider-field, .settings-content #background-image-controls .slider-field { margin: 0; }
+.settings-content .effects-grid { flex: none; grid-auto-rows: auto; align-items: start; }
+.settings-content .spectrum-settings { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.settings-content .spectrum-settings[hidden] { display: none !important; }
+.settings-content .spectrum-settings > .section-heading { grid-column: 1 / -1; margin-bottom: 2px; }
+.settings-content .spectrum-settings > .slider-field { margin: 0; }
