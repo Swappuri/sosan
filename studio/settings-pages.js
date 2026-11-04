@@ -115,10 +115,6 @@ export function setupSettingsPages(panel) {
     const direction = gesture.take(delta, performance.now(), { discrete: event.deltaMode === 1 || (event.deltaX === 0 && [100, 120].includes(Math.abs(event.deltaY))) });
     if (direction) step(direction);
   }, { passive: false });
-  content.addEventListener('focusin', event => {
-    const index = sections.indexOf(event.target.closest('.control-section'));
-    if (index >= 0 && index !== current) go(index);
-  });
   content.addEventListener('keydown', event => {
     if (event.target !== content) return;
     const direction = ['PageDown', 'ArrowDown'].includes(event.key) ? 1 : ['PageUp', 'ArrowUp'].includes(event.key) ? -1 : 0;
