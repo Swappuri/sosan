@@ -120,6 +120,7 @@ class StudioRenderer:
         self.primary, self.secondary = np.array(bgr(settings['primary'])), np.array(bgr(settings['secondary']))
         self.background = np.array(bgr(settings['background']))
         self.levels = np.zeros(settings['bars'] // 2)
+        self.travel = 0.
         self.bass = self.flash = 0.
         self.echoes = []
         self.last_echo_beat = -math.inf
@@ -212,12 +213,66 @@ class StudioRenderer:
         alpha = resized[:, :, 3:4].astype(np.float32) / 255 * mask[:, :, None] * (self.settings['logoOpacity'] / 100 if is_logo else 1)
         image[y0:y1, x0:x1] = image[y0:y1, x0:x1] * (1 - alpha) + resized[:, :, :3] * alpha
 
+    def draw_background_effects(self, image, clock):
+        s, scale = self.settings, self.scale
+        width, height = self.width, self.height
+        x, y = width / 2, height / 2
+        bass, beat, travel = min(1, self.bass), min(1, self.flash), clock + self.travel
+        amount = lambda name: s[name + 'Strength'] / 100 if s[name] else 0
+        def blend(layer, alpha):
+            cv2.addWeighted(image, 1, layer, min(.8, alpha), 0, dst=image)
+        def haze(px, py, radius, color, alpha):
+            left, right = max(0, int(px - radius)), min(width, int(px + radius + 1))
+            top, bottom = max(0, int(py - radius)), min(height, int(py + radius + 1))
+            if left >= right or top >= bottom: return
+            yy, xx = np.ogrid[top:bottom, left:right]
+            mask = np.maximum(0, 1 - np.hypot(xx - px, yy - py) / radius)[:, :, None] * alpha
+            roi = image[top:bottom, left:right]
+            roi[:] = np.clip(roi + mask * color, 0, 255)
+        if amount('nebula'):
+            for i in range(3):
+                haze(width * (.5 + .36 * math.sin(clock * .08 + i * 2.1)), height * (.5 + .32 * math.cos(clock * .06 + i * 1.7)), (210 + bass * 30) * scale, self.secondary if i % 2 else self.primary, min(.4, amount('nebula') * (.08 + bass * .05)))
+        if amount('lightRays'):
+            layer = np.zeros_like(image)
+            for i in range(12):
+                angle = i / 12 * math.tau + clock * .025
+                cv2.line(layer, (round(x + math.cos(angle) * 145 * scale), round(y + math.sin(angle) * 145 * scale)), (round(x + math.cos(angle) * width), round(y + math.sin(angle) * width)), tuple(map(int, self.secondary)), max(1, round((6 + bass * 10) * scale)), cv2.LINE_AA)
+            blend(layer, amount('lightRays') * (.025 + beat * .065))
+        if amount('starTrails'):
+            layer = np.zeros_like(image)
+            for i in range(48):
+                angle, phase = i * 2.399963, (i * .618034 + travel * .04) % 1
+                radius, length = (40 + phase * 480) * scale, (3 + bass * 24) * scale * phase
+                color = tuple(map(int, self.primary * phase))
+                cv2.line(layer, (round(x + math.cos(angle) * radius), round(y + math.sin(angle) * radius)), (round(x + math.cos(angle) * (radius + length)), round(y + math.sin(angle) * (radius + length))), color, max(1, round(scale)), cv2.LINE_AA)
+            blend(layer, amount('starTrails') * (.18 + beat * .3))
+        if amount('grid'):
+            layer = np.zeros_like(image); horizon = height * .57
+            color = tuple(map(int, self.secondary))
+            for i in range(-8, 9): cv2.line(layer, (round(x + i * 9 * scale), round(horizon)), (round(x + i * 95 * scale), height), color, max(1, round(scale)), cv2.LINE_AA)
+            for i in range(12):
+                phase = ((i + travel * .5) % 12) / 12
+                py = round(horizon + phase ** 2 * (height - horizon))
+                cv2.line(layer, (0, py), (width, py), color, max(1, round(scale)), cv2.LINE_AA)
+            blend(layer, min(.45, amount('grid') * (.1 + bass * .08)))
+        if amount('fireflies'):
+            for i in range(26):
+                px = (i * .618034 + .04 * math.sin(travel * .13 + i)) % 1 * width
+                py = (i * .414214 + .06 * math.cos(travel * .17 + i * 2)) % 1 * height
+                haze(px, py, (6 + 3 * math.sin(clock + i) + beat * 4) * scale, self.primary if i % 2 else self.secondary, min(.8, amount('fireflies') * (.18 + beat * .35)))
+        if amount('scanlines'):
+            layer = np.zeros_like(image); spacing = 7 * scale
+            for py in np.arange((clock * 8 * scale) % spacing, height, spacing):
+                cv2.line(layer, (0, round(py)), (width, round(py)), tuple(map(int, self.primary)), max(1, round(scale)))
+            blend(layer, min(.15, amount('scanlines') * (.025 + beat * .025)))
+
     def frame(self, index, levels, bass, onset):
         s, scale, center = self.settings, self.scale, self.center
         strength = lambda name: s[name + 'Strength'] / 100
         dt = 1 / s['fps']
         self.levels += (levels - self.levels) * (1 - np.exp(-dt * np.where(levels > self.levels, 24, 8)))
         self.bass += (bass - self.bass) * (1 - math.exp(-dt * (22 if bass > self.bass else 6)))
+        self.travel += dt * min(1, self.bass) * 3
         self.flash_envelope = max(getattr(self, 'flash_envelope', 0) * math.exp(-dt * 5), min(1, onset))
         self.flash += (self.flash_envelope - self.flash) * (1 - math.exp(-dt * (20 if self.flash_envelope > self.flash else 7)))
         image = np.clip(self.base + self.flash_aura * self.flash, 0, 255).astype(np.uint8) if s['flashes'] else self.base.copy()
@@ -246,11 +301,13 @@ class StudioRenderer:
             scheduled = self.next_echo
             self.next_echo += (math.floor((clock - scheduled) / (self.echo_period * 4)) + 1) * self.echo_period * 4
             if clock - scheduled < 1.6: self.echoes.append((scheduled, 1.))
+        self.draw_background_effects(image, clock)
+        particle_clock = clock + self.travel
         if s['particles'] and strength('particles') > 0:
             for x, y, size, phase in self.particles:
-                px = round((x + math.cos(phase) * clock * .003) % 1 * self.width)
-                py = round((y - clock * .004 * size / 2) % 1 * self.height)
-                alpha = min(1, (.15 + .3 * (.5 + .5 * math.sin(clock * .8 + phase))) * strength('particles'))
+                px = round((x + math.cos(phase) * particle_clock * .003) % 1 * self.width)
+                py = round((y - particle_clock * .004 * size / 2) % 1 * self.height)
+                alpha = min(1, (.15 + .3 * (.5 + .5 * math.sin(clock * .8 + phase))) * strength('particles') * (1 + min(1, self.flash) * 1.5))
                 color = tuple(int(c) for c in self.primary * alpha + self.background * (1 - alpha))
                 cv2.circle(image, (px, py), max(1, round(size * scale)), color, -1, cv2.LINE_AA)
         radius = (s['radius'] + (min(1, self.bass) * 12 * strength('pulse') if s['pulse'] else 0)) * scale

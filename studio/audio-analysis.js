@@ -89,5 +89,6 @@ export function advanceMotion(motion, target, dt, time = (motion.echoTime ?? -dt
     motion.levels[i] += (target.levels[i] - motion.levels[i]) * (1 - Math.exp(-dt * rate));
   }
   motion.bass += (target.bass - motion.bass) * (1 - Math.exp(-dt * (target.bass > motion.bass ? 22 : 6)));
+  motion.travel = (motion.travel ?? 0) + dt * Math.min(1, motion.bass) * 3;
   motion.flash = smoothFlash(motion, target.onset, dt);
 }

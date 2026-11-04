@@ -31,8 +31,18 @@ class OfflineExportTests(unittest.TestCase):
         self.assertFalse(np.array_equal(frame, plain))
         self.assertAlmostEqual(renderer.echo_period, .5)
 
+    def test_background_effects_are_visible_and_deterministic(self):
+        base = {'width': 854, 'height': 480, 'particles': False, 'aura': False, 'flashes': False}
+        levels = np.zeros(64)
+        plain = StudioRenderer(validate_settings(base)).frame(30, levels, .7, .8)
+        for effect in ('nebula', 'lightRays', 'starTrails', 'grid', 'fireflies', 'scanlines'):
+            settings = validate_settings({**base, effect: True, effect + 'Strength': 100})
+            first = StudioRenderer(settings).frame(30, levels, .7, .8)
+            self.assertFalse(np.array_equal(first, plain), effect)
+            np.testing.assert_array_equal(first, StudioRenderer(settings).frame(30, levels, .7, .8))
+
     def test_zero_strength_disables_each_effect(self):
-        effects = ('glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette')
+        effects = ('glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'lightRays', 'starTrails', 'grid', 'fireflies', 'scanlines')
         base = {**{key: False for key in effects}, 'width': 854, 'height': 480}
         levels = np.full(64, .5)
         def render(values):

@@ -15,13 +15,14 @@ const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Fr
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 0 };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 0, nebula: false, nebulaStrength: 0, lightRays: false, lightRaysStrength: 0, starTrails: false, starTrailsStrength: 0, grid: false, gridStrength: 0, fireflies: false, firefliesStrength: 0, scanlines: false, scanlinesStrength: 0 };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let backgroundImage, backgroundFile, backgroundLoadId = 0;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 const echoState = {};
+let particleTravel = 0;
 let echoPulses = null;
 const flashState = {};
 let lastTime = 0;
@@ -121,7 +122,7 @@ function syncFileCards() {
   $('logo-card').classList.toggle('has-file', !!logoFile);
 }
 function setDisplayTitle(value) { $('title').value = value; }
-function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; echoState.beatTimes = []; echoState.nextEcho = undefined; echoState.period = undefined; flashState.flashEnvelope = 0; smooth.fill(0); bass = previousBass = flash = 0; }
+function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; echoState.beatTimes = []; echoState.nextEcho = undefined; echoState.period = undefined; particleTravel = 0; flashState.flashEnvelope = 0; smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
   if (!/\.(mp3|wav)$/i.test(file.name)) { status('Choose an MP3 or WAV audio file.', true); return; }
@@ -286,7 +287,7 @@ function applyTheme() {
   const focusContrast = (Math.max(luminance, surfaceLuminance) + .05) / (Math.min(luminance, surfaceLuminance) + .05);
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
-const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette'];
+const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'lightRays', 'starTrails', 'grid', 'fireflies', 'scanlines'];
 function syncEffectStrength() {
   for (const name of effectNames) {
     const key = name + 'Strength';
@@ -334,7 +335,7 @@ const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
-  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'glowStrength', 'auraStrength', 'particlesStrength', 'pulseStrength', 'flashesStrength', 'orbitLightsStrength', 'echoRingsStrength', 'vignetteStrength'], detail: 'Restore the default effects?' },
+  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'glowStrength', 'auraStrength', 'particlesStrength', 'pulseStrength', 'flashesStrength', 'orbitLightsStrength', 'echoRingsStrength', 'vignetteStrength', 'nebula', 'nebulaStrength', 'lightRays', 'lightRaysStrength', 'starTrails', 'starTrailsStrength', 'grid', 'gridStrength', 'fireflies', 'firefliesStrength', 'scanlines', 'scanlinesStrength'], detail: 'Restore the default effects?' },
   backgroundImage: { title: 'Background Image', keys: ['backgroundFit', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY'], detail: 'Remove the background image and restore its default settings?' },
   logo: { title: 'Logo', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY', 'logoOpacity'], detail: 'Restore default logo placement and opacity? The uploaded logo will be kept.' },
   text: { title: 'Text', keys: ['textColor', 'textSize', 'textFont'], detail: 'Restore the song filename and default text color, size, and font?' },
@@ -464,6 +465,7 @@ function sampleAudio(dt) {
     const delta = Math.max(0, targetBass - previousBass);
     previousBass = targetBass;
     bass += (targetBass - bass) * (1 - Math.exp(-dt * (targetBass > bass ? 22 : 6)));
+    particleTravel += dt * Math.min(1, bass) * 3;
     const onset = Math.min(1, delta * 6);
     flashState.flash = flash;
     flash = smoothFlash(flashState, onset, dt);
@@ -514,7 +516,7 @@ function draw(now) {
 }
 function paintPreview(now) {
   try {
-    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash, echoes: echoState.echoes ?? [] }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '', loaded ? backgroundImage : null);
+    renderScene(ctx, canvas.width, canvas.height, settings, { levels: smooth, bass, flash, travel: particleTravel, echoes: echoState.echoes ?? [] }, loaded ? audio.currentTime : now / 1000 * .25, loaded ? logo : null, loaded ? $('title').value.trim() : '', loaded ? backgroundImage : null);
     if (previewError && $('status').textContent.startsWith('Preview rendering failed:')) status('');
     previewError = undefined;
   } catch (error) {

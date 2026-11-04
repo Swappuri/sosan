@@ -1,3 +1,4 @@
+import { drawBackgroundEffects } from './background-effects.js';
 import { ECHO_LIFETIME } from './effect-motion.js';
 import { TEXT_FAMILIES } from './text-fonts.js';
 import { layoutText } from './text-layout.js';
@@ -94,12 +95,14 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     aura.addColorStop(1, rgba(settings.background, 0));
     ctx.fillStyle = aura; ctx.fillRect(0, 0, width, height);
   }
+  drawBackgroundEffects(ctx, width, height, settings, motion, songTime);
+  const particleClock = songTime + (motion.travel ?? 0);
   // A restrained star field drifts outwards with the song clock.
   if (settings.particles) {
     for (const p of particles) {
-      const px = fract(p.x + Math.cos(p.phase) * songTime * .003) * width;
-      const py = fract(p.y - songTime * .004 * (p.size / 2)) * height;
-      ctx.globalAlpha = Math.min(1, (.15 + .3 * (0.5 + .5 * Math.sin(songTime * .8 + p.phase))) * strength('particles'));
+      const px = fract(p.x + Math.cos(p.phase) * particleClock * .003) * width;
+      const py = fract(p.y - particleClock * .004 * (p.size / 2)) * height;
+      ctx.globalAlpha = Math.min(1, (.15 + .3 * (0.5 + .5 * Math.sin(songTime * .8 + p.phase))) * strength('particles') * (1 + Math.min(1, motion.flash) * 1.5));
       ctx.fillStyle = settings.primary; ctx.beginPath(); ctx.arc(px, py, p.size * scale, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
