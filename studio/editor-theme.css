@@ -246,3 +246,9 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .settings-section-links button:hover { background: var(--surface); color: var(--text); }
 .settings-section-links button[aria-current=location] { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
 .settings-section-links button:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+
+.settings-section-links { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; padding: 8px 12px; }
+.settings-section-links button { height: 29px; padding: 0; font-size: 11px; }
+.settings-content { scroll-snap-type: y mandatory; }
+.settings-content > .control-section { scroll-snap-align: start; scroll-snap-stop: always; }
+.settings-content > .control-section:last-child { scroll-snap-align: end; }
