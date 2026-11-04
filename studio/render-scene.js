@@ -1,3 +1,4 @@
+import { spectrumPass } from './spectrum-pass.js';
 import { drawBackgroundEffects } from './background-effects.js';
 import { ECHO_LIFETIME } from './effect-motion.js';
 import { TEXT_FAMILIES } from './text-fonts.js';
@@ -126,6 +127,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   const count = shape === 'circle' && settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
   const wave = [];
+  const spectrum = spectrumPass(ctx, scale, settings.glow ? strength('glow') : 0);
   ctx.lineCap = 'round';
   for (let i = 0; i < count; i++) {
     const bands = settings.bars / 2;
@@ -139,22 +141,21 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
     const length = (3 + Math.pow(level, 1.35) * 67) * scale;
     const color = blend(settings.primary, settings.secondary, index / bands);
     if (settings.style === 'wave') {
-      wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level });
+      wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level, position: index / bands });
       continue;
     }
-    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, 2.2 * scale);
-    ctx.shadowColor = color; ctx.shadowBlur = settings.glow ? (9 + level * 9) * scale * strength('glow') : 0;
-    ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale));
-    ctx.lineTo(x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)); ctx.stroke();
+    spectrum.draw({ color, level, position: index / bands,
+      start: [x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale)],
+      end: [x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)] });
   }
   // Quadratic segments meet at shared midpoints for one continuous wavy outline.
   for (let i = 0; i < wave.length; i++) {
     const point = wave[i], previous = wave[(i + wave.length - 1) % wave.length], next = wave[(i + 1) % wave.length];
-    ctx.strokeStyle = point.color; ctx.lineWidth = Math.max(1, 2.2 * scale);
-    ctx.shadowColor = point.color; ctx.shadowBlur = settings.glow ? (9 + point.level * 9) * scale * strength('glow') : 0;
-    ctx.beginPath(); ctx.moveTo((previous.x + point.x) / 2, (previous.y + point.y) / 2);
-    ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2); ctx.stroke();
+    spectrum.draw({ color: point.color, level: point.level, position: point.position,
+      start: [(previous.x + point.x) / 2, (previous.y + point.y) / 2], control: [point.x, point.y],
+      end: [(point.x + next.x) / 2, (point.y + next.y) / 2] });
   }
+  spectrum.finish();
   ctx.shadowBlur = 0;
   ctx.fillStyle = settings.innerFill ?? '#0b1114'; traceShape(ctx, shape, x, y, radius); ctx.fill();
   if (logo && logo.width > 0 && logo.height > 0) {

@@ -18,7 +18,8 @@ export function setupSettingsPages(panel) {
   ];
   let current = 0, scheduled = false;
   const gesture = new SectionGesture();
-  let transition, moving = false;
+  let transition, moving = false, stableScroll = 0;
+  function setScroll(top) { content.scrollTop = top; stableScroll = content.scrollTop; }
   const pending = [];
   let buffers = [];
   const tooltip = document.createElement('div');
@@ -57,7 +58,7 @@ export function setupSettingsPages(panel) {
     const focused = document.activeElement;
     buffers.forEach(node => node.remove()); buffers = [];
     content.append(...sections.slice(current), ...sections.slice(0, current));
-    content.scrollTop = 0;
+    setScroll(0);
     if (content.contains(focused)) focused.focus({ preventScroll: true });
   }
   function step(direction) {
@@ -72,7 +73,7 @@ export function setupSettingsPages(panel) {
     if (direction < 0 && next === (current - 1 + sections.length) % sections.length) {
       const oldTop = sections[current].getBoundingClientRect().top;
       content.prepend(sections[next]);
-      content.scrollTop += sections[current].getBoundingClientRect().top - oldTop;
+      setScroll(content.scrollTop + sections[current].getBoundingClientRect().top - oldTop);
     }
     // Visual-only tail lets a long icon jump reach the last card without a blank end.
     // The real sections replace these seamlessly when the transition settles.
@@ -102,7 +103,7 @@ export function setupSettingsPages(panel) {
     moving = true;
     const animate = now => {
       const progress = Math.min(1, (now - started) / SECTION_TRANSITION_MS);
-      content.scrollTop = start + (target - start) * sectionEase(progress);
+      setScroll(start + (target - start) * sectionEase(progress));
       if (progress < 1) transition = requestAnimationFrame(animate);
       else finish();
     };
@@ -115,6 +116,11 @@ export function setupSettingsPages(panel) {
     const direction = gesture.take(delta, performance.now(), { discrete: event.deltaMode === 1 || (event.deltaX === 0 && [100, 120].includes(Math.abs(event.deltaY))) });
     if (direction) step(direction);
   }, { passive: false });
+  // Browsers may scroll a focused input or a returning native color picker.
+  // Editing must not move this section-controlled viewport.
+  content.addEventListener('scroll', () => {
+    if (!moving && Math.abs(content.scrollTop - stableScroll) > .5) content.scrollTop = stableScroll;
+  }, { passive: true });
   content.addEventListener('keydown', event => {
     if (event.target !== content) return;
     const direction = ['PageDown', 'ArrowDown'].includes(event.key) ? 1 : ['PageUp', 'ArrowUp'].includes(event.key) ? -1 : 0;

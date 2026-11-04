@@ -34,7 +34,7 @@ export function setupFontPicker(select, { fontPreview = true, label = 'Animation
   }
   function close(focus = false) {
     list.hidden = true; trigger.setAttribute('aria-expanded', 'false');
-    if (focus) trigger.focus();
+    if (focus) trigger.focus({ preventScroll: true });
   }
   function open() {
     if (select.disabled || select.closest('fieldset')?.disabled) return;
@@ -66,6 +66,7 @@ export function setupFontPicker(select, { fontPreview = true, label = 'Animation
   };
   document.addEventListener('pointerdown', event => { if (!trigger.contains(event.target) && !list.contains(event.target)) close(); });
   window.addEventListener('resize', () => close());
+  select.closest('.settings')?.addEventListener('settings-section-change', () => close());
   new MutationObserver(() => { if (select.closest('fieldset')?.disabled || select.closest('fieldset')?.hidden) close(); }).observe(select.closest('fieldset'), { attributes: true, attributeFilter: ['disabled', 'hidden'] });
   sync(); return sync;
 }
