@@ -61,7 +61,7 @@ class OfflineExportTests(unittest.TestCase):
             for beat in (0, 15, 30, 45, 60): renderer.frame(beat, levels, .6, 1)
             return renderer.frame(60 + index, levels, .6, 0)
         for shape in ('circle', 'square', 'triangle'):
-            base = {'shape': shape, 'width': 854, 'height': 480, 'background': '#666666', 'particles': False, 'glow': False, 'aura': False, 'flashes': False, 'pulse': False}
+            base = {'shape': shape, 'width': 854, 'height': 480, 'background': '#666666', 'vignette': False, 'particles': False, 'glow': False, 'aura': False, 'flashes': False, 'pulse': False}
             plain = render(validate_settings(base), 20)
             for effect in ('orbitLights', 'echoRings', 'vignette'):
                 with self.subTest(shape=shape, effect=effect):
@@ -238,7 +238,7 @@ class OfflineExportTests(unittest.TestCase):
             self.assertFalse(np.array_equal(image, with_ring))
 
     def test_silence_and_settings_affect_output(self):
-        settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'title': 'TEST'})
+        settings = validate_settings({'width': 854, 'height': 480, 'glow': False, 'particles': False, 'vignette': False, 'title': 'TEST'})
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'silence.wav'
             sf.write(path, np.zeros(24000), 48000)
