@@ -222,11 +222,8 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .effect-control { padding: 0; }
 .effect-control .slider-field { height: 44px; min-height: 44px; margin: 0; gap: 12px; }
 .effect-control .slider-label { font-size: 11px; flex: 1; min-width: 0; }
-.effect-heading { display: flex; align-items: center; gap: 8px; width: 100%; }
-.effect-heading input[role=switch] { flex: 0 0 auto; width: 26px; height: 14px; margin: 0; }
 .effects-grid { row-gap: 12px; column-gap: 20px; }
 
-.effect-heading input[role=switch] { appearance: none; border: 0; border-radius: 20px; background: #484848; position: relative; cursor: pointer; }
-.effect-heading input[role=switch]::before { content: ''; position: absolute; left: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: #b4b4b4; }
-.effect-heading input[role=switch]:checked { background: var(--accent); }
-.effect-heading input[role=switch]:checked::before { left: 15px; background: var(--accent-ink); }
+
+.effect-control .slider-field { height: 38px; min-height: 38px; gap: 12px; }
+.effect-control .slider-label { flex: initial; width: 100%; }

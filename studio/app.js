@@ -15,7 +15,7 @@ const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Fr
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 100, echoRingsStrength: 100, vignetteStrength: 100 };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 0 };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let backgroundImage, backgroundFile, backgroundLoadId = 0;
@@ -290,6 +290,7 @@ const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLigh
 function syncEffectStrength() {
   for (const name of effectNames) {
     const key = name + 'Strength';
+    settings[name] = settings[key] > 0;
     $(key).value = settings[key];
     $(key + '-value').value = `${settings[key]}%`;
   }
@@ -312,7 +313,6 @@ function syncSettings() {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key] && (name !== 'logo-fit' || (settings.logoZoom === 100 && settings.logoX === 0 && settings.logoY === 0)) && (name !== 'background-fit' || (settings.backgroundZoom === 100 && settings.backgroundX === 0 && settings.backgroundY === 0)); });
   }
   for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY', 'logoOpacity']) $(key).value = settings[key];
-  for (const key of ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette']) $(key).checked = settings[key];
   for (const key of ['logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY', 'logoOpacity']) $(key + '-value').value = `${settings[key]}%`;
   $('radius-value').value = `${settings.radius} px`;
   $('sensitivity-value').value = `${settings.sensitivity.toFixed(1)}×`;
@@ -324,7 +324,6 @@ function syncSettings() {
 }
 for (const key of ['primary', 'secondary', 'innerFill', 'background', 'textColor']) $(key + '-color').oninput = () => { settings[key] = $(key + '-color').value; $(key + '-color-value').value = settings[key].toUpperCase(); applyTheme(); };
 for (const key of ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing', 'logoZoom', 'logoX', 'logoY', 'textSize', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY', 'logoOpacity']) $(key).oninput = () => { settings[key] = Number($(key).value); syncSettings(); };
-for (const key of ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette']) $(key).onchange = () => { settings[key] = $(key).checked; };
 for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.onchange = () => { if (input.checked) settings[key] = input.value; }; });
 }
