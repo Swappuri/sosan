@@ -1,3 +1,4 @@
+import { SectionGesture } from './section-scroll.js';
 // One continuous inspector with section shortcuts; controls stay mounted.
 export function setupSettingsPages(panel) {
   const content = panel.querySelector('.settings-content');
@@ -15,7 +16,8 @@ export function setupSettingsPages(panel) {
     '<path d="M4 5h16M12 5v15M8 20h8"/>',
     '<path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/>',
   ];
-  let current = -1, scheduled = false;
+  let current = 0, scheduled = false;
+  const gesture = new SectionGesture();
   const tooltip = document.createElement('div');
   tooltip.id = 'settings-section-tooltip'; tooltip.className = 'settings-page-tooltip';
   tooltip.setAttribute('role', 'tooltip'); tooltip.hidden = true;
@@ -44,31 +46,57 @@ export function setupSettingsPages(panel) {
     button.onmouseleave = button.onblur = hideTooltip;
     button.onkeydown = event => { if (event.key === 'Escape') hideTooltip(); };
     button.setAttribute('aria-controls', section.id);
-    button.onclick = () => {
-      hideTooltip();
-      const top = content.scrollTop + section.getBoundingClientRect().top - content.getBoundingClientRect().top - 8;
-      content.scrollTo({ top: Math.max(0, top), behavior: reducedMotion.matches ? 'instant' : 'smooth' });
-      panel.dispatchEvent(new Event('settings-section-change'));
-    };
+    button.onclick = () => go(index);
     return button;
   });
   navigation.replaceChildren(...buttons);
-  function update() {
-    scheduled = false;
-    const edge = content.getBoundingClientRect().top + 12;
-    let active = 0;
-    sections.forEach((section, index) => { if (section.getBoundingClientRect().top <= edge) active = index; });
-    if (content.scrollTop > 1 && content.scrollTop + content.clientHeight >= content.scrollHeight - 2) active = sections.length - 1;
-    if (active === current) return;
-    current = active;
+  function go(index, instant = false) {
+    current = Math.max(0, Math.min(sections.length - 1, index));
+    hideTooltip();
+    const top = content.scrollTop + sections[current].getBoundingClientRect().top - content.getBoundingClientRect().top;
+    content.scrollTo({ top: Math.max(0, top), behavior: instant || reducedMotion.matches ? 'instant' : 'smooth' });
     buttons.forEach((button, index) => {
-      if (index === active) button.setAttribute('aria-current', 'location');
+      if (index === current) button.setAttribute('aria-current', 'location');
       else button.removeAttribute('aria-current');
     });
+    panel.dispatchEvent(new Event('settings-section-change'));
+  }
+  content.addEventListener('wheel', event => {
+    if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.target.closest('.font-picker-options')) return;
+    event.preventDefault();
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? content.clientHeight : 1);
+    const direction = gesture.take(delta, performance.now());
+    if (direction) go(current + direction);
+  }, { passive: false });
+  content.addEventListener('focusin', event => {
+    const index = sections.indexOf(event.target.closest('.control-section'));
+    if (index >= 0 && index !== current) go(index);
+  });
+  content.addEventListener('keydown', event => {
+    if (event.target !== content) return;
+    const direction = ['PageDown', 'ArrowDown'].includes(event.key) ? 1 : ['PageUp', 'ArrowUp'].includes(event.key) ? -1 : 0;
+    if (direction || ['Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      go(event.key === 'Home' ? 0 : event.key === 'End' ? sections.length - 1 : current + direction);
+    }
+  });
+  let touchY;
+  content.addEventListener('touchstart', event => { touchY = event.touches[0]?.clientY; }, { passive: true });
+  content.addEventListener('touchend', event => {
+    const distance = touchY - event.changedTouches[0]?.clientY;
+    if (Math.abs(distance) > 35) go(current + Math.sign(distance));
+    touchY = undefined;
+  }, { passive: true });
+  function update() {
+    scheduled = false;
+    if (!content.clientHeight) return;
+    // Allow even the final card to reach the same top edge as the others.
+    content.style.paddingBottom = `${Math.max(12, content.clientHeight - sections.at(-1).getBoundingClientRect().height)}px`;
+    go(current, true);
   }
   function schedule() { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } }
-  content.addEventListener('scroll', schedule, { passive: true });
   new ResizeObserver(schedule).observe(content);
+  new ResizeObserver(schedule).observe(sections.at(-1));
   document.fonts.ready.then(schedule);
   schedule();
 }
