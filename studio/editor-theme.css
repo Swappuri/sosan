@@ -233,45 +233,7 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .effect-name:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 .effect-tooltip { max-width: min(280px, calc(100vw - 16px)); }
 
-/* Content-sized tabs avoid the blank space left by whole-section pagination. */
-.settings { align-self: start; height: auto; max-height: calc(100dvh - 96px); }
-.settings-content { flex: 0 1 auto; overflow-y: auto; overflow-x: hidden; }
-.settings-tabs { flex-shrink: 0; display: flex; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
-.settings-tabs button { flex: 1; white-space: nowrap; border: 1px solid transparent; border-radius: 4px; padding: 7px 5px; color: var(--muted); background: transparent; font: inherit; font-size: 10px; }
-.settings-tabs button:hover { color: var(--text); background: var(--surface); }
-.settings-tabs button[aria-selected=true] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
 .effect-percentage { border: 0; background: none; padding: 0 2px; margin: 0 -2px; color: #d0d0d0; font: inherit; font-size: 11px; line-height: 15px; cursor: pointer; border-radius: 3px; }
 .effect-percentage:hover:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
 .effect-percentage[aria-pressed=false] { color: var(--muted); }
 .effect-percentage:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
-@media (max-width: 760px) { .settings { max-height: calc(100dvh - 148px); } }
-/* Both panels share the workspace height; controls retain compact natural spacing. */
-.settings { align-self: stretch; height: 100%; max-height: none; }
-.settings-content { flex: 1; overflow: hidden; gap: 16px; }
-.settings-tabs { flex-wrap: wrap; padding: 8px 12px; }
-.settings-tabs button { flex: 1 0 auto; }
-.settings-content > .control-section > .section-heading { flex-shrink: 0; }
-.settings-content > .control-section > .slider-field { flex-shrink: 0; }
-@media (max-height: 620px) {
-  .settings-content { padding: 10px 14px; gap: 10px; }
-  .settings-content .section-heading { margin-bottom: 8px; }
-  .settings-content .slider-field { height: 30px; min-height: 30px; gap: 6px; }
-  .settings-content .effects-grid { row-gap: 6px; }
-}
-
-.settings-tabs { display: grid; }
-.settings-tabs button { min-width: 0; }
-
-.settings-tabs button { white-space: normal; line-height: 14px; }
-
-.settings-content { justify-content: flex-start; gap: 16px; }
-.settings-content > .control-section:not([hidden]) { display: block; flex: 0 0 auto; }
-.settings-content .slider-field + .slider-field { margin-top: 10px; }
-.settings-content #logo-placement, .settings-content #background-image-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin-top: 10px; }
-.settings-content #logo-placement > .style-choices, .settings-content #background-image-controls > .style-choices { grid-column: 1 / -1; margin: 0; }
-.settings-content #logo-placement .slider-field, .settings-content #background-image-controls .slider-field { margin: 0; }
-.settings-content .effects-grid { flex: none; grid-auto-rows: auto; align-items: start; }
-.settings-content .spectrum-settings { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
-.settings-content .spectrum-settings[hidden] { display: none !important; }
-.settings-content .spectrum-settings > .section-heading { grid-column: 1 / -1; margin-bottom: 2px; }
-.settings-content .spectrum-settings > .slider-field { margin: 0; }

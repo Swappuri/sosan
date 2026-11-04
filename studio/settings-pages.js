@@ -1,74 +1,92 @@
-// Reflow named groups to the available height without moving or recreating controls.
+// Keep controls in place so paging never resets their values or event handlers.
 export function setupSettingsPages(panel) {
   const content = panel.querySelector('.settings-content');
   const sections = [...content.children];
-  const tabs = panel.querySelector('#settings-tabs');
-  const categories = [
-    { name: 'Design', names: ['Audio', 'Appearance', 'Colors', 'Spectrum'] },
-    { name: 'Effects', names: ['Effects'] },
-    { name: 'Images', names: ['Logo', 'Background Image'] },
-    { name: 'Text & Export', names: ['Text', 'Export'] },
-  ];
-  content.id = 'settings-tab-content'; content.setAttribute('role', 'tabpanel');
-  let groups = [], buttons = [], current = 0, queued = false;
-  const heading = section => section.querySelector('h3').textContent.trim();
+  const previous = panel.querySelector('[data-settings-page="previous"]');
+  const next = panel.querySelector('[data-settings-page="next"]');
+  const label = panel.querySelector('#settings-page-label');
+  const numbers = panel.querySelector('#settings-page-numbers');
+  const tooltip = document.createElement('div');
+  tooltip.id = 'settings-page-tooltip';
+  tooltip.className = 'settings-page-tooltip';
+  tooltip.setAttribute('role', 'tooltip');
+  tooltip.hidden = true;
+  document.body.append(tooltip);
+  function hideTooltip() { tooltip.hidden = true; }
+  function showTooltip(button, text) {
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    const rect = button.getBoundingClientRect();
+    const width = tooltip.getBoundingClientRect().width;
+    tooltip.style.left = `${Math.max(8, Math.min(innerWidth - width - 8, rect.left + rect.width / 2 - width / 2))}px`;
+    tooltip.style.top = `${rect.top - tooltip.getBoundingClientRect().height - 8}px`;
+  }
+  window.addEventListener('resize', hideTooltip);
+  let pages = [], current = 0, scheduled = false;
   function show(index) {
-    current = Math.max(0, Math.min(index, groups.length - 1));
-    const visible = groups[current]?.sections ?? [];
-    sections.forEach(section => {
+    hideTooltip();
+    current = Math.max(0, Math.min(index, pages.length - 1));
+    const visible = pages[current] ?? [];
+    for (const section of sections) {
       section.hidden = !visible.includes(section);
       section.classList.toggle('page-start', section === visible[0]);
-    });
-    buttons.forEach((button, i) => {
-      button.setAttribute('aria-selected', String(i === current)); button.tabIndex = i === current ? 0 : -1;
-    });
-    if (buttons[current]) content.setAttribute('aria-labelledby', buttons[current].id);
-    panel.dispatchEvent(new Event('settings-tab-change'));
+    }
+    for (const [index, button] of [...numbers.children].entries()) {
+      if (index === current) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    }
+    previous.disabled = current === 0;
+    next.disabled = current >= pages.length - 1;
+    label.textContent = `${current + 1} / ${Math.max(1, pages.length)}`;
+    content.scrollTop = 0;
   }
   function layout() {
-    queued = false;
+    scheduled = false;
     if (!content.clientHeight) return;
-    const anchor = groups[current]?.sections[0];
-    panel.classList.add('measuring-settings');
-    sections.forEach(section => { section.hidden = false; section.classList.add('page-start'); });
+    const focusedSection = document.activeElement?.closest('.control-section');
+    const anchor = sections.includes(focusedSection) && !focusedSection.hidden ? focusedSection : pages[current]?.[0] ?? sections[0];
+    for (const section of sections) { section.hidden = false; section.classList.remove('page-start'); }
     const style = getComputedStyle(content);
-    const available = content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 6;
-    const gap = parseFloat(style.rowGap) || 16;
-    const heights = new Map(sections.map(section => [section, section.getBoundingClientRect().height]));
-    groups = [];
-    for (const category of categories) {
-      const members = sections.filter(section => category.names.includes(heading(section)));
-      const batches = []; let batch = [], used = 0;
-      for (const section of members) {
-        // Reserve a little space for the divider between sections.
-        const height = heights.get(section);
-        if (batch.length && used + height + gap + 16 > available) { batches.push(batch); batch = []; used = 0; }
-        batch.push(section); used += height + (batch.length > 1 ? gap + 16 : 0);
+    const available = content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    const gap = parseFloat(style.rowGap) || 0;
+    pages = [];
+    let page = [], used = 0;
+    for (const section of sections) {
+      const height = section.getBoundingClientRect().height;
+      const sectionStyle = getComputedStyle(section);
+      const divider = parseFloat(sectionStyle.borderTopWidth) + parseFloat(sectionStyle.paddingTop);
+      if (page.length && used + gap + height > available + .5) {
+        pages.push(page); page = []; used = 0;
       }
-      if (batch.length) batches.push(batch);
-      batches.forEach(batch => groups.push({
-        name: batches.length === 1 ? category.name : batch.some(section => heading(section) === 'Appearance') ? 'Design' : batch.map(section => heading(section).replace(' Image', '')).join(' & '),
-        sections: batch,
-      }));
+      used += page.length ? gap + height : height - divider;
+      page.push(section);
     }
-    panel.classList.remove('measuring-settings');
-    buttons = groups.map((group, index) => {
+    if (page.length) pages.push(page);
+    numbers.replaceChildren(...pages.map((page, index) => {
       const button = document.createElement('button');
-      button.type = 'button'; button.textContent = group.name; button.id = `settings-tab-${index}`;
-      button.setAttribute('role', 'tab'); button.setAttribute('aria-controls', content.id);
+      button.type = 'button';
+      const names = page.map(section => section.querySelector('h3').textContent).join(' · ');
+      button.setAttribute('aria-describedby', tooltip.id);
+      button.onpointerenter = button.onfocus = () => showTooltip(button, names);
+      button.onpointerleave = button.onblur = hideTooltip;
+      button.onkeydown = event => { if (event.key === 'Escape') hideTooltip(); };
+      button.textContent = index + 1;
+      button.setAttribute('aria-label', `Settings page ${index + 1}: ${page.map(section => section.querySelector('h3').textContent).join(', ')}`);
       button.onclick = () => show(index);
-      button.onkeydown = event => {
-        const next = event.key === 'ArrowRight' ? (current + 1) % groups.length : event.key === 'ArrowLeft' ? (current + groups.length - 1) % groups.length : event.key === 'Home' ? 0 : event.key === 'End' ? groups.length - 1 : undefined;
-        if (next !== undefined) { event.preventDefault(); show(next); buttons[next].focus(); }
-      };
       return button;
-    });
-    tabs.replaceChildren(...buttons);
-    tabs.style.gridTemplateColumns = `repeat(${groups.length <= 4 ? groups.length : 3}, minmax(0, 1fr))`;
-    show(Math.max(0, groups.findIndex(group => group.sections.includes(anchor))));
+    }));
+    show(Math.max(0, pages.findIndex(page => page.includes(anchor))));
   }
-  function schedule() { if (!queued) { queued = true; requestAnimationFrame(layout); } }
+  function schedule() {
+    if (!scheduled) { scheduled = true; requestAnimationFrame(layout); }
+  }
+  previous.onclick = () => show(current - 1);
+  next.onclick = () => show(current + 1);
   new ResizeObserver(schedule).observe(content);
+  // Uploading a logo expands its placement controls; repaginate without losing context.
+  new MutationObserver(records => {
+    if (records.some(record => !sections.includes(record.target))) schedule();
+  }).observe(content, { subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled'], childList: true });
   document.fonts.ready.then(schedule);
   schedule();
 }
