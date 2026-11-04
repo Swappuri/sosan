@@ -18,7 +18,9 @@ export function setupSettingsPages(panel) {
   ];
   let current = 0, scheduled = false;
   const gesture = new SectionGesture();
-  let transition;
+  let transition, moving = false;
+  const pending = [];
+  let buffers = [];
   const tooltip = document.createElement('div');
   tooltip.id = 'settings-section-tooltip'; tooltip.className = 'settings-page-tooltip';
   tooltip.setAttribute('role', 'tooltip'); tooltip.hidden = true;
@@ -51,33 +53,67 @@ export function setupSettingsPages(panel) {
     return button;
   });
   navigation.replaceChildren(...buttons);
-  function go(index, instant = false) {
-    current = Math.max(0, Math.min(sections.length - 1, index));
+  function arrange() {
+    const focused = document.activeElement;
+    buffers.forEach(node => node.remove()); buffers = [];
+    content.append(...sections.slice(current), ...sections.slice(0, current));
+    content.scrollTop = 0;
+    if (content.contains(focused)) focused.focus({ preventScroll: true });
+  }
+  function step(direction) {
+    if (moving) { pending.push(() => step(direction)); return; }
+    go(current + direction, false, direction);
+  }
+  function go(index, instant = false, direction = 1) {
+    if (moving && !instant) { pending.push(() => go(index, false, direction)); return; }
+    const next = (index % sections.length + sections.length) % sections.length;
+    if (instant) { cancelAnimationFrame(transition); moving = false; pending.length = 0; }
     hideTooltip();
-    const top = content.scrollTop + sections[current].getBoundingClientRect().top - content.getBoundingClientRect().top;
-    cancelAnimationFrame(transition);
-    const target = Math.max(0, top), start = content.scrollTop, started = performance.now();
-    if (instant || reducedMotion.matches || Math.abs(target - start) < 1) content.scrollTop = target;
-    else {
-      const animate = now => {
-        const progress = Math.min(1, (now - started) / SECTION_TRANSITION_MS);
-        content.scrollTop = start + (target - start) * sectionEase(progress);
-        if (progress < 1) transition = requestAnimationFrame(animate);
-      };
-      transition = requestAnimationFrame(animate);
+    if (direction < 0 && next === (current - 1 + sections.length) % sections.length) {
+      const oldTop = sections[current].getBoundingClientRect().top;
+      content.prepend(sections[next]);
+      content.scrollTop += sections[current].getBoundingClientRect().top - oldTop;
     }
+    // Visual-only tail lets a long icon jump reach the last card without a blank end.
+    // The real sections replace these seamlessly when the transition settles.
+    if (!instant && !buffers.length) {
+      let covered = 0;
+      for (let i = 0; covered < content.clientHeight && i < sections.length; i++) {
+        const clone = sections[(current + i) % sections.length].cloneNode(true);
+        clone.inert = true; clone.setAttribute('aria-hidden', 'true');
+        clone.removeAttribute('id');
+        clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+        clone.querySelectorAll('[for]').forEach(node => node.removeAttribute('for'));
+        clone.querySelectorAll('[name]').forEach(node => node.removeAttribute('name'));
+        content.append(clone); buffers.push(clone);
+        covered += clone.getBoundingClientRect().height + 12;
+      }
+    }
+    const target = Math.max(0, content.scrollTop + sections[next].getBoundingClientRect().top - content.getBoundingClientRect().top - 12);
+    const start = content.scrollTop, started = performance.now();
+    current = next;
     buttons.forEach((button, index) => {
       if (index === current) button.setAttribute('aria-current', 'location');
       else button.removeAttribute('aria-current');
     });
     panel.dispatchEvent(new Event('settings-section-change'));
+    const finish = () => { moving = false; arrange(); pending.shift()?.(); };
+    if (instant || reducedMotion.matches || Math.abs(target - start) < 1) { finish(); return; }
+    moving = true;
+    const animate = now => {
+      const progress = Math.min(1, (now - started) / SECTION_TRANSITION_MS);
+      content.scrollTop = start + (target - start) * sectionEase(progress);
+      if (progress < 1) transition = requestAnimationFrame(animate);
+      else finish();
+    };
+    transition = requestAnimationFrame(animate);
   }
   panel.addEventListener('wheel', event => {
     if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) * 2 || event.target.closest('.font-picker-options')) return;
     event.preventDefault();
     const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? content.clientHeight : 1);
     const direction = gesture.take(delta, performance.now(), { discrete: event.deltaMode === 1 || (event.deltaX === 0 && [100, 120].includes(Math.abs(event.deltaY))) });
-    if (direction) go(current + direction);
+    if (direction) step(direction);
   }, { passive: false });
   content.addEventListener('focusin', event => {
     const index = sections.indexOf(event.target.closest('.control-section'));
@@ -88,21 +124,20 @@ export function setupSettingsPages(panel) {
     const direction = ['PageDown', 'ArrowDown'].includes(event.key) ? 1 : ['PageUp', 'ArrowUp'].includes(event.key) ? -1 : 0;
     if (direction || ['Home', 'End'].includes(event.key)) {
       event.preventDefault();
-      go(event.key === 'Home' ? 0 : event.key === 'End' ? sections.length - 1 : current + direction);
+      if (direction) step(direction); else go(event.key === 'Home' ? 0 : sections.length - 1);
     }
   });
   let touchY;
   content.addEventListener('touchstart', event => { touchY = event.touches[0]?.clientY; }, { passive: true });
   content.addEventListener('touchend', event => {
     const distance = touchY - event.changedTouches[0]?.clientY;
-    if (Math.abs(distance) > 35) go(current + Math.sign(distance));
+    if (Math.abs(distance) > 35) step(Math.sign(distance));
     touchY = undefined;
   }, { passive: true });
   function update() {
     scheduled = false;
     if (!content.clientHeight) return;
-    // Allow even the final card to reach the same top edge as the others.
-    content.style.paddingBottom = `${Math.max(12, content.clientHeight - sections.at(-1).getBoundingClientRect().height)}px`;
+    content.style.paddingBottom = '12px';
     go(current, true);
   }
   function schedule() { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } }

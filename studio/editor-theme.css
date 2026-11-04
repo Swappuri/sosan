@@ -263,3 +263,5 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 
 .settings-content { overflow-y: hidden; scroll-snap-type: none; scroll-padding-top: 0; padding-top: 0; touch-action: pan-x; }
 .settings-content > .control-section { scroll-snap-align: none; }
+
+.settings-content { padding-top: 12px; scroll-padding-top: 12px; }
