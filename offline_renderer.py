@@ -152,7 +152,7 @@ class StudioRenderer:
         if settings['vignette']:
             edge_distance = np.hypot(xx - self.center[0], yy - self.center[1]) / math.hypot(*self.center)
             self.vignette = 1 - np.clip((edge_distance - .35) / .65, 0, 1).astype(np.float32) * min(.9, .6 * settings['vignetteStrength'] / 100)
-        self.flash_aura = inner[:, :, None] * self.primary * .38 * settings['flashesStrength'] / 100
+        self.flash_aura = inner[:, :, None] * self.primary * .18 * settings['flashesStrength'] / 100
         self.particles = []
         for i in range(100):
             self.particles.append(((math.sin(i * 127.1 + 3) * 43758.5453) % 1, (math.sin(i * 311.7 + 9) * 43758.5453) % 1, .6 + (math.sin(i * 41.9) * 43758.5453) % 1 * 1.4, i * 2.7))
@@ -218,7 +218,8 @@ class StudioRenderer:
         dt = 1 / s['fps']
         self.levels += (levels - self.levels) * (1 - np.exp(-dt * np.where(levels > self.levels, 24, 8)))
         self.bass += (bass - self.bass) * (1 - math.exp(-dt * (22 if bass > self.bass else 6)))
-        self.flash = max(self.flash * math.exp(-dt * 9), onset)
+        self.flash_envelope = max(getattr(self, 'flash_envelope', 0) * math.exp(-dt * 5), min(1, onset))
+        self.flash += (self.flash_envelope - self.flash) * (1 - math.exp(-dt * (20 if self.flash_envelope > self.flash else 7)))
         image = np.clip(self.base + self.flash_aura * self.flash, 0, 255).astype(np.uint8) if s['flashes'] else self.base.copy()
         clock = index / s['fps']
         if clock < self.echo_time - .01:

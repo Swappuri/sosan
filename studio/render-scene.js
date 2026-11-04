@@ -86,7 +86,7 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   const strength = name => (settings[name + 'Strength'] ?? 100) / 100;
   const ambient = (settings.aura ?? true) ? strength('aura') : 0;
-  const flashLight = settings.flashes ? motion.flash * .38 * strength('flashes') : 0;
+  const flashLight = settings.flashes ? motion.flash * .18 * strength('flashes') : 0;
   if (ambient || flashLight > 0) {
     const aura = ctx.createRadialGradient(x, y, 0, x, y, 360 * scale);
     aura.addColorStop(0, rgba(settings.primary, Math.min(.9, .09 * ambient + flashLight)));

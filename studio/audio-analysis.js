@@ -1,3 +1,4 @@
+import { smoothFlash } from './beat-grid.js';
 import { updateEchoes } from './effect-motion.js';
 /** Frame-clock spectrum analysis; independent of playback and browser timers. */
 export function frameCount(samples, sampleRate, fps) {
@@ -88,5 +89,5 @@ export function advanceMotion(motion, target, dt, time = (motion.echoTime ?? -dt
     motion.levels[i] += (target.levels[i] - motion.levels[i]) * (1 - Math.exp(-dt * rate));
   }
   motion.bass += (target.bass - motion.bass) * (1 - Math.exp(-dt * (target.bass > motion.bass ? 22 : 6)));
-  motion.flash = Math.max(motion.flash * Math.exp(-dt * 9), target.onset);
+  motion.flash = smoothFlash(motion, target.onset, dt);
 }

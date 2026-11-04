@@ -1,3 +1,4 @@
+import { trackPulses, scheduledEchoes } from '../studio/beat-grid.js';
 import { exportBitrate } from '../studio/export-quality.js';
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioSampleSource, AudioSample, Quality, canEncodeVideo, canEncodeAudio } from 'mediabunny';
 import { registerAacEncoder } from '@mediabunny/aac-encoder';
@@ -42,11 +43,13 @@ self.onmessage = async ({ data }) => {
     await output.start();
     const analysis = new SpectrumAnalysis(channels, sampleRate, settings.bars / 2, settings.sensitivity);
     const motion = { levels: new Float32Array(settings.bars / 2), bass: 0, flash: 0 };
+    const pulses = trackPulses(channels, sampleRate);
     const total = frameCount(channels[0].length, sampleRate, fps);
     let audioCursor = 0;
     for (let frame = 0; frame < total; frame++) {
       const timestamp = frame / fps;
       advanceMotion(motion, analysis.frame(timestamp), 1 / fps, timestamp);
+      motion.echoes = scheduledEchoes(pulses, timestamp);
       renderScene(ctx, width, height, settings, motion, timestamp, logo, settings.title, backgroundImage);
       await video.add(timestamp, 1 / fps);
       const end = Math.min(channels[0].length, Math.round((frame + 1) / fps * sampleRate));

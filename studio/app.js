@@ -1,3 +1,4 @@
+import { trackPulses, scheduledEchoes, smoothFlash } from './beat-grid.js';
 import { updateEchoes } from './effect-motion.js';
 import { optionSupport, probeExportSupport } from './export-support.js';
 import { setupFontPicker } from './font-picker.js';
@@ -21,6 +22,8 @@ let backgroundImage, backgroundFile, backgroundLoadId = 0;
 let currentUrl, logo, loaded = false, loading = false, exporting = false;
 let smooth = new Float32Array(96), bass = 0, previousBass = 0, flash = 0;
 const echoState = {};
+let echoPulses = null;
+const flashState = {};
 let lastTime = 0;
 let logoLoadId = 0, previewError;
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
@@ -118,7 +121,7 @@ function syncFileCards() {
   $('logo-card').classList.toggle('has-file', !!logoFile);
 }
 function setDisplayTitle(value) { $('title').value = value; }
-function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; echoState.beatTimes = []; echoState.nextEcho = undefined; echoState.period = undefined; smooth.fill(0); bass = previousBass = flash = 0; }
+function resetMotion() { echoState.echoes = []; echoState.lastEchoBeat = -Infinity; echoState.echoTime = undefined; echoState.beatTimes = []; echoState.nextEcho = undefined; echoState.period = undefined; flashState.flashEnvelope = 0; smooth.fill(0); bass = previousBass = flash = 0; }
 async function loadSong(file) {
   if (loading) return;
   if (!/\.(mp3|wav)$/i.test(file.name)) { status('Choose an MP3 or WAV audio file.', true); return; }
@@ -139,6 +142,7 @@ async function loadSong(file) {
   currentUrl = URL.createObjectURL(file);
   audio.src = currentUrl;
   resetMotion();
+  echoPulses = null;
   try {
     await new Promise((resolve, reject) => {
       const cleanup = () => { clearTimeout(timeout); audio.removeEventListener('loadedmetadata', success); audio.removeEventListener('error', failure); };
@@ -153,6 +157,11 @@ async function loadSong(file) {
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) throw new Error('This file has no playable audio.');
     loaded = true;
     selectedFile = file;
+    // Analyze independently of playback, volume, frame rate, and reactivity.
+    const decoder = new AudioContext();
+    decoder.decodeAudioData(await file.arrayBuffer()).then(buffer => {
+      if (loadId === activeLoad) echoPulses = trackPulses(Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i)), buffer.sampleRate);
+    }).catch(error => console.warn('Beat analysis unavailable:', error)).finally(() => decoder.close());
     setDisplayTitle(defaultTitle(file));
     $('empty-state').hidden = true;
     $('duration').textContent = timeLabel(audio.duration);
@@ -457,8 +466,10 @@ function sampleAudio(dt) {
     previousBass = targetBass;
     bass += (targetBass - bass) * (1 - Math.exp(-dt * (targetBass > bass ? 22 : 6)));
     const onset = Math.min(1, delta * 6);
-    flash = Math.max(flash * Math.exp(-dt * 9), onset);
-    updateEchoes(echoState, onset, audio.currentTime);
+    flashState.flash = flash;
+    flash = smoothFlash(flashState, onset, dt);
+    if (echoPulses) echoState.echoes = scheduledEchoes(echoPulses, audio.currentTime);
+    else updateEchoes(echoState, onset, audio.currentTime);
     for (let i = 0; i < count; i++) {
       const low = 35 * Math.pow(14000 / 35, i / count);
       const high = 35 * Math.pow(14000 / 35, (i + 1) / count);
@@ -471,6 +482,7 @@ function sampleAudio(dt) {
     }
   } else {
     echoState.echoes = []; echoState.nextEcho = undefined; echoState.beatTimes = [];
+    flashState.flashEnvelope = (flashState.flashEnvelope ?? 0) * Math.exp(-dt * 5);
     bass *= Math.exp(-dt * 6); flash *= Math.exp(-dt * 9);
     for (let i = 0; i < smooth.length; i++) smooth[i] *= Math.exp(-dt * 7);
   }
