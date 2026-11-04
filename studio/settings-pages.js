@@ -1,4 +1,4 @@
-import { SectionGesture } from './section-scroll.js';
+import { SectionGesture, SECTION_TRANSITION_MS, sectionEase } from './section-scroll.js';
 // One continuous inspector with section shortcuts; controls stay mounted.
 export function setupSettingsPages(panel) {
   const content = panel.querySelector('.settings-content');
@@ -18,6 +18,7 @@ export function setupSettingsPages(panel) {
   ];
   let current = 0, scheduled = false;
   const gesture = new SectionGesture();
+  let transition;
   const tooltip = document.createElement('div');
   tooltip.id = 'settings-section-tooltip'; tooltip.className = 'settings-page-tooltip';
   tooltip.setAttribute('role', 'tooltip'); tooltip.hidden = true;
@@ -54,18 +55,28 @@ export function setupSettingsPages(panel) {
     current = Math.max(0, Math.min(sections.length - 1, index));
     hideTooltip();
     const top = content.scrollTop + sections[current].getBoundingClientRect().top - content.getBoundingClientRect().top;
-    content.scrollTo({ top: Math.max(0, top), behavior: instant || reducedMotion.matches ? 'instant' : 'smooth' });
+    cancelAnimationFrame(transition);
+    const target = Math.max(0, top), start = content.scrollTop, started = performance.now();
+    if (instant || reducedMotion.matches || Math.abs(target - start) < 1) content.scrollTop = target;
+    else {
+      const animate = now => {
+        const progress = Math.min(1, (now - started) / SECTION_TRANSITION_MS);
+        content.scrollTop = start + (target - start) * sectionEase(progress);
+        if (progress < 1) transition = requestAnimationFrame(animate);
+      };
+      transition = requestAnimationFrame(animate);
+    }
     buttons.forEach((button, index) => {
       if (index === current) button.setAttribute('aria-current', 'location');
       else button.removeAttribute('aria-current');
     });
     panel.dispatchEvent(new Event('settings-section-change'));
   }
-  content.addEventListener('wheel', event => {
-    if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.target.closest('.font-picker-options')) return;
+  panel.addEventListener('wheel', event => {
+    if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) * 2 || event.target.closest('.font-picker-options')) return;
     event.preventDefault();
     const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? content.clientHeight : 1);
-    const direction = gesture.take(delta, performance.now());
+    const direction = gesture.take(delta, performance.now(), { discrete: event.deltaMode === 1 || (event.deltaX === 0 && [100, 120].includes(Math.abs(event.deltaY))) });
     if (direction) go(current + direction);
   }, { passive: false });
   content.addEventListener('focusin', event => {
