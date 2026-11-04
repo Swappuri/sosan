@@ -252,3 +252,11 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .settings-content { scroll-snap-type: y mandatory; }
 .settings-content > .control-section { scroll-snap-align: start; scroll-snap-stop: always; }
 .settings-content > .control-section:last-child { scroll-snap-align: end; }
+
+/* Each section is a distinct compact card, with the snap point at its boundary. */
+.settings-section-links button { display: flex; align-items: center; justify-content: center; }
+.settings-section-links svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.settings-content { padding: 8px 12px 12px; gap: 12px; scroll-padding-top: 8px; }
+.settings-content > fieldset.control-section { padding: 12px; border: 1px solid #393939; border-radius: 6px; background: #1c1c1c; scroll-margin-top: 0; }
+.settings-content > .control-section > .section-heading { margin: -12px -12px 12px; padding: 10px 12px; background: #222; border-bottom: 1px solid #343434; border-radius: 6px 6px 0 0; }
+.settings-content > .control-section .section-heading h3 { margin: 0; }
