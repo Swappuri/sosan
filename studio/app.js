@@ -287,18 +287,28 @@ function applyTheme() {
   const focusContrast = (Math.max(luminance, surfaceLuminance) + .05) / (Math.min(luminance, surfaceLuminance) + .05);
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
+const lastEffectStrength = {};
 const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'aurora', 'constellation', 'grid', 'fireflies', 'scanlines'];
 function syncEffectStrength() {
   for (const name of effectNames) {
     const key = name + 'Strength';
     settings[name] = settings[key] > 0;
     $(key).value = settings[key];
-    $(key + '-value').value = `${settings[key]}%`;
+    const percentage = $(key + '-value');
+    percentage.textContent = `${settings[key]}%`;
+    percentage.setAttribute('aria-pressed', String(settings[key] > 0));
+    percentage.title = settings[key] > 0 ? 'Click to turn off; click again to restore this strength' : 'Click to restore the previous strength';
+    percentage.setAttribute('aria-label', `${$(key).closest('.slider-field').querySelector('.effect-name').textContent}: ${settings[key]}%. ${settings[key] > 0 ? 'Turn off' : 'Restore strength'}`);
+    if (settings[key] > 0) lastEffectStrength[name] = settings[key];
   }
 }
 for (const name of effectNames) {
   const key = name + 'Strength';
   $(key).oninput = () => { settings[key] = Number($(key).value); syncEffectStrength(); };
+  $(key + '-value').onclick = () => {
+    settings[key] = settings[key] > 0 ? 0 : (lastEffectStrength[name] ?? 100);
+    syncEffectStrength();
+  };
 }
 function syncSettings() {
   syncEffectStrength();
@@ -753,4 +763,4 @@ for (const name of document.querySelectorAll('[data-effect-tip]')) {
   name.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
 }
 addEventListener('resize', () => { effectTooltip.hidden = true; });
-document.querySelector('.settings-page-numbers')?.addEventListener('click', () => { effectTooltip.hidden = true; });
+$('settings-panel').addEventListener('settings-tab-change', () => { effectTooltip.hidden = true; });
