@@ -227,3 +227,10 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 
 .effect-control .slider-field { height: 38px; min-height: 38px; gap: 12px; }
 .effect-control .slider-label { flex: initial; width: 100%; }
+
+.effect-group-title { grid-column: 1 / -1; margin: 2px 0 0; color: var(--muted); font-size: 10px; font-weight: 500; letter-spacing: .04em; }
+.effect-group-title:not(:first-child) { padding-top: 9px; border-top: 1px solid #393939; }
+.effects-grid { row-gap: 10px; }
+.effect-name { cursor: help; }
+.effect-name:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.effect-tooltip { max-width: min(280px, calc(100vw - 16px)); }

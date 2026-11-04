@@ -232,29 +232,40 @@ class StudioRenderer:
         if amount('nebula'):
             for i in range(3):
                 haze(width * (.5 + .36 * math.sin(clock * .08 + i * 2.1)), height * (.5 + .32 * math.cos(clock * .06 + i * 1.7)), (210 + bass * 30) * scale, self.secondary if i % 2 else self.primary, min(.4, amount('nebula') * (.08 + bass * .05)))
-        if amount('lightRays'):
+        if amount('aurora'):
+            for ribbon in range(3):
+                color = tuple(map(int, self.primary if ribbon % 2 else self.secondary))
+                points = []
+                for step in range(65):
+                    px = step / 64 * width
+                    py = height * (.22 + ribbon * .27) + math.sin(step / 64 * 7 + travel * .18 + ribbon * 1.5) * (24 + bass * 18) * scale + math.sin(step / 64 * 13 - clock * .13) * 12 * scale
+                    points.append((round(px), round(py)))
+                for line_width, opacity in ((18, .025), (6, .055), (1.5, .16)):
+                    layer = np.zeros_like(image)
+                    cv2.polylines(layer, [np.array(points, np.int32)], False, color, max(1, round(line_width * scale)), cv2.LINE_AA)
+                    blend(layer, amount('aurora') * opacity * (1 + beat * .7))
+        if amount('constellation'):
+            points = [(((i * .618034 + .035 * math.sin(travel * .1 + i * 2)) % 1) * width, ((i * .414214 + .05 * math.cos(travel * .12 + i)) % 1) * height) for i in range(34)]
             layer = np.zeros_like(image)
-            for i in range(12):
-                angle = i / 12 * math.tau + clock * .025
-                cv2.line(layer, (round(x + math.cos(angle) * 145 * scale), round(y + math.sin(angle) * 145 * scale)), (round(x + math.cos(angle) * width), round(y + math.sin(angle) * width)), tuple(map(int, self.secondary)), max(1, round((6 + bass * 10) * scale)), cv2.LINE_AA)
-            blend(layer, amount('lightRays') * (.025 + beat * .065))
-        if amount('starTrails'):
-            layer = np.zeros_like(image)
-            for i in range(48):
-                angle, phase = i * 2.399963, (i * .618034 + travel * .04) % 1
-                radius, length = (40 + phase * 480) * scale, (3 + bass * 24) * scale * phase
-                color = tuple(map(int, self.primary * phase))
-                cv2.line(layer, (round(x + math.cos(angle) * radius), round(y + math.sin(angle) * radius)), (round(x + math.cos(angle) * (radius + length)), round(y + math.sin(angle) * (radius + length))), color, max(1, round(scale)), cv2.LINE_AA)
-            blend(layer, amount('starTrails') * (.18 + beat * .3))
+            for i, point in enumerate(points):
+                cv2.circle(layer, tuple(round(v) for v in point), max(1, round((1 + beat) * scale)), tuple(map(int, self.primary)), -1, cv2.LINE_AA)
+                for other in points[i + 1:]:
+                    distance = math.hypot(point[0] - other[0], point[1] - other[1])
+                    if distance > 130 * scale: continue
+                    color = tuple(map(int, self.secondary * (1 - distance / (130 * scale)) * .5))
+                    cv2.line(layer, tuple(round(v) for v in point), tuple(round(v) for v in other), color, max(1, round(scale)), cv2.LINE_AA)
+            blend(layer, amount('constellation') * (.22 + beat * .25))
         if amount('grid'):
-            layer = np.zeros_like(image); horizon = height * .57
-            color = tuple(map(int, self.secondary))
-            for i in range(-8, 9): cv2.line(layer, (round(x + i * 9 * scale), round(horizon)), (round(x + i * 95 * scale), height), color, max(1, round(scale)), cv2.LINE_AA)
-            for i in range(12):
-                phase = ((i + travel * .5) % 12) / 12
-                py = round(horizon + phase ** 2 * (height - horizon))
-                cv2.line(layer, (0, py), (width, py), color, max(1, round(scale)), cv2.LINE_AA)
-            blend(layer, min(.45, amount('grid') * (.1 + bass * .08)))
+            for ceiling in (False, True):
+                layer = np.zeros_like(image)
+                horizon, edge = height * (.43 if ceiling else .57), 0 if ceiling else height
+                color = tuple(map(int, self.secondary))
+                for i in range(-8, 9): cv2.line(layer, (round(x + i * 9 * scale), round(horizon)), (round(x + i * 95 * scale), edge), color, max(1, round(scale)), cv2.LINE_AA)
+                for i in range(12):
+                    phase = ((i + travel * .5) % 12) / 12
+                    py = round(horizon + phase ** 2 * (edge - horizon))
+                    cv2.line(layer, (0, py), (width, py), color, max(1, round(scale)), cv2.LINE_AA)
+                blend(layer, min(.45, amount('grid') * (.1 + bass * .08)) * (.65 if ceiling else 1))
         if amount('fireflies'):
             for i in range(26):
                 px = (i * .618034 + .04 * math.sin(travel * .13 + i)) % 1 * width

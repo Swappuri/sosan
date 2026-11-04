@@ -15,7 +15,7 @@ const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Fr
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 0, nebula: false, nebulaStrength: 0, lightRays: false, lightRaysStrength: 0, starTrails: false, starTrailsStrength: 0, grid: false, gridStrength: 0, fireflies: false, firefliesStrength: 0, scanlines: false, scanlinesStrength: 0 };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: false, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 0, nebula: false, nebulaStrength: 0, aurora: false, auroraStrength: 0, constellation: false, constellationStrength: 0, grid: false, gridStrength: 0, fireflies: false, firefliesStrength: 0, scanlines: false, scanlinesStrength: 0 };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let backgroundImage, backgroundFile, backgroundLoadId = 0;
@@ -287,7 +287,7 @@ function applyTheme() {
   const focusContrast = (Math.max(luminance, surfaceLuminance) + .05) / (Math.min(luminance, surfaceLuminance) + .05);
   root.setProperty('--accent-focus', focusContrast >= 3 ? color : blend(color, '#ffffff', .6));
 }
-const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'lightRays', 'starTrails', 'grid', 'fireflies', 'scanlines'];
+const effectNames = ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'aurora', 'constellation', 'grid', 'fireflies', 'scanlines'];
 function syncEffectStrength() {
   for (const name of effectNames) {
     const key = name + 'Strength';
@@ -335,7 +335,7 @@ const resetSections = {
   appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
-  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'glowStrength', 'auraStrength', 'particlesStrength', 'pulseStrength', 'flashesStrength', 'orbitLightsStrength', 'echoRingsStrength', 'vignetteStrength', 'nebula', 'nebulaStrength', 'lightRays', 'lightRaysStrength', 'starTrails', 'starTrailsStrength', 'grid', 'gridStrength', 'fireflies', 'firefliesStrength', 'scanlines', 'scanlinesStrength'], detail: 'Restore the default effects?' },
+  effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'glowStrength', 'auraStrength', 'particlesStrength', 'pulseStrength', 'flashesStrength', 'orbitLightsStrength', 'echoRingsStrength', 'vignetteStrength', 'nebula', 'nebulaStrength', 'aurora', 'auroraStrength', 'constellation', 'constellationStrength', 'grid', 'gridStrength', 'fireflies', 'firefliesStrength', 'scanlines', 'scanlinesStrength'], detail: 'Restore the default effects?' },
   backgroundImage: { title: 'Background Image', keys: ['backgroundFit', 'backgroundOpacity', 'backgroundZoom', 'backgroundX', 'backgroundY'], detail: 'Remove the background image and restore its default settings?' },
   logo: { title: 'Logo', keys: ['logoFit', 'logoZoom', 'logoX', 'logoY', 'logoOpacity'], detail: 'Restore default logo placement and opacity? The uploaded logo will be kept.' },
   text: { title: 'Text', keys: ['textColor', 'textSize', 'textFont'], detail: 'Restore the song filename and default text color, size, and font?' },
@@ -730,3 +730,27 @@ if (browserMode) {
     $('export-support-note').textContent = 'Could not check export support. Reload to retry.';
   });
 }
+
+// Fixed-position tooltips stay readable outside the paginated settings panel.
+const effectTooltip = document.createElement('div');
+effectTooltip.id = 'effect-tooltip';
+effectTooltip.className = 'settings-page-tooltip effect-tooltip';
+effectTooltip.setAttribute('role', 'tooltip');
+effectTooltip.hidden = true;
+document.body.append(effectTooltip);
+for (const name of document.querySelectorAll('[data-effect-tip]')) {
+  name.setAttribute('aria-describedby', effectTooltip.id);
+  const show = () => {
+    effectTooltip.textContent = name.dataset.effectTip;
+    effectTooltip.hidden = false;
+    const rect = name.getBoundingClientRect(), box = effectTooltip.getBoundingClientRect();
+    effectTooltip.style.left = `${Math.max(8, Math.min(innerWidth - box.width - 8, rect.left))}px`;
+    effectTooltip.style.top = `${rect.top > box.height + 12 ? rect.top - box.height - 8 : rect.bottom + 8}px`;
+  };
+  const hide = () => { effectTooltip.hidden = true; };
+  name.addEventListener('mouseenter', show); name.addEventListener('mouseleave', hide);
+  name.addEventListener('focus', show); name.addEventListener('blur', hide);
+  name.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
+}
+addEventListener('resize', () => { effectTooltip.hidden = true; });
+document.querySelector('.settings-page-numbers')?.addEventListener('click', () => { effectTooltip.hidden = true; });

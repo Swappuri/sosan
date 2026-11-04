@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { drawBackgroundEffects } from '../../studio/background-effects.js';
-const names = ['nebula', 'lightRays', 'starTrails', 'grid', 'fireflies', 'scanlines'];
+const names = ['nebula', 'aurora', 'constellation', 'grid', 'fireflies', 'scanlines'];
 function draw(name, strength, bass = .8, time = 2) {
  const calls = [];
  const ctx = new Proxy({ createRadialGradient: (...args) => { calls.push(['gradient',...args]); return {addColorStop(){}}; } }, {get(target,key){ return target[key] ?? ((...args)=>calls.push([key,...args])); }});

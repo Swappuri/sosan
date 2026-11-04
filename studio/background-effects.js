@@ -17,41 +17,57 @@ export function drawBackgroundEffects(ctx, width, height, settings, motion, time
       ctx.globalAlpha = Math.min(.4, nebula * (.08 + bass * .05));
       ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
     }
-    const rays = amount('lightRays');
-    if (rays) {
-      ctx.lineCap = 'round'; ctx.strokeStyle = settings.secondary;
-      for (let i = 0; i < 12; i++) {
-        const angle = i / 12 * Math.PI * 2 + time * .025;
-        ctx.globalAlpha = Math.min(.3, rays * (.025 + beat * .065));
-        ctx.lineWidth = (6 + bass * 10) * scale;
-        ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * 145 * scale, y + Math.sin(angle) * 145 * scale);
-        ctx.lineTo(x + Math.cos(angle) * width, y + Math.sin(angle) * width); ctx.stroke();
+    const aurora = amount('aurora');
+    if (aurora) {
+      ctx.lineCap = 'round';
+      for (let ribbon = 0; ribbon < 3; ribbon++) {
+        ctx.strokeStyle = ribbon % 2 ? settings.primary : settings.secondary;
+        for (const [lineWidth, opacity] of [[18, .025], [6, .055], [1.5, .16]]) {
+          ctx.lineWidth = lineWidth * scale;
+          ctx.globalAlpha = Math.min(.6, aurora * opacity * (1 + beat * .7));
+          ctx.beginPath();
+          for (let step = 0; step <= 64; step++) {
+            const px = step / 64 * width;
+            const py = height * (.22 + ribbon * .27) + Math.sin(step / 64 * 7 + travel * .18 + ribbon * 1.5) * (24 + bass * 18) * scale + Math.sin(step / 64 * 13 - time * .13) * 12 * scale;
+            if (!step) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
       }
     }
-    const trails = amount('starTrails');
-    if (trails) {
-      ctx.strokeStyle = settings.primary; ctx.lineWidth = scale;
-      for (let i = 0; i < 48; i++) {
-        const angle = i * 2.399963, phase = ((i * .618034 + travel * .04) % 1);
-        const radius = (40 + phase * 480) * scale;
-        const length = (3 + bass * 24) * scale * phase;
-        ctx.globalAlpha = Math.min(.8, trails * phase * (.18 + beat * .3));
-        ctx.beginPath(); ctx.moveTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
-        ctx.lineTo(x + Math.cos(angle) * (radius + length), y + Math.sin(angle) * (radius + length)); ctx.stroke();
+    const constellation = amount('constellation');
+    if (constellation) {
+      const points = Array.from({ length: 34 }, (_, i) => ({
+        x: ((i * .618034 + .035 * Math.sin(travel * .1 + i * 2)) % 1 + 1) % 1 * width,
+        y: ((i * .414214 + .05 * Math.cos(travel * .12 + i)) % 1 + 1) % 1 * height,
+      }));
+      ctx.strokeStyle = settings.secondary; ctx.fillStyle = settings.primary; ctx.lineWidth = scale;
+      for (let i = 0; i < points.length; i++) {
+        const point = points[i];
+        ctx.globalAlpha = Math.min(.8, constellation * (.22 + beat * .25));
+        ctx.beginPath(); ctx.arc(point.x, point.y, (1 + beat) * scale, 0, Math.PI * 2); ctx.fill();
+        for (let j = i + 1; j < points.length; j++) {
+          const other = points[j], distance = Math.hypot(point.x - other.x, point.y - other.y);
+          if (distance > 130 * scale) continue;
+          ctx.globalAlpha = Math.min(.5, constellation * (1 - distance / (130 * scale)) * (.14 + beat * .2));
+          ctx.beginPath(); ctx.moveTo(point.x, point.y); ctx.lineTo(other.x, other.y); ctx.stroke();
+        }
       }
     }
     const grid = amount('grid');
     if (grid) {
-      const horizon = height * .57;
       ctx.strokeStyle = settings.secondary; ctx.lineWidth = scale;
-      ctx.globalAlpha = Math.min(.45, grid * (.1 + bass * .08));
-      for (let i = -8; i <= 8; i++) {
-        ctx.beginPath(); ctx.moveTo(x + i * 9 * scale, horizon); ctx.lineTo(x + i * 95 * scale, height); ctx.stroke();
-      }
-      for (let i = 0; i < 12; i++) {
-        const phase = ((i + travel * .5) % 12) / 12;
-        const py = horizon + phase * phase * (height - horizon);
-        ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(width, py); ctx.stroke();
+      for (const ceiling of [false, true]) {
+        const horizon = height * (ceiling ? .43 : .57), edge = ceiling ? 0 : height;
+        ctx.globalAlpha = Math.min(.45, grid * (.1 + bass * .08)) * (ceiling ? .65 : 1);
+        for (let i = -8; i <= 8; i++) {
+          ctx.beginPath(); ctx.moveTo(x + i * 9 * scale, horizon); ctx.lineTo(x + i * 95 * scale, edge); ctx.stroke();
+        }
+        for (let i = 0; i < 12; i++) {
+          const phase = ((i + travel * .5) % 12) / 12;
+          const py = horizon + phase * phase * (edge - horizon);
+          ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(width, py); ctx.stroke();
+        }
       }
     }
     const flies = amount('fireflies');
