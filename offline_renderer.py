@@ -58,8 +58,11 @@ def analyze_track(source, settings, checkpoint=lambda *_: None):
 
 
 def smooth_spectrum(levels, smoothing=50):
-    passes = (min(100, max(0, smoothing)) / 50) ** 2
-    result = levels
+    amount = min(200, max(0, smoothing))
+    passes = (amount / 50) ** 2
+    contrast = 1 + 1.2 * max(0, 1 - amount / 50)
+    mean = float(np.mean(levels)) if len(levels) else 0
+    result = np.clip(mean + (levels - mean) * contrast, 0, 1)
     for step in range(math.ceil(passes)):
         filtered = np.convolve(np.pad(result, (2, 2), mode='edge'), np.array([1, 4, 6, 4, 1]) / 16, mode='valid')
         result = result + (filtered - result) * min(1, passes - step)

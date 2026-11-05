@@ -106,7 +106,7 @@ test('smoothing slider preserves sharp peaks at zero and progressively softens t
   assert.equal(smoothSpectrum(values, 50)[32], 6 / 16);
   const roughness = values => values.slice(1).reduce((sum, value, i) => sum + (value - values[i]) ** 2, 0);
   let previous = Infinity;
-  for (const amount of [0, 25, 50, 75, 100]) {
+  for (const amount of [0, 25, 50, 75, 100, 150, 200]) {
     const result = smoothSpectrum(values, amount);
     assert.ok(roughness(result) < previous);
     assert.ok(Math.abs(result.reduce((a, b) => a + b, 0) - 1) < 1e-6);
@@ -322,4 +322,13 @@ test('orbits clear the tallest possible bar in all shape directions', () => {
       assert.ok(orbit - tip >= 50);
     }
   }
+});
+
+ test('low smoothing exaggerates real differences without inventing activity', () => {
+  const values = Float32Array.from([.3, .5, .4, .6, .35, .55]);
+  const sharp = smoothSpectrum(values, 0);
+  assert.ok(sharp[3] - sharp[2] > (values[3] - values[2]) * 2);
+  assert.ok(smoothSpectrum(values, 200)[3] - smoothSpectrum(values, 200)[2] < .02);
+  assert.ok(smoothSpectrum(new Float32Array(64), 0).every(x => x === 0));
+  assert.ok(smoothSpectrum(new Float32Array(64).fill(.4), 0).every(x => Math.abs(x - .4) < 1e-6));
 });

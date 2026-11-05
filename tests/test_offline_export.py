@@ -141,7 +141,7 @@ class OfflineExportTests(unittest.TestCase):
                 self.assertFalse(np.array_equal(first, second))
 
     def test_settings_validation(self):
-        for invalid in ({'glowStrength': -1}, {'echoRingsStrength': 201}, {'vignetteStrength': float('nan')}, {'orbitLights': 1}, {'echoRings': 'yes'}, {'vignette': None}, {'aura': 'false'}, {'backgroundZoom': 49}, {'backgroundX': 101}, {'backgroundY': -101}, {'logoOpacity': 101}, {'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 101}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
+        for invalid in ({'glowStrength': -1}, {'echoRingsStrength': 201}, {'vignetteStrength': float('nan')}, {'orbitLights': 1}, {'echoRings': 'yes'}, {'vignette': None}, {'aura': 'false'}, {'backgroundZoom': 49}, {'backgroundX': 101}, {'backgroundY': -101}, {'logoOpacity': 101}, {'backgroundFit': 'invalid'}, {'backgroundOpacity': -1}, {'backgroundOpacity': 101}, {'textColor': 'red'}, {'textSize': 49}, {'textSize': 201}, {'textSize': float('nan')}, {'textFont': 'invalid'}, {'innerFill': 'red'}, {'innerRing': 'yes'}, {'logoFit': 'invalid'}, {'logoZoom': 201}, {'logoX': -101}, {'logoY': float('nan')}, {'shape': 'invalid'}, {'style': 'invalid'}, {'smoothing': -1}, {'smoothing': 201}, {'smoothing': float('nan')}, {'rotation': -1}, {'rotation': 181}, {'rotation': float('nan')}, {'radius': float('nan')}, {'bars': 33}, {'fps': 500}, {'primary': 'red'}, {'glow': 'yes'}, {'width': 9999}, {'width': 854.0, 'height': 480}):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 validate_settings(invalid)
 
@@ -170,6 +170,11 @@ class OfflineExportTests(unittest.TestCase):
         np.testing.assert_array_equal(smooth_spectrum(levels, 0), levels)
         self.assertEqual(smooth_spectrum(levels, 50)[32], 6 / 16)
         self.assertLess(smooth_spectrum(levels, 100)[32], smooth_spectrum(levels, 50)[32])
+        self.assertLess(smooth_spectrum(levels, 200)[32], smooth_spectrum(levels, 100)[32])
+        natural = np.array([.3, .5, .4, .6, .35, .55])
+        sharp = smooth_spectrum(natural, 0)
+        self.assertGreater(sharp[3] - sharp[2], (natural[3] - natural[2]) * 2)
+        self.assertEqual(validate_settings({'smoothing': 200})['smoothing'], 200)
         self.assertEqual(validate_settings({})['smoothing'], 0)
         self.assertEqual(validate_settings({})['rotation'], 90)
 

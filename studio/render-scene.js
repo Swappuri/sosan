@@ -20,10 +20,14 @@ export function spectrumBandPosition(position, bands, rotation = 0) {
 }
 
 export function smoothSpectrum(levels, smoothing = 50) {
-  // Zero keeps the original peaks; 50% matches the previous default filter.
-  const passes = (Math.min(100, Math.max(0, smoothing)) / 50) ** 2;
+  // Sharpen real frequency differences at the low end, then blend adjacent
+  // bands progressively. Shared by preview and browser video export.
+  const amount = Math.min(200, Math.max(0, smoothing));
+  const passes = (amount / 50) ** 2;
+  const contrast = 1 + 1.2 * Math.max(0, 1 - amount / 50);
+  const mean = levels.reduce((sum, value) => sum + value, 0) / Math.max(1, levels.length);
   const weights = [1, 4, 6, 4, 1];
-  let result = levels;
+  let result = Float32Array.from(levels, value => Math.max(0, Math.min(1, mean + (value - mean) * contrast)));
   for (let pass = 0; pass < Math.ceil(passes); pass++) {
     const blend = Math.min(1, passes - pass);
     const previous = result;
