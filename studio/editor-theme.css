@@ -266,7 +266,11 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 
 .settings-content { padding-top: 12px; scroll-padding-top: 12px; }
 
-#export { position: relative; overflow: hidden; min-width: 156px; }
+#export { position: relative; overflow: hidden; min-width: 0; }
 #export-label { position: relative; z-index: 1; font-variant-numeric: tabular-nums; }
-#export.is-exporting { opacity: 1; cursor: progress; }
+#export.is-exporting { opacity: 1; cursor: default; }
 #export.is-exporting::after { content: ''; position: absolute; left: 0; bottom: 0; width: var(--export-progress, 0%); height: 3px; background: var(--accent-ink); opacity: .55; transition: width .2s ease-out; }
+
+#export.is-exporting::before { content: ''; position: relative; z-index: 1; flex: 0 0 auto; width: 11px; height: 11px; box-sizing: border-box; border: 1.5px solid var(--accent-ink); border-right-color: transparent; border-radius: 50%; animation: export-spin .8s linear infinite; }
+@keyframes export-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #export.is-exporting::before { animation: none; } }

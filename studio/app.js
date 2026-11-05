@@ -94,7 +94,7 @@ function setExportState(value) {
 function updateExportProgress(value) {
   const progress = Math.max(0, Math.min(100, Math.floor(value || 0)));
   $('export').style.setProperty('--export-progress', `${progress}%`);
-  $('export-label').textContent = exporting ? `Download video · ${progress}%` : 'Download video';
+  $('export-label').textContent = exporting ? `Download · ${progress}%` : 'Download';
 }
 function downloadVideo(url, filename) {
   const link = document.createElement('a');
@@ -658,7 +658,7 @@ const startServerExport = async () => {
 let browserFilename;
 const browserExporter = createBrowserExporter({
   started() {
-    audio.pause(); setExportState(true); status('');
+    setExportState(true); status('');
   },
   progress(data) { updateExportProgress(data.progress); },
   complete(blob) {
