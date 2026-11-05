@@ -3,7 +3,7 @@ import math
 
 DEFAULTS = {
     'segments': None,
-    'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
+    'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True, 'extendSpectrum': False,
     'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'poppins', 'backgroundFit': 'cover', 'backgroundOpacity': 100, 'backgroundZoom': 100, 'backgroundX': 0, 'backgroundY': 0,
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
     'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0, 'logoOpacity': 100,
@@ -51,7 +51,7 @@ def validate_settings(value):
         raise ValueError('Invalid shape.')
     if result['style'] not in ('bars', 'wave'):
         raise ValueError('Invalid spectrum style.')
-    for name in ('glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'aurora', 'constellation', 'grid', 'fireflies', 'scanlines', 'innerRing'):
+    for name in ('glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'nebula', 'aurora', 'constellation', 'grid', 'fireflies', 'scanlines', 'innerRing', 'extendSpectrum'):
         if type(result[name]) is not bool:
             raise ValueError(f'Invalid {name} switch.')
     if type(result['width']) is not int or type(result['height']) is not int or (result['width'], result['height']) not in [(640, 360), (854, 480), (1280, 720), (1920, 1080), (2560, 1440), (3840, 2160)]:

@@ -16,7 +16,7 @@ const syncFpsPicker = setupFontPicker($('fps'), { fontPreview: false, label: 'Fr
 const canvas = $('visualizer');
 const ctx = canvas.getContext('2d', { alpha: false });
 const audio = $('audio');
-const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: true, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 100, nebula: false, nebulaStrength: 0, aurora: false, auroraStrength: 0, constellation: false, constellationStrength: 0, grid: false, gridStrength: 0, fireflies: false, firefliesStrength: 0, scanlines: false, scanlinesStrength: 0 };
+const defaults = { primary: '#59ff9b', secondary: '#59ff9b', background: '#0b1114', innerFill: '#0b1114', innerRing: true, extendSpectrum: false, textColor: '#eeeff2', textSize: 100, textFont: 'poppins', backgroundFit: 'cover', backgroundOpacity: 100, backgroundZoom: 100, backgroundX: 0, backgroundY: 0, radius: 115, sensitivity: 1.2, bars: 128, rotation: 90, smoothing: 0, style: 'bars', shape: 'circle', logoFit: 'cover', logoZoom: 100, logoX: 0, logoY: 0, logoOpacity: 100, glow: true, aura: true, particles: true, pulse: true, flashes: true, orbitLights: false, echoRings: false, vignette: true, glowStrength: 100, auraStrength: 100, particlesStrength: 100, pulseStrength: 100, flashesStrength: 100, orbitLightsStrength: 0, echoRingsStrength: 0, vignetteStrength: 100, nebula: false, nebulaStrength: 0, aurora: false, auroraStrength: 0, constellation: false, constellationStrength: 0, grid: false, gridStrength: 0, fireflies: false, firefliesStrength: 0, scanlines: false, scanlinesStrength: 0 };
 let settings = { ...defaults };
 let context, analyser, source, monitor, spectrum;
 let backgroundImage, backgroundFile, backgroundLoadId = 0;
@@ -424,6 +424,7 @@ function syncSettings() {
   applyTheme();
   $('textFont').value = settings.textFont;
   syncFontPicker();
+  $('extendSpectrum').setAttribute('aria-pressed', String(settings.extendSpectrum));
   $('innerRing').setAttribute('aria-pressed', String(settings.innerRing));
   for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape'], ['logo-fit', 'logoFit'], ['background-fit', 'backgroundFit']]) {
     document.querySelectorAll(`input[name="${name}"]`).forEach(input => { input.checked = input.value === settings[key] && (name !== 'logo-fit' || (settings.logoZoom === 100 && settings.logoX === 0 && settings.logoY === 0)) && (name !== 'background-fit' || (settings.backgroundZoom === 100 && settings.backgroundX === 0 && settings.backgroundY === 0)); });
@@ -445,9 +446,10 @@ for (const [name, key] of [['spectrum-style', 'style'], ['shape', 'shape']]) {
 }
 document.querySelectorAll('input[name="logo-fit"]').forEach(input => { input.onclick = () => resetLogoPlacement(input.value); });
 $('textFont').onchange = () => { settings.textFont = $('textFont').value; syncFontPicker(); };
+$('extendSpectrum').onclick = () => { settings.extendSpectrum = !settings.extendSpectrum; syncSettings(); };
 $('innerRing').onclick = () => { settings.innerRing = !settings.innerRing; syncSettings(); };
 const resetSections = {
-  appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing'], detail: 'Restore Bars, Circle, and the inset outline?' },
+  appearance: { title: 'Appearance', keys: ['style', 'shape', 'innerRing', 'extendSpectrum'], detail: 'Restore Bars, Circle, the inset outline, and a single spectrum layer?' },
   colors: { title: 'Colors', keys: ['primary', 'secondary', 'innerFill', 'background'], detail: 'Restore the default colors?' },
   spectrum: { title: 'Spectrum', keys: ['radius', 'sensitivity', 'bars', 'rotation', 'smoothing'], detail: 'Restore the default size, reactivity, bands, rotation, and smoothing?' },
   effects: { title: 'Effects', keys: ['glow', 'aura', 'particles', 'pulse', 'flashes', 'orbitLights', 'echoRings', 'vignette', 'glowStrength', 'auraStrength', 'particlesStrength', 'pulseStrength', 'flashesStrength', 'orbitLightsStrength', 'echoRingsStrength', 'vignetteStrength', 'nebula', 'nebulaStrength', 'aurora', 'auroraStrength', 'constellation', 'constellationStrength', 'grid', 'gridStrength', 'fireflies', 'firefliesStrength', 'scanlines', 'scanlinesStrength'], detail: 'Restore the default effects?' },

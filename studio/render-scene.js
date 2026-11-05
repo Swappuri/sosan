@@ -21,8 +21,9 @@ export function spectrumBandPosition(position, bands, rotation = 0) {
 
 export function smoothSpectrum(levels, smoothing = 50) {
   // Sharpen real frequency differences at the low end, then blend adjacent
-  // bands progressively. Shared by preview and browser video export.
-  const amount = Math.min(200, Math.max(0, smoothing));
+  // bands progressively. Square the slider position to spread the contrast
+  // transition across the first half without changing either endpoint. Shared by preview and browser video export.
+  const amount = 200 * (Math.min(200, Math.max(0, smoothing)) / 200) ** 2;
   const passes = (amount / 50) ** 2;
   const contrast = 1 + 1.2 * Math.max(0, 1 - amount / 50);
   const mean = levels.reduce((sum, value) => sum + value, 0) / Math.max(1, levels.length);
@@ -130,34 +131,37 @@ export function renderScene(ctx, width, height, settings, motion, songTime, logo
   }
   const count = shape === 'circle' && settings.style === 'wave' ? Math.max(512, settings.bars) : settings.bars;
   const levels = smoothSpectrum(motion.levels, settings.smoothing);
-  const wave = [];
+  const layers = settings.extendSpectrum ? Math.ceil((Math.hypot(width / 2, height / 2) * (shape === 'triangle' ? 2 : shape === 'square' ? Math.SQRT2 : 1) - radius) / (100 * scale)) + 1 : 1;
   const spectrum = spectrumPass(ctx, scale, settings.glow ? strength('glow') : 0);
   ctx.lineCap = 'round';
-  for (let i = 0; i < count; i++) {
-    const bands = settings.bars / 2;
-    const position = (i + .5) / count;
-    const sideIndex = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * settings.bars - .5));
-    const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
-    const first = Math.floor(index), fraction = index - first;
-    const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
-    const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
-    const boundary = shapeRadius(shape, radius, angle);
-    const length = (3 + Math.pow(level, 1.35) * 67) * scale;
-    const color = blend(settings.primary, settings.secondary, index / bands);
-    if (settings.style === 'wave') {
-      wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level, position: index / bands });
-      continue;
+  for (let layer = 0; layer < layers; layer++) {
+    const wave = [];
+    for (let i = 0; i < count; i++) {
+      const bands = settings.bars / 2;
+      const position = (i + .5) / count;
+      const sideIndex = Math.max(0, Math.min(bands - 1, (position < .5 ? position : 1 - position) * settings.bars - .5));
+      const index = spectrumBandPosition(sideIndex, bands, settings.rotation);
+      const first = Math.floor(index), fraction = index - first;
+      const level = (levels[first] || 0) * (1 - fraction) + (levels[Math.min(first + 1, bands - 1)] || 0) * fraction;
+      const angle = (i + .5) / count * Math.PI * 2 - Math.PI / 2;
+      const boundary = shapeRadius(shape, radius + layer * 100 * scale, angle);
+      const length = (3 + Math.pow(level, 1.35) * 67) * scale;
+      const color = blend(settings.primary, settings.secondary, index / bands);
+      if (settings.style === 'wave') {
+        wave.push({ x: x + Math.cos(angle) * (boundary + 8 * scale + length), y: y + Math.sin(angle) * (boundary + 8 * scale + length), color, level, position: index / bands });
+        continue;
+      }
+      spectrum.draw({ color, level, position: index / bands,
+        start: [x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale)],
+        end: [x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)] });
     }
-    spectrum.draw({ color, level, position: index / bands,
-      start: [x + Math.cos(angle) * (boundary + 8 * scale), y + Math.sin(angle) * (boundary + 8 * scale)],
-      end: [x + Math.cos(angle) * (boundary + 8 * scale + length), y + Math.sin(angle) * (boundary + 8 * scale + length)] });
-  }
-  // Quadratic segments meet at shared midpoints for one continuous wavy outline.
-  for (let i = 0; i < wave.length; i++) {
-    const point = wave[i], previous = wave[(i + wave.length - 1) % wave.length], next = wave[(i + 1) % wave.length];
-    spectrum.draw({ color: point.color, level: point.level, position: point.position,
-      start: [(previous.x + point.x) / 2, (previous.y + point.y) / 2], control: [point.x, point.y],
-      end: [(point.x + next.x) / 2, (point.y + next.y) / 2] });
+    // Quadratic segments meet at shared midpoints for one continuous wavy outline.
+    for (let i = 0; i < wave.length; i++) {
+      const point = wave[i], previous = wave[(i + wave.length - 1) % wave.length], next = wave[(i + 1) % wave.length];
+      spectrum.draw({ color: point.color, level: point.level, position: point.position,
+        start: [(previous.x + point.x) / 2, (previous.y + point.y) / 2], control: [point.x, point.y],
+        end: [(point.x + next.x) / 2, (point.y + next.y) / 2] });
+    }
   }
   spectrum.finish();
   ctx.shadowBlur = 0;

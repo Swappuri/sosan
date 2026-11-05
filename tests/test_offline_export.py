@@ -146,7 +146,7 @@ class OfflineExportTests(unittest.TestCase):
                 validate_settings(invalid)
 
     def test_rotation_changes_export_and_preserves_mirrored_geometry(self):
-        settings = validate_settings({'width': 854, 'height': 480, 'particles': False, 'glow': False, 'pulse': False, 'smoothing': 50})
+        settings = validate_settings({'width': 854, 'height': 480, 'particles': False, 'glow': False, 'pulse': False, 'smoothing': 100})
         levels = np.zeros(64)
         levels[0] = 1
         def frame(rotation):
@@ -168,7 +168,7 @@ class OfflineExportTests(unittest.TestCase):
         levels = np.zeros(64)
         levels[32] = 1
         np.testing.assert_array_equal(smooth_spectrum(levels, 0), levels)
-        self.assertEqual(smooth_spectrum(levels, 50)[32], 6 / 16)
+        self.assertEqual(smooth_spectrum(levels, 100)[32], 6 / 16)
         self.assertLess(smooth_spectrum(levels, 100)[32], smooth_spectrum(levels, 50)[32])
         self.assertLess(smooth_spectrum(levels, 200)[32], smooth_spectrum(levels, 100)[32])
         natural = np.array([.3, .5, .4, .6, .35, .55])

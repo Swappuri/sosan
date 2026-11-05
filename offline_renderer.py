@@ -58,7 +58,7 @@ def analyze_track(source, settings, checkpoint=lambda *_: None):
 
 
 def smooth_spectrum(levels, smoothing=50):
-    amount = min(200, max(0, smoothing))
+    amount = 200 * (min(200, max(0, smoothing)) / 200) ** 2
     passes = (amount / 50) ** 2
     contrast = 1 + 1.2 * max(0, 1 - amount / 50)
     mean = float(np.mean(levels)) if len(levels) else 0
@@ -335,37 +335,39 @@ class StudioRenderer:
                 image = cv2.addWeighted(image, 1 - alpha, overlay, alpha, 0)
         glow = np.zeros_like(image) if s['glow'] and strength('glow') > 0 else None
         levels = smooth_spectrum(self.levels, s['smoothing'])
-        wave = []
-        count = max(512, s['bars']) if s['shape'] == 'circle' and s['style'] == 'wave' else s['bars']
-        for i in range(count):
-            bands = s['bars'] // 2
-            position = (i + .5) / count
-            side_index = max(0, min(bands - 1, (position if position < .5 else 1 - position) * s['bars'] - .5))
-            bass_position = s['rotation'] / 180 * (bands - 1)
-            idx = abs(side_index - bass_position) / max(bass_position, bands - 1 - bass_position, 1) * (bands - 1)
-            first = math.floor(idx)
-            fraction = idx - first
-            level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
-            angle = (i + .5) / count * math.tau - math.pi / 2
-            start = float(shape_radius(s['shape'], radius, angle)) + 8 * scale
-            end = start + (3 + level ** 1.35 * 67) * scale
-            a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))
-            b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
-            ratio = idx / (s['bars'] / 2)
-            color = tuple(int(c) for c in self.primary * (1 - ratio) + self.secondary * ratio)
-            if s['style'] == 'wave':
-                wave.append((np.array([center[0] + math.cos(angle) * end, center[1] + math.sin(angle) * end]), color))
-                continue
-            cv2.line(image, a, b, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
-            if glow is not None:
-                cv2.line(glow, a, b, color, max(1, round(3 * scale)), cv2.LINE_AA)
-        for i, (point, color) in enumerate(wave):
-            previous, following = wave[(i - 1) % len(wave)][0], wave[(i + 1) % len(wave)][0]
-            start, end = (previous + point) / 2, (point + following) / 2
-            curve = np.array([np.rint((1 - t) ** 2 * start + 2 * (1 - t) * t * point + t ** 2 * end) for t in np.linspace(0, 1, 6)], np.int32)
-            cv2.polylines(image, [curve], False, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
-            if glow is not None:
-                cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
+        layers = math.ceil((math.hypot(self.width / 2, self.height / 2) * (2 if s['shape'] == 'triangle' else math.sqrt(2) if s['shape'] == 'square' else 1) - radius) / (100 * scale)) + 1 if s['extendSpectrum'] else 1
+        for layer in range(layers):
+            wave = []
+            count = max(512, s['bars']) if s['shape'] == 'circle' and s['style'] == 'wave' else s['bars']
+            for i in range(count):
+                bands = s['bars'] // 2
+                position = (i + .5) / count
+                side_index = max(0, min(bands - 1, (position if position < .5 else 1 - position) * s['bars'] - .5))
+                bass_position = s['rotation'] / 180 * (bands - 1)
+                idx = abs(side_index - bass_position) / max(bass_position, bands - 1 - bass_position, 1) * (bands - 1)
+                first = math.floor(idx)
+                fraction = idx - first
+                level = levels[first] * (1 - fraction) + levels[min(first + 1, bands - 1)] * fraction
+                angle = (i + .5) / count * math.tau - math.pi / 2
+                start = float(shape_radius(s['shape'], radius + layer * 100 * scale, angle)) + 8 * scale
+                end = start + (3 + level ** 1.35 * 67) * scale
+                a = (round(center[0] + math.cos(angle) * start), round(center[1] + math.sin(angle) * start))
+                b = (round(center[0] + math.cos(angle) * end), round(center[1] + math.sin(angle) * end))
+                ratio = idx / (s['bars'] / 2)
+                color = tuple(int(c) for c in self.primary * (1 - ratio) + self.secondary * ratio)
+                if s['style'] == 'wave':
+                    wave.append((np.array([center[0] + math.cos(angle) * end, center[1] + math.sin(angle) * end]), color))
+                    continue
+                cv2.line(image, a, b, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
+                if glow is not None:
+                    cv2.line(glow, a, b, color, max(1, round(3 * scale)), cv2.LINE_AA)
+            for i, (point, color) in enumerate(wave):
+                previous, following = wave[(i - 1) % len(wave)][0], wave[(i + 1) % len(wave)][0]
+                start, end = (previous + point) / 2, (point + following) / 2
+                curve = np.array([np.rint((1 - t) ** 2 * start + 2 * (1 - t) * t * point + t ** 2 * end) for t in np.linspace(0, 1, 6)], np.int32)
+                cv2.polylines(image, [curve], False, color, max(1, round(2.2 * scale)), cv2.LINE_AA)
+                if glow is not None:
+                    cv2.polylines(glow, [curve], False, color, max(1, round(3 * scale)), cv2.LINE_AA)
         has_logo = self.logo is not None
         draw_shape(image, s['shape'], center, radius, bgr(s['innerFill']), -1)
         if has_logo:

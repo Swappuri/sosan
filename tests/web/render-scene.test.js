@@ -93,7 +93,7 @@ test('180 degrees reverses the full frequency range without wrapping', () => {
 
 test('neighbor smoothing spreads narrow peaks without blending bass and treble endpoints', () => {
   const values = new Float32Array(64); values[0] = 1;
-  const smooth = smoothSpectrum(values);
+  const smooth = smoothSpectrum(values, 100);
   assert.ok(smooth[0] > smooth[1] && smooth[1] > smooth[2] && smooth[2] > 0);
   assert.equal(smooth[63], 0);
   assert.ok(smoothSpectrum(new Float32Array(64)).every(x => x === 0));
@@ -103,7 +103,7 @@ test('neighbor smoothing spreads narrow peaks without blending bass and treble e
 test('smoothing slider preserves sharp peaks at zero and progressively softens them', () => {
   const values = new Float32Array(64); values[32] = 1;
   assert.deepEqual(smoothSpectrum(values, 0), values);
-  assert.equal(smoothSpectrum(values, 50)[32], 6 / 16);
+  assert.equal(smoothSpectrum(values, 100)[32], 6 / 16);
   const roughness = values => values.slice(1).reduce((sum, value, i) => sum + (value - values[i]) ** 2, 0);
   let previous = Infinity;
   for (const amount of [0, 25, 50, 75, 100, 150, 200]) {
@@ -331,4 +331,35 @@ test('orbits clear the tallest possible bar in all shape directions', () => {
   assert.ok(smoothSpectrum(values, 200)[3] - smoothSpectrum(values, 200)[2] < .02);
   assert.ok(smoothSpectrum(new Float32Array(64), 0).every(x => x === 0));
   assert.ok(smoothSpectrum(new Float32Array(64).fill(.4), 0).every(x => Math.abs(x - .4) < 1e-6));
+});
+
+test('extended bars repeat identical reactive lengths at evenly spaced radii through the viewport edges', () => {
+  for (const shape of ['circle', 'square', 'triangle']) {
+    const canvas = canvasContext(), segments = [];
+    let start;
+    canvas.ctx.moveTo = (...p) => { start = p; };
+    canvas.ctx.lineTo = (...end) => segments.push({ start, end });
+    renderScene(canvas.ctx, 854, 480, { ...settings, shape, style: 'bars', extendSpectrum: true, glow: false, particles: false, pulse: false, innerRing: false }, motion, 1, null, '');
+    // Spectrum lines precede the closed shape's outline.
+    const firstLayer = segments.slice(0, settings.bars);
+    const secondLayer = segments.slice(settings.bars, settings.bars * 2);
+    const length = s => Math.hypot(s.end[0] - s.start[0], s.end[1] - s.start[1]);
+    for (let i = 0; i < settings.bars; i++) assert.ok(Math.abs(length(firstLayer[i]) - length(secondLayer[i])) < 1e-6);
+    assert.ok(segments.some(s => s.end[0] < 0 || s.end[0] > 854 || s.end[1] < 0 || s.end[1] > 480));
+    if (shape === 'circle') assert.ok(Math.abs(Math.hypot(...secondLayer[0].start.map((v, i) => v - firstLayer[0].start[i])) - 100) < 1e-6);
+  }
+});
+
+test('extended waves keep each reactive layer connected', () => {
+  for (const shape of ['circle', 'square', 'triangle']) {
+    const canvas = canvasContext(), curves = [];
+    canvas.ctx.quadraticCurveTo = (...args) => curves.push(args);
+    const config = { ...settings, shape, style: 'wave', glow: false, particles: false, pulse: false };
+    renderScene(canvas.ctx, 854, 480, config, motion, 1, null, '');
+    const originalCount = curves.length;
+    curves.length = 0;
+    renderScene(canvas.ctx, 854, 480, { ...config, extendSpectrum: true }, motion, 1, null, '');
+    assert.ok(curves.length > originalCount);
+    assert.equal(curves.length % originalCount, 0);
+  }
 });
