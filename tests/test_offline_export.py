@@ -175,7 +175,7 @@ class OfflineExportTests(unittest.TestCase):
         sharp = smooth_spectrum(natural, 0)
         self.assertGreater(sharp[3] - sharp[2], (natural[3] - natural[2]) * 2)
         self.assertEqual(validate_settings({'smoothing': 200})['smoothing'], 200)
-        self.assertEqual(validate_settings({})['smoothing'], 0)
+        self.assertEqual(validate_settings({})['smoothing'], 100)
         self.assertEqual(validate_settings({})['rotation'], 90)
 
     def test_wave_style_uses_connected_curves(self):

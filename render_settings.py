@@ -5,7 +5,7 @@ DEFAULTS = {
     'segments': None,
     'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True, 'extendSpectrum': False,
     'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'poppins', 'backgroundFit': 'cover', 'backgroundOpacity': 100, 'backgroundZoom': 100, 'backgroundX': 0, 'backgroundY': 0,
-    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
+    'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 100, 'style': 'bars', 'shape': 'circle',
     'logoFit': 'cover', 'logoZoom': 100, 'logoX': 0, 'logoY': 0, 'logoOpacity': 100,
     'glow': True, 'aura': True, 'particles': True, 'pulse': True, 'flashes': True, 'orbitLights': False, 'echoRings': False, 'vignette': True, 'glowStrength': 100, 'auraStrength': 100, 'particlesStrength': 100, 'pulseStrength': 100, 'flashesStrength': 100, 'orbitLightsStrength': 100, 'echoRingsStrength': 100, 'vignetteStrength': 100, 'nebula': False, 'nebulaStrength': 0, 'aurora': False, 'auroraStrength': 0, 'constellation': False, 'constellationStrength': 0, 'grid': False, 'gridStrength': 0, 'fireflies': False, 'firefliesStrength': 0, 'scanlines': False, 'scanlinesStrength': 0,
     'width': 1280, 'height': 720, 'fps': 30, 'title': '',

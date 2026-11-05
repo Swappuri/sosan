@@ -19,7 +19,7 @@ export function spectrumBandPosition(position, bands, rotation = 0) {
   return Math.abs(position - bass) / Math.max(bass, last - bass, 1) * last;
 }
 
-export function smoothSpectrum(levels, smoothing = 50) {
+export function smoothSpectrum(levels, smoothing = 100) {
   // Sharpen real frequency differences at the low end, then blend adjacent
   // bands progressively. Square the slider position to spread the contrast
   // transition across the first half without changing either endpoint. Shared by preview and browser video export.

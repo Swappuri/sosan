@@ -57,7 +57,7 @@ def analyze_track(source, settings, checkpoint=lambda *_: None):
     return levels, bass, onsets, duration
 
 
-def smooth_spectrum(levels, smoothing=50):
+def smooth_spectrum(levels, smoothing=100):
     amount = 200 * (min(200, max(0, smoothing)) / 200) ** 2
     passes = (amount / 50) ** 2
     contrast = 1 + 1.2 * max(0, 1 - amount / 50)
