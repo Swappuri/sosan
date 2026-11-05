@@ -2,6 +2,7 @@
 import math
 
 DEFAULTS = {
+    'segments': None,
     'primary': '#59ff9b', 'secondary': '#59ff9b', 'background': '#0b1114', 'innerFill': '#0b1114', 'innerRing': True,
     'textColor': '#eeeff2', 'textSize': 100, 'textFont': 'poppins', 'backgroundFit': 'cover', 'backgroundOpacity': 100, 'backgroundZoom': 100, 'backgroundX': 0, 'backgroundY': 0,
     'radius': 115, 'sensitivity': 1.2, 'bars': 128, 'rotation': 90, 'smoothing': 0, 'style': 'bars', 'shape': 'circle',
@@ -17,6 +18,20 @@ def validate_settings(value):
     if not isinstance(value, dict):
         raise ValueError('Settings must be an object.')
     result = {**DEFAULTS, **{key: val for key, val in value.items() if key in DEFAULTS}}
+    segments = result['segments']
+    if segments is not None:
+        if not isinstance(segments, list) or not 1 <= len(segments) <= 101:
+            raise ValueError('Invalid audio edit segments.')
+        previous = 0
+        for segment in segments:
+            if not isinstance(segment, list) or len(segment) != 2:
+                raise ValueError('Invalid audio edit segment.')
+            start, end = segment
+            if any(isinstance(n, bool) or not isinstance(n, (int, float)) or not math.isfinite(n) for n in segment) or not 0 <= previous <= start < end <= 86400:
+                raise ValueError('Invalid audio edit times.')
+            previous = end
+        if sum(end - start for start, end in segments) < .05:
+            raise ValueError('Keep at least 0.05 seconds of audio.')
     for name in ('primary', 'secondary', 'innerFill', 'background', 'textColor'):
         if not isinstance(result[name], str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', result[name]):
             raise ValueError(f'Invalid {name} color.')

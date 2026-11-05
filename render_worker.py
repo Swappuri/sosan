@@ -11,6 +11,16 @@ import time
 import traceback
 
 
+def trim_audio(source, target, segments, ffmpeg):
+    filters = []
+    for index, (start, end) in enumerate(segments):
+        filters.append(f'[0:a]atrim=start={start}:end={end},asetpts=PTS-STARTPTS[a{index}]')
+    filters.append(''.join(f'[a{i}]' for i in range(len(segments))) + f'concat=n={len(segments)}:v=0:a=1[edited]')
+    result = subprocess.run([ffmpeg, '-y', '-v', 'error', '-i', str(source), '-filter_complex', ';'.join(filters), '-map', '[edited]', '-ar', '48000', '-c:a', 'pcm_f32le', str(target)], capture_output=True)
+    if result.returncode:
+        raise ValueError('Could not apply audio edits: ' + result.stderr.decode(errors='replace')[-300:])
+
+
 def save_status(folder, **changes):
     """Atomic updates let HTTP readers observe progress without partial JSON."""
     path = folder / 'job.json'
@@ -46,6 +56,11 @@ def run_job(folder):
 
         checkpoint()
         source = folder / 'audio'
+        if settings.get('segments'):
+            edited = folder / 'edited.wav'
+            trim_audio(source, edited, settings['segments'], ffmpeg)
+            source = edited
+            checkpoint()
         levels, bass, onsets, duration = analyze_track(source, settings, checkpoint)
         checkpoint()
         renderer = StudioRenderer(settings, folder / 'logo' if (folder / 'logo').is_file() else None, folder / 'background' if (folder / 'background').is_file() else None)

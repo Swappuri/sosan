@@ -1,3 +1,4 @@
+import { editChannels, editDuration } from './audio-edit.js';
 import { exportBitrate } from './export-quality.js';
 import { TEXT_FONTS } from './text-fonts.js';
 /** Static-site export: decode locally, render in a worker, then offer an MP4 Blob. */
@@ -25,8 +26,9 @@ export function createBrowserExporter(callbacks) {
         if (id !== generation) return;
         if (decoded.numberOfChannels > 2) throw new Error('Browser export supports mono or stereo audio. Convert this multichannel WAV to stereo first.');
         const bitrate = exportBitrate(selection.settings.height, selection.settings.fps);
-        if (decoded.duration > 600 || (bitrate + 192_000) * decoded.duration / 8 > 300 * 1024 ** 2) throw new Error('This export exceeds the browser memory budget. Try 480p, a track under 10 minutes, or the local Python version.');
-        const channels = Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i).slice());
+        const duration = selection.settings.segments?.length ? editDuration(selection.settings.segments) : decoded.duration;
+        if (duration > 600 || (bitrate + 192_000) * duration / 8 > 300 * 1024 ** 2) throw new Error('This export exceeds the browser memory budget. Try 480p, a track under 10 minutes, or the local Python version.');
+        const channels = editChannels(Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i)), decoded.sampleRate, selection.settings.segments);
         const fontSpec = TEXT_FONTS[selection.settings.textFont] ?? TEXT_FONTS.poppins;
         const response = await fetch(new URL(`./fonts/${fontSpec.file}`, import.meta.url));
         if (!response.ok) throw new Error('Could not load the export font. Reload the page and retry.');
@@ -45,7 +47,7 @@ export function createBrowserExporter(callbacks) {
         const transfer = [...channels.map(channel => channel.buffer), font];
         if (logo) transfer.push(logo);
         if (backgroundImage) transfer.push(backgroundImage);
-        worker.postMessage({ settings: selection.settings, channels, sampleRate: decoded.sampleRate, font, fontSpec, logo, backgroundImage }, transfer);
+        worker.postMessage({ pulseTimes: selection.pulseTimes, settings: selection.settings, channels, sampleRate: decoded.sampleRate, font, fontSpec, logo, backgroundImage }, transfer);
       } catch (error) {
         if (id === generation) { cleanup(); logo?.close(); backgroundImage?.close(); callbacks.failed(error); }
       } finally { if (decoder) await decoder.close().catch(() => {}); }

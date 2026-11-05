@@ -274,3 +274,21 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 #export.is-exporting::before { content: ''; position: relative; z-index: 1; flex: 0 0 auto; width: 11px; height: 11px; box-sizing: border-box; border: 1.5px solid var(--accent-ink); border-right-color: transparent; border-radius: 50%; animation: export-spin .8s linear infinite; }
 @keyframes export-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { #export.is-exporting::before { animation: none; } }
+
+#trim-audio { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; color: var(--accent); }
+#trim-audio svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+#trim-audio[aria-pressed=true] { background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 4px; }
+#trim-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 20px; border: 1px solid #454545; border-radius: 8px; background: var(--panel); color: var(--text); }
+#trim-dialog::backdrop { background: #0009; }
+#trim-dialog h2 { font-size: 15px; }
+#trim-dialog h3 { font-size: 12px; margin: 20px 0 10px; }
+#trim-dialog p { font-size: 11px; line-height: 1.6; color: var(--muted); margin: 10px 0; }
+.trim-fields, .trim-position-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+.trim-fields label { min-width: 0; color: var(--muted); font-size: 11px; }
+.trim-fields input { display: block; width: 100%; margin-top: 5px; border: 1px solid #414141; background: var(--surface); color: var(--text); padding: 8px; border-radius: 4px; }
+#trim-dialog button { font-size: 11px; }
+#audio-cuts { padding: 0; list-style: none; max-height: 140px; overflow: auto; }
+#audio-cuts li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 11px; }
+#trim-dialog #trim-error { color: #ff9292; }
+#trim-dialog .dialog-actions { margin-top: 16px; }
+#reset-trim { margin-right: auto; }

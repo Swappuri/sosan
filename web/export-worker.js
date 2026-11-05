@@ -43,7 +43,7 @@ self.onmessage = async ({ data }) => {
     await output.start();
     const analysis = new SpectrumAnalysis(channels, sampleRate, settings.bars / 2, settings.sensitivity);
     const motion = { levels: new Float32Array(settings.bars / 2), bass: 0, flash: 0 };
-    const pulses = trackPulses(channels, sampleRate);
+    const pulses = data.pulseTimes ?? trackPulses(channels, sampleRate);
     const total = frameCount(channels[0].length, sampleRate, fps);
     let audioCursor = 0;
     for (let frame = 0; frame < total; frame++) {
