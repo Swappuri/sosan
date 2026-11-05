@@ -14,8 +14,8 @@ uploaded. MP4 export uses WebCodecs in a browser worker and generates every fram
 without recording playback. Use an updated Chrome, Edge, or Safari browser with
 H.264 encoding support.
 
-**Keep the tab open until export finishes**, then download the MP4 before closing
-or refreshing it. GitHub Pages is static hosting: it cannot run a server-side job
+**Keep the tab open until export finishes.** The MP4 downloads automatically.
+Avoid closing or refreshing the page during rendering. GitHub Pages is static hosting: it cannot run a server-side job
 after you close the page. Rendering speed depends on your device, not song playback.
 A background tab can work, but browsers may suspend it; returning to the tab lets
 it continue. No render servers or paid hosting are used.
@@ -34,7 +34,7 @@ use the optional local version for larger exports and closed-tab rendering.
 - Add a logo and display text, with independent text color, size, and font controls.
 - Export at 360p, 480p, 720p, 1080p, 1440p, or 4K, with 15, 24, 25, 30, 50, 60, or 120 FPS. Browser encoding support is checked on-device; unsupported combinations are disabled in the export menus.
 - Export directly in the browser, or use the optional Python server for persistent background jobs.
-- Cancel an active render or download the completed MP4.
+- Click Download video to render and automatically download a fresh MP4. Progress appears in the same button; clicking again starts a new render.
 - Keep audio, images, analysis, and rendering on your computer.
 
 ## Optional local version
@@ -99,9 +99,8 @@ python server.py --no-browser      # Start without opening a browser
 2. Play the preview and adjust the settings. On smaller windows, switch between
    the Preview and Settings views.
 3. Optionally add a PNG, JPG, or WebP logo. Fit image and Fill shape restore centered placement at 100% zoom. Use the Text section to add text over the logo or on its own, and customize its color, size, and font. Text wraps inside the selected shape at your chosen size, shrinking only when the wrapped block cannot fit.
-4. Select the export resolution and frame rate, then click **Export video**.
-5. Keep the page open during the initial upload. Once analysis or rendering
-   starts, you can close it and return later to download the finished MP4.
+4. Select the export resolution and frame rate, then click **Download video**.
+5. Progress appears in the Download video button, and the finished MP4 downloads automatically. Each click renders a new file. With the local server, an accepted render continues if you close the tab; reopening the app resumes progress and automatically downloads it when ready.
 
 An export captures the settings and logo selected when you submit it. Later
 preview changes do not affect the active job. Only one export renders at a time.

@@ -14,7 +14,7 @@
 <body data-view="preview">
   <header class="app-header">
     <a class="brand" href="./" aria-label="sosan home"><span aria-hidden="true"><span class="brand-initial">s</span><svg class="brand-o" viewBox="0 0 24 24"><defs><linearGradient id="brand-gradient" x1="0" y1="0" x2="1" y2="1"><stop class="ring-primary" offset="0%"/><stop class="ring-secondary" offset="100%"/></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="none" stroke="url(#brand-gradient)" stroke-width="2.5"/></svg>san</span></a>
-    <button id="export" class="primary" disabled>Export video </button>
+    <button id="export" class="primary" disabled><span id="export-label">Download video</span></button>
   </header>
   <nav class="view-switch" aria-label="Workspace view">
     <button data-view="preview" aria-pressed="true" aria-controls="preview-panel">Preview</button>
@@ -47,12 +47,7 @@
           <button id="fullscreen" class="icon-button fullscreen-button" aria-label="Enter fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fullscreen-enter" d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><path class="fullscreen-exit" d="M3 8h5V3m8 0v5h5M8 21v-5H3m18 0h-5v5"/></svg></button>
         </div>
       </div>
-      <section class="export-panel" id="export-panel" hidden aria-live="polite">
-        <div><strong id="export-title">Rendering…</strong><span id="export-detail"></span></div>
-        <progress id="export-progress" value="0" max="100" aria-label="Export progress"></progress>
-        <button id="cancel-export" class="secondary">Cancel</button>
-        <a id="export-download" class="primary" hidden>Download MP4</a>
-      </section>
+
     </section>
     <aside class="settings panel" id="settings-panel" aria-label="Visualizer settings">
       <div class="panel-heading"><h2>Settings</h2><button id="reset" class="text-button" disabled>Reset all</button></div>

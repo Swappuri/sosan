@@ -265,3 +265,8 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .settings-content > .control-section { scroll-snap-align: none; }
 
 .settings-content { padding-top: 12px; scroll-padding-top: 12px; }
+
+#export { position: relative; overflow: hidden; min-width: 156px; }
+#export-label { position: relative; z-index: 1; font-variant-numeric: tabular-nums; }
+#export.is-exporting { opacity: 1; cursor: progress; }
+#export.is-exporting::after { content: ''; position: absolute; left: 0; bottom: 0; width: var(--export-progress, 0%); height: 3px; background: var(--accent-ink); opacity: .55; transition: width .2s ease-out; }

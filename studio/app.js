@@ -87,9 +87,24 @@ async function prepareAudio() {
 function setExportState(value) {
   exporting = value;
   syncExportButton();
-  $('export-panel').hidden = false;
-  $('cancel-export').hidden = !value;
-  $('cancel-export').disabled = false;
+  $('export').classList.toggle('is-exporting', value);
+  $('export').setAttribute('aria-busy', String(value));
+  updateExportProgress(0);
+}
+function updateExportProgress(value) {
+  const progress = Math.max(0, Math.min(100, Math.floor(value || 0)));
+  $('export').style.setProperty('--export-progress', `${progress}%`);
+  $('export-label').textContent = exporting ? `Download video · ${progress}%` : 'Download video';
+}
+function downloadVideo(url, filename) {
+  const link = document.createElement('a');
+  link.href = url; link.download = filename; link.hidden = true;
+  document.body.append(link); link.click(); link.remove();
+}
+function finishDownload(url, filename) {
+  updateExportProgress(100);
+  downloadVideo(url, filename);
+  setTimeout(() => setExportState(false), 250);
 }
 function syncPlaybackState() { syncPlaybackButton($('play'), audio, loaded && !loading); }
 function syncSettingsAvailability() {
@@ -561,24 +576,17 @@ async function api(path, options = {}) {
 }
 function showJob(job) {
   const active = ['queued', 'analyzing', 'rendering', 'finalizing'].includes(job.state);
-  setExportState(active);
-  $('export-progress').value = job.progress || 0;
-  $('export-download').hidden = job.state !== 'complete';
-  if (job.state === 'complete') {
-    $('export-title').textContent = `Ready · ${job.filename}`;
-    $('export-detail').textContent = 'Saved locally.';
-    $('export-download').href = job.download_url;
-    $('export-download').download = job.filename;
+  if (active) {
+    if (!exporting) setExportState(true);
+    updateExportProgress(job.progress);
     status('');
-  } else if (active) {
-    const labels = { queued: 'Starting offline renderer…', analyzing: 'Analyzing your song…', rendering: 'Rendering offline', finalizing: 'Finalizing your MP4…' };
-    $('export-title').textContent = `${labels[job.state]} · ${Math.floor(job.progress || 0)}%`;
-    const speed = job.render_fps ? ` · ${job.render_fps} frames/sec` : '';
-    $('export-detail').textContent = `You can close this tab. Keep your computer awake.${speed}`;
+  } else if (job.state === 'complete') {
+    finishDownload(job.download_url, job.filename);
+    exportJobId = null;
+    try { localStorage.removeItem('sosan-export-id'); } catch {}
     status('');
   } else {
-    $('export-title').textContent = job.state === 'cancelled' ? 'Export cancelled.' : 'Export could not finish.';
-    $('export-detail').textContent = job.message || 'Please try again.';
+    setExportState(false);
     status(job.message || 'Export stopped.', job.state === 'failed');
   }
   return active;
@@ -602,8 +610,6 @@ async function pollExport() {
       try { localStorage.removeItem('sosan-export-id'); } catch {}
       return;
     }
-    $('export-title').textContent = 'Waiting for the local server…';
-    $('export-detail').textContent = 'A started render continues independently. Reopen the server to check progress.';
     status(`Cannot check export progress: ${error.message}`, true);
     pollTimer = setTimeout(pollExport, 3000);
   }
@@ -615,10 +621,7 @@ const startServerExport = async () => {
   clearTimeout(pollTimer);
   exportJobId = null;
   setExportState(true);
-  $('export-download').hidden = true;
-  $('export-title').textContent = 'Uploading song to the local renderer…';
-  $('export-detail').textContent = 'Keep this tab open until the render starts. Nothing leaves your computer.';
-  $('export-progress').value = 0;
+  updateExportProgress(0);
   uploadController = new AbortController();
   const signal = uploadController.signal;
   const exportAudio = selectedFile, exportLogo = logoFile, exportBackground = backgroundFile;
@@ -641,8 +644,6 @@ const startServerExport = async () => {
   } catch (error) {
     setExportState(false);
     if (error.name !== 'AbortError') {
-      $('export-title').textContent = 'Export could not start.';
-      $('export-detail').textContent = error.message;
       status(error.message, true);
     }
     if (exportJobId) {
@@ -651,57 +652,22 @@ const startServerExport = async () => {
   } finally {
     exportPreparing = false;
     uploadController = null;
+    syncExportButton();
   }
 };
-const cancelServerExport = async () => {
-  uploadController?.abort();
-  $('cancel-export').disabled = true;
-  try {
-    if (exportJobId) await api(`/api/exports/${exportJobId}/cancel`, { method: 'POST' });
-    exportPreparing = false;
-    if (exportJobId) await pollExport();
-    else { setExportState(false); status('Export cancelled.'); }
-  } catch (error) { $('cancel-export').disabled = false; status(error.message, true); await pollExport(); }
-};
-let browserDownloadUrl, browserFilename;
+let browserFilename;
 const browserExporter = createBrowserExporter({
   started() {
-    audio.pause();
-    if (browserDownloadUrl) URL.revokeObjectURL(browserDownloadUrl);
-    browserDownloadUrl = null;
-    setExportState(true);
-    $('export-download').hidden = true;
-    $('export-title').textContent = 'Preparing browser export…';
-    $('export-detail').textContent = 'Keep this tab open. Your audio stays on this device.';
-    $('export-progress').value = 0;
-    status('');
+    audio.pause(); setExportState(true); status('');
   },
-  progress(data) {
-    $('export-progress').value = data.progress;
-    $('export-title').textContent = data.phase || `Rendering in browser · ${Math.floor(data.progress)}%`;
-    $('export-detail').textContent = data.frame ? `${data.frame} / ${data.total} frames · Keep this tab open.` : 'Keep this tab open. Your audio stays on this device.';
-  },
+  progress(data) { updateExportProgress(data.progress); },
   complete(blob) {
-    setExportState(false);
-    browserDownloadUrl = URL.createObjectURL(blob);
-    $('export-progress').value = 100;
-    $('export-title').textContent = `Ready · ${browserFilename}`;
-    $('export-detail').textContent = 'Download before closing this tab.';
-    $('export-download').href = browserDownloadUrl;
-    $('export-download').download = browserFilename;
-    $('export-download').hidden = false;
+    const url = URL.createObjectURL(blob);
+    try { finishDownload(url, browserFilename); }
+    finally { setTimeout(() => URL.revokeObjectURL(url), 60000); }
   },
-  failed(error) {
-    setExportState(false);
-    $('export-title').textContent = 'Browser export failed.';
-    $('export-detail').textContent = error.message;
-    status(error.message, true);
-  },
-  cancelled() {
-    setExportState(false);
-    $('export-title').textContent = 'Export cancelled.';
-    $('export-detail').textContent = '';
-  },
+  failed(error) { setExportState(false); status(error.message, true); },
+  cancelled() { setExportState(false); },
 });
 $('export').onclick = () => {
   if (!browserMode) return startServerExport();
@@ -712,8 +678,7 @@ $('export').onclick = () => {
   browserFilename = `${(title || selectedFile.name.replace(/\.[^.]+$/, '')).replace(/[\\/:*?"<>|]/g, '_')}.mp4`;
   browserExporter.start({ file: selectedFile, logoFile, backgroundFile, settings: { ...settings, width, height, fps: Number($('fps').value), title } });
 };
-$('cancel-export').onclick = () => browserMode ? browserExporter.cancel() : cancelServerExport();
-$('export').title = browserMode ? 'Render an MP4 on this device. Keep this tab open during export.' : 'Render an MP4 in the local background server.';
+$('export').title = browserMode ? 'Render and automatically download a new MP4. Keep this tab open until it finishes.' : 'Render and automatically download a new MP4 from the local renderer.';
 window.addEventListener('beforeunload', event => {
   if (exportPreparing || (browserMode && browserExporter.active)) { event.preventDefault(); event.returnValue = ''; }
 });
