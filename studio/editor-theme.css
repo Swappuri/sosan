@@ -278,17 +278,20 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 #trim-audio { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; color: var(--accent); }
 #trim-audio svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
 #trim-audio[aria-pressed=true] { background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 4px; }
-#trim-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 20px; border: 1px solid #454545; border-radius: 8px; background: var(--panel); color: var(--text); }
-#trim-dialog::backdrop { background: #0009; }
-#trim-dialog h2 { font-size: 15px; }
-#trim-dialog h3 { font-size: 12px; margin: 20px 0 10px; }
-#trim-dialog p { font-size: 11px; line-height: 1.6; color: var(--muted); margin: 10px 0; }
-.trim-fields, .trim-position-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
-.trim-fields label { min-width: 0; color: var(--muted); font-size: 11px; }
-.trim-fields input { display: block; width: 100%; margin-top: 5px; border: 1px solid #414141; background: var(--surface); color: var(--text); padding: 8px; border-radius: 4px; }
-#trim-dialog button { font-size: 11px; }
-#audio-cuts { padding: 0; list-style: none; max-height: 140px; overflow: auto; }
-#audio-cuts li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 11px; }
-#trim-dialog #trim-error { color: #ff9292; }
-#trim-dialog .dialog-actions { margin-top: 16px; }
-#reset-trim { margin-right: auto; }
+/* Inline end trimming on the original-song timeline. */
+.playback-timeline { position: relative; width: 100%; height: 12px; display: flex; align-items: center; }
+.playback-timeline.is-trimming { height: 24px; }
+#trim-overlay { position: absolute; inset: 0; pointer-events: none; }
+.trim-kept { position: absolute; left: var(--trim-start,0%); right: calc(100% - var(--trim-end,100%)); top: 4px; bottom: 4px; border-top: 1px solid var(--accent-border); border-bottom: 1px solid var(--accent-border); background: var(--accent-soft); }
+.trim-excluded { position: absolute; top: 4px; bottom: 4px; background: #080808b3; }
+.trim-excluded-start { left: 0; width: var(--trim-start,0%); }
+.trim-excluded-end { right: 0; width: calc(100% - var(--trim-end,100%)); }
+.trim-handle { position: absolute; top: 0; width: 18px; height: 24px; transform: translateX(-50%); border: 0; background: transparent; color: var(--accent); cursor: ew-resize; pointer-events: auto; padding: 0; touch-action: none; z-index: 2; }
+.trim-handle-start { left: var(--trim-start,0%); }
+.trim-handle-end { left: var(--trim-end,100%); }
+.trim-handle::before { content: ''; display: block; height: 24px; width: 0; margin: auto; border-left: 2px dashed currentColor; }
+.trim-handle::after { content: attr(data-time); position: absolute; bottom: calc(100% + 5px); padding: 2px 5px; background: #222; border: 1px solid #454545; border-radius: 3px; font-size: 10px; color: var(--text); white-space: nowrap; }
+.trim-handle-start::after { left: 50%; }
+.trim-handle-end::after { right: 50%; }
+.trim-handle:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+#trim-audio.has-edits:not([aria-pressed=true]) { box-shadow: inset 0 -2px var(--accent); }

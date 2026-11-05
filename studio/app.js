@@ -28,7 +28,8 @@ let echoPulses = null, previewPulseTimes = [];
 const flashState = {};
 let lastTime = 0;
 let logoLoadId = 0, previewError;
-let audioSegments = [], audioEdit = { start: 0, end: 0, cuts: [] };
+let trimMode = false;
+let audioSegments = [], audioEdit = { start: 0, end: 0 };
 let selectedFile, logoFile, exportJobId, pollTimer, uploadController;
 let activeLoad = 0, exportPreparing = false;
 let statusTimer;
@@ -115,6 +116,7 @@ function syncSettingsAvailability() {
   syncExportButton();
   $('title').disabled = disabled;
   $('trim-audio').disabled = disabled;
+  $('trim-start-handle').disabled = $('trim-end-handle').disabled = disabled;
   document.querySelectorAll('#background-image-controls input').forEach(input => { input.disabled = disabled || !backgroundImage; });
   $('background-image-controls').classList.toggle('is-disabled', disabled || !backgroundImage);
   document.querySelectorAll('#logo-placement input').forEach(input => { input.disabled = disabled || !logo; });
@@ -175,7 +177,8 @@ async function loadSong(file) {
     if (loadId !== activeLoad) return;
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) throw new Error('This file has no playable audio.');
     loaded = true;
-    audioEdit = { start: 0, end: audio.duration, cuts: [] };
+    trimMode = false;
+    audioEdit = { start: 0, end: audio.duration };
     audioSegments = [[0, audio.duration]];
     syncAudioEdit();
     selectedFile = file;
@@ -221,8 +224,7 @@ $('visualizer').onkeydown = event => { if (['Enter',' '].includes(event.key)) { 
 for (const event of ['play', 'playing', 'pause', 'ended', 'emptied', 'loadstart', 'loadedmetadata', 'abort', 'error']) {
   audio.addEventListener(event, syncPlaybackState);
 }
-$('seek').oninput = () => { if (loaded) { audio.currentTime = editedToSource(audioSegments, Number($('seek').value)); resetMotion(); } };
-let draftCuts = [];
+$('seek').oninput = () => { if (loaded) { audio.currentTime = trimMode ? Math.max(audioEdit.start, Math.min(audioEdit.end, Number($('seek').value))) : editedToSource(audioSegments, Number($('seek').value)); resetMotion(); } };
 function exportSegments() {
   return audioSegments.length === 1 && audioSegments[0][0] === 0 && Math.abs(audioSegments[0][1] - audio.duration) < .001 ? null : audioSegments.map(range=>[...range]);
 }
@@ -230,11 +232,24 @@ function syncAudioEdit() {
   if (!audioSegments.length) return;
   previewPulseTimes = echoPulses ? editPulseTimes(echoPulses, audioSegments) : [];
   const duration = editDuration(audioSegments);
-  $('seek').max = duration;
+  $('seek').max = trimMode ? audio.duration : duration;
   $('duration').textContent = timeLabel(duration);
   const edited = audioSegments.length !== 1 || audioSegments[0][0] > .001 || audioSegments[0][1] < audio.duration - .001;
-  $('trim-audio').setAttribute('aria-pressed', String(edited));
-  $('trim-audio').title = edited ? 'Edit audio · cuts applied' : 'Trim audio';
+  $('trim-audio').setAttribute('aria-pressed', String(trimMode));
+  $('trim-audio').classList.toggle('has-edits', edited);
+  $('trim-audio').title = trimMode ? 'Finish trimming' : 'Trim audio';
+  $('trim-overlay').hidden = !trimMode;
+  $('playback-timeline').classList.toggle('is-trimming', trimMode);
+  $('playback-timeline').style.setProperty('--trim-start', `${audioEdit.start / audio.duration * 100}%`);
+  $('playback-timeline').style.setProperty('--trim-end', `${audioEdit.end / audio.duration * 100}%`);
+  for (const edge of ['start','end']) {
+    const handle = $('trim-' + edge + '-handle');
+    handle.setAttribute('aria-valuemin', edge === 'start' ? 0 : audioEdit.start + .05);
+    handle.setAttribute('aria-valuemax', edge === 'start' ? audioEdit.end - .05 : audio.duration);
+    handle.setAttribute('aria-valuenow', audioEdit[edge].toFixed(3));
+    const text = `${Math.floor(audioEdit[edge] / 60)}:${(audioEdit[edge] % 60).toFixed(2).padStart(5,'0')}`;
+    handle.setAttribute('aria-valuetext', text); handle.dataset.time = text;
+  }
 }
 function enforceAudioEdit() {
   if (!loaded || audio.paused || !audioSegments.length) return;
@@ -250,49 +265,41 @@ function enforceAudioEdit() {
   }
 }
 audio.addEventListener('timeupdate', enforceAudioEdit);
-function draftSegments() {
-  return retainedSegments(audio.duration, Number($('trim-start').value), Math.min(audio.duration, Number($('trim-end').value)), draftCuts);
-}
-function renderTrim() {
-  $('audio-cuts').replaceChildren(...draftCuts.map(([start,end], index) => {
-    const item = document.createElement('li'), label = document.createElement('span'), remove = document.createElement('button');
-    label.textContent = `${start.toFixed(3)} – ${end.toFixed(3)} s`;
-    remove.type = 'button'; remove.className = 'text-button'; remove.textContent = 'Remove cut';
-    remove.onclick = () => { draftCuts.splice(index,1); renderTrim(); };
-    item.append(label,remove); return item;
-  }));
-  try { const duration = editDuration(draftSegments()); $('trim-summary').textContent = `${audio.duration.toFixed(2)} s original · ${duration.toFixed(2)} s edited`; $('trim-error').textContent = ''; }
-  catch(error) { $('trim-summary').textContent = ''; $('trim-error').textContent = error.message; }
-}
 $('trim-audio').onclick = () => {
-  if (!loaded) return;
-  $('trim-start').value = audioEdit.start.toFixed(3); $('trim-end').value = audioEdit.end.toFixed(3);
-  draftCuts = audioEdit.cuts.map(range=>[...range]);
-  $('cut-start').value = Math.min(audio.currentTime,audio.duration).toFixed(3); $('cut-end').value = '';
-  for (const id of ['trim-start','trim-end','cut-start','cut-end']) $(id).max = Math.ceil(audio.duration * 1000) / 1000;
-  renderTrim(); $('trim-dialog').showModal();
+  if (!loaded || loading) return;
+  trimMode = !trimMode; syncAudioEdit();
 };
-for (const id of ['trim-start','trim-end']) $(id).oninput = renderTrim;
-$('trim-start-here').onclick = () => { $('trim-start').value = audio.currentTime.toFixed(3); renderTrim(); };
-$('trim-end-here').onclick = () => { $('trim-end').value = audio.currentTime.toFixed(3); renderTrim(); };
-$('add-cut').onclick = () => {
-  const start = Number.parseFloat($('cut-start').value), end = Number.parseFloat($('cut-end').value);
-  try { if (draftCuts.length >= 100) throw new Error('You can add up to 100 cuts.'); retainedSegments(audio.duration, 0, audio.duration, [[start,end]]); draftCuts.push([start,end]); renderTrim(); }
-  catch(error) { $('trim-error').textContent = error.message; }
-};
-$('reset-trim').onclick = () => { $('trim-start').value = 0; $('trim-end').value = audio.duration.toFixed(3); draftCuts=[]; renderTrim(); };
-$('cancel-trim').onclick = () => $('trim-dialog').close();
-$('trim-form').onsubmit = event => {
-  event.preventDefault();
-  try {
-    const ranges = draftSegments();
-    audioEdit = {start:Number($('trim-start').value), end:Math.min(audio.duration,Number($('trim-end').value)), cuts:draftCuts.map(range=>[...range])};
-    audioSegments = ranges;
-    const position = sourceToEdited(ranges,audio.currentTime);
-    audio.currentTime = editedToSource(ranges,position >= editDuration(ranges) ? 0 : position);
-    resetMotion(); syncAudioEdit(); $('trim-dialog').close();
-  } catch(error) { $('trim-error').textContent = error.message; }
-};
+function changeTrim(edge, seconds) {
+  const minimum = Math.min(.05, audio.duration / 2);
+  audioEdit[edge] = edge === 'start' ? Math.max(0, Math.min(audioEdit.end - minimum, seconds)) : Math.min(audio.duration, Math.max(audioEdit.start + minimum, seconds));
+  audioSegments = retainedSegments(audio.duration, audioEdit.start, audioEdit.end);
+  if (audio.currentTime < audioEdit.start) audio.currentTime = audioEdit.start;
+  if (audio.currentTime > audioEdit.end) audio.currentTime = audioEdit.end;
+  resetMotion(); syncAudioEdit();
+}
+for (const edge of ['start','end']) {
+  const handle = $('trim-' + edge + '-handle');
+  let dragging = false;
+  handle.onpointerdown = event => {
+    if (!loaded || !trimMode) return;
+    event.preventDefault(); dragging = true; handle.setPointerCapture(event.pointerId);
+  };
+  handle.onpointermove = event => {
+    if (!dragging) return;
+    const rect = $('playback-timeline').getBoundingClientRect();
+    changeTrim(edge, (event.clientX - rect.left) / rect.width * audio.duration);
+  };
+  handle.onpointerup = handle.onpointercancel = () => { dragging = false; };
+  handle.onlostpointercapture = () => { dragging = false; };
+  handle.onkeydown = event => {
+    let value;
+    if (event.key === 'ArrowLeft') value = audioEdit[edge] - (event.shiftKey ? 1 : .1);
+    if (event.key === 'ArrowRight') value = audioEdit[edge] + (event.shiftKey ? 1 : .1);
+    if (event.key === 'Home') value = edge === 'start' ? 0 : audioEdit.start + .05;
+    if (event.key === 'End') value = edge === 'end' ? audio.duration : audioEdit.end - .05;
+    if (value !== undefined) { event.preventDefault(); event.stopPropagation(); changeTrim(edge,value); }
+  };
+}
 let previewVolume = 1, previewMuted = false, lastPreviewVolume = 1;
 function syncPreviewVolume() {
   const level = previewMuted ? 0 : previewVolume;
@@ -620,8 +627,8 @@ function draw(now) {
   enforceAudioEdit();
   sampleAudio(dt);
   paintPreview(now);
-  if (loaded) { $('elapsed').textContent = timeLabel(sourceToEdited(audioSegments, audio.currentTime)); $('seek').value = sourceToEdited(audioSegments, audio.currentTime); }
-  $('seek').style.setProperty('--seek-progress', `${loaded && audio.duration > 0 ? sourceToEdited(audioSegments, audio.currentTime) / editDuration(audioSegments) * 100 : 0}%`);
+  if (loaded) { $('elapsed').textContent = timeLabel(sourceToEdited(audioSegments, audio.currentTime)); $('seek').value = trimMode ? audio.currentTime : sourceToEdited(audioSegments, audio.currentTime); }
+  $('seek').style.setProperty('--seek-progress', `${loaded && audio.duration > 0 ? (trimMode ? audio.currentTime / audio.duration : sourceToEdited(audioSegments, audio.currentTime) / editDuration(audioSegments)) * 100 : 0}%`);
 }
 function paintPreview(now) {
   try {

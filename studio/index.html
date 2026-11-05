@@ -32,7 +32,14 @@
         </div>
       </div>
       <div class="transport">
-        <input id="seek" type="range" min="0" max="100" value="0" step="0.01" aria-label="Song position" disabled>
+        <div id="playback-timeline" class="playback-timeline">
+          <input id="seek" type="range" min="0" max="100" value="0" step="0.01" aria-label="Song position" disabled>
+          <div id="trim-overlay" hidden>
+            <div class="trim-excluded trim-excluded-start"></div><div class="trim-excluded trim-excluded-end"></div><div class="trim-kept"></div>
+            <button id="trim-start-handle" type="button" class="trim-handle trim-handle-start" role="slider" aria-label="Trim start" aria-orientation="horizontal"></button>
+            <button id="trim-end-handle" type="button" class="trim-handle trim-handle-end" role="slider" aria-label="Trim end" aria-orientation="horizontal"></button>
+          </div>
+        </div>
         <div class="transport-row">
           <div class="transport-left">
             <button id="play" class="play" aria-label="Play" title="Play / pause (Space)" disabled>▶</button>
@@ -162,20 +169,7 @@
 
     </aside>
   </main>
-  <dialog id="trim-dialog" aria-labelledby="trim-heading">
-    <form id="trim-form">
-      <h2 id="trim-heading">Edit audio</h2>
-      <p class="trim-help">Times are in seconds from the original song.</p>
-      <div class="trim-fields"><label>Start<input id="trim-start" type="number" min="0" step="0.001" required></label><label>End<input id="trim-end" type="number" min="0" step="0.001" required></label></div>
-      <div class="trim-position-buttons"><button id="trim-start-here" type="button" class="secondary">Start at playhead</button><button id="trim-end-here" type="button" class="secondary">End at playhead</button></div>
-      <h3>Remove a portion</h3>
-      <div class="trim-fields"><label>From<input id="cut-start" type="number" min="0" step="0.001"></label><label>To<input id="cut-end" type="number" min="0" step="0.001"></label></div>
-      <button id="add-cut" type="button" class="secondary">Add cut</button>
-      <ul id="audio-cuts" aria-label="Removed portions"></ul>
-      <p id="trim-summary" role="status"></p><p id="trim-error" role="alert"></p>
-      <div class="dialog-actions"><button id="reset-trim" type="button" class="text-button">Reset edits</button><button id="cancel-trim" type="button" class="secondary">Cancel</button><button type="submit" class="primary">Apply</button></div>
-    </form>
-  </dialog>
+
   <dialog id="reset-dialog" aria-labelledby="reset-dialog-title" aria-describedby="reset-dialog-detail">
     <form method="dialog">
       <h2 id="reset-dialog-title"></h2><p id="reset-dialog-detail"></p>
