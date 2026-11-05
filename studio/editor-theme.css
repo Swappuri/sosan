@@ -294,4 +294,4 @@ body, .settings, .section-heading h3, .settings-page-tooltip { font-family: Popp
 .trim-handle-start::after { left: 50%; }
 .trim-handle-end::after { right: 50%; }
 .trim-handle:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-#trim-audio.has-edits:not([aria-pressed=true]) { box-shadow: inset 0 -2px var(--accent); }
+#trim-audio.has-edits { box-shadow: none; border: 1px solid var(--accent-border); border-radius: 4px; background: var(--accent-soft); }
